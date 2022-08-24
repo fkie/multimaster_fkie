@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Signal
 import threading
 
@@ -106,9 +105,11 @@ class UpdateHandler(QObject):
         with self._lock:
             try:
                 if masteruri in self.__updateThreads:
-                    self.__requestedUpdates[masteruri] = (monitoruri, delayed_exec)
+                    self.__requestedUpdates[masteruri] = (
+                        monitoruri, delayed_exec)
                 else:
-                    self.__create_update_thread(monitoruri, masteruri, delayed_exec)
+                    self.__create_update_thread(
+                        monitoruri, masteruri, delayed_exec)
             except Exception:
                 pass
 
@@ -139,8 +140,10 @@ class UpdateHandler(QObject):
                 thread.timediff_signal.disconnect(self._on_timediff)
                 thread.username_signal.disconnect(self._on_username)
                 del thread
-                monitoruri, delayed_exec = self.__requestedUpdates.pop(masteruri)
-                self.__create_update_thread(monitoruri, masteruri, delayed_exec)
+                monitoruri, delayed_exec = self.__requestedUpdates.pop(
+                    masteruri)
+                self.__create_update_thread(
+                    monitoruri, masteruri, delayed_exec)
             except KeyError:
                 pass
             except Exception:

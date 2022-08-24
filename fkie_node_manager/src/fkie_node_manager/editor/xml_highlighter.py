@@ -32,7 +32,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QRegExp, Qt
 from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
@@ -42,9 +41,11 @@ class XmlHighlighter(QSyntaxHighlighter):
     Enabled the syntax highlightning for the ROS launch files.
     '''
 
-    LAUNCH_LAUNCH_CHILDS = ['group', 'node', 'test', 'env', 'remap', 'rosparam', 'param', 'machine', 'include', 'arg']
+    LAUNCH_LAUNCH_CHILDS = ['group', 'node', 'test', 'env',
+                            'remap', 'rosparam', 'param', 'machine', 'include', 'arg']
     LAUNCH_LAUNCH_ATTR = {'deprecated=': '"message"'}
-    LAUNCH_GROUP_CHILDS = ['node', 'test', 'env', 'remap', 'rosparam', 'param', 'machine', 'include', 'arg']
+    LAUNCH_GROUP_CHILDS = ['node', 'test', 'env', 'remap',
+                           'rosparam', 'param', 'machine', 'include', 'arg']
     LAUNCH_GROUP_ATTR = {'ns=': '"foo"',
                          'clear_params=': '"true|false"'
                          }
@@ -170,39 +171,56 @@ class XmlHighlighter(QSyntaxHighlighter):
         self.comment_format = self._create_format(Qt.darkGray, 'italic')
 #        self.mark_background = QBrush(QColor(251, 247, 222))
         # create patterns for braces
-        self.rules.append((self._create_regexp("</?|/?>"), self._create_format(QColor(24, 24, 24))))
+        self.rules.append((self._create_regexp("</?|/?>"),
+                           self._create_format(QColor(24, 24, 24))))
         # create patterns for TAG
         if self._is_launch:
-            tag_list = '|'.join(["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()])
-            self.rules.append((self._create_regexp(tag_list), self._create_format(Qt.darkRed)))
+            tag_list = '|'.join(
+                ["\\b%s\\b" % t for t in self.LAUNCH_CHILDS.keys()])
+            self.rules.append((self._create_regexp(tag_list),
+                               self._create_format(Qt.darkRed)))
         else:
-            self.rules.append((self._create_regexp(">|/>|<[/.\w:]*[\s\t>]|<[/.\w:]*$"), self._create_format(Qt.darkRed)))
+            self.rules.append((self._create_regexp(
+                ">|/>|<[/.\w:]*[\s\t>]|<[/.\w:]*$"), self._create_format(Qt.darkRed)))
         # create patterns for ATTRIBUTES
         if self._is_launch:
-            attr_list = '|'.join(set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()]))
-            self.rules.append((self._create_regexp(attr_list), self._create_format(QColor(0, 100, 0))))  # darkGreen
+            attr_list = '|'.join(
+                set(["\\b%s" % attr for v in self.LAUNCH_ATTR.values() for attr in v.keys()]))
+            self.rules.append((self._create_regexp(
+                attr_list), self._create_format(QColor(0, 100, 0))))  # darkGreen
         else:
-            self.rules.append((self._create_regexp("[_.\w]*="), self._create_format(QColor(0, 100, 0))))  # darkGreen
+            self.rules.append((self._create_regexp(
+                "[_.\w]*="), self._create_format(QColor(0, 100, 0))))  # darkGreen
         # create patterns for substitutions
-        self.rule_arg = (self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(77, 0, 38)))
+        self.rule_arg = (self._create_regexp("\\$\\(.*\\)"),
+                         self._create_format(QColor(77, 0, 38)))
         # create patterns for DOCTYPE
-        self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
-        self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
+        self.rules.append((self._create_regexp("<!DOCTYPE.*>"),
+                           self._create_format(Qt.lightGray)))
+        self.rules.append((self._create_regexp("<\\?xml.*\\?>"),
+                           self._create_format(Qt.lightGray)))
         # create patterns for yaml parameter inside
-        self.rules.append((self._create_regexp("[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp(
+            "[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
         # create patterns for yaml oneline strings inside
-        self.rules.append((self._create_regexp("'.*'"), self._create_format(Qt.blue)))
+        self.rules.append((self._create_regexp("'.*'"),
+                           self._create_format(Qt.blue)))
         # create pattern for list signes
-        self.rules.append((self._create_regexp("^\s*-"), self._create_format(Qt.darkRed, 'bold')))
+        self.rules.append((self._create_regexp("^\s*-"),
+                           self._create_format(Qt.darkRed, 'bold')))
         # create pattern for digits
-        self.rules.append((self._create_regexp("\\d+"), self._create_format(QColor(127, 64, 127))))
-        self.yaml_comment_rule = (self._create_regexp("#[.]*"), self._create_format(Qt.darkGray))
+        self.rules.append((self._create_regexp("\\d+"),
+                           self._create_format(QColor(127, 64, 127))))
+        self.yaml_comment_rule = (self._create_regexp(
+            "#[.]*"), self._create_format(Qt.darkGray))
         # create deprecated
         self.dep_pattern = []
         if self.DEPRECATED_PARAMETER:
-            attr_list = '|'.join(set([r'name="%s"' % attr for attr in self.DEPRECATED_PARAMETER.keys()]))
+            attr_list = '|'.join(
+                set([r'name="%s"' % attr for attr in self.DEPRECATED_PARAMETER.keys()]))
             # print(attr_list)
-            self.dep_pattern.append((self._create_regexp(attr_list), self._create_format(QColor(250, 0, 0), 'bold')))  # red
+            self.dep_pattern.append((self._create_regexp(
+                attr_list), self._create_format(QColor(250, 0, 0), 'bold')))  # red
         # create patterns for strings
         self.string_pattern = QRegExp("\"")
         self.string_format = self._create_format(Qt.blue)
@@ -265,14 +283,16 @@ class XmlHighlighter(QSyntaxHighlighter):
                 comment_length = idx_end - idx_start_cmt + self.comment_end.matchedLength()
             self._comments_idx.append((idx_start_cmt, comment_length))
             self.setFormat(idx_start_cmt, comment_length, self.comment_format)
-            idx_start_cmt = self.comment_start.indexIn(text, idx_start_cmt + comment_length)
+            idx_start_cmt = self.comment_start.indexIn(
+                text, idx_start_cmt + comment_length)
         # format string and detection for multiline string
         idx_start = self.string_pattern.indexIn(text)
         if self.previousBlockState() != -1 and self.previousBlockState() & self.STATE_STRING:
             strlen = idx_start + self.string_pattern.matchedLength()
             if idx_start == -1:
                 strlen = len(text)
-                self.setCurrentBlockState(self.currentBlockState() + self.STATE_STRING)
+                self.setCurrentBlockState(
+                    self.currentBlockState() + self.STATE_STRING)
             self.setFormat(0, strlen, self.string_format)
             idx_start = self.string_pattern.indexIn(text, strlen)
         idx_search = idx_start + 1
@@ -283,7 +303,8 @@ class XmlHighlighter(QSyntaxHighlighter):
                 strlen = 0
                 if not self._in_hl_range(idx_end, self._comments_idx):
                     if idx_end == -1:
-                        self.setCurrentBlockState(self.currentBlockState() + self.STATE_STRING)
+                        self.setCurrentBlockState(
+                            self.currentBlockState() + self.STATE_STRING)
                         strlen = len(text) - idx_start
                     else:
                         strlen = idx_end - idx_start + self.string_pattern.matchedLength()
@@ -339,7 +360,8 @@ class XmlHighlighter(QSyntaxHighlighter):
             tag_len = len(opentag)
             while rindex == -1 and next_block.isValid():
                 rindex = text.rfind(opentag, 0, idx_search)
-                obr, cbr = self._get_braces_count(text[rindex if rindex != -1 else 0:idx_search])
+                obr, cbr = self._get_braces_count(
+                    text[rindex if rindex != -1 else 0:idx_search])
                 open_braces += obr
                 closed_braces += cbr
                 loop += 1
@@ -359,8 +381,10 @@ class XmlHighlighter(QSyntaxHighlighter):
             closetag.setMinimal(True)
             while rindex == -1 and next_block.isValid():
                 rindex = closetag.indexIn(text, idx_search)
-                max_search_idx = rindex + closetag.matchedLength() if rindex != -1 else len(text)
-                obr, cbr = self._get_braces_count(text[idx_search:max_search_idx])
+                max_search_idx = rindex + closetag.matchedLength() if rindex != - \
+                    1 else len(text)
+                obr, cbr = self._get_braces_count(
+                    text[idx_search:max_search_idx])
                 open_braces += obr
                 closed_braces += cbr
                 loop += 1

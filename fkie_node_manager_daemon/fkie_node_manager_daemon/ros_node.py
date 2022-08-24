@@ -62,8 +62,10 @@ class RosNodeLauncher(object):
         nmd.rosnode.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
         # nmd.rosnode.declare_parameter('force_insecure', value=False, descriptor=ParameterDescriptor(description='Ignore security options and use insecure channel'), ignore_override = False)
         # start server and load launch files provided by arguments
-        self.server = Server(self.rosnode, default_domain_id=self.ros_domain_id)
-        self.success_start = self.server.start('[::]:%d' % self._port, displayed_name=self._displayed_name)
+        self.server = Server(
+            self.rosnode, default_domain_id=self.ros_domain_id)
+        self.success_start = self.server.start(
+            '[::]:%d' % self._port, displayed_name=self._displayed_name)
         if self.success_start:
             self._load_launches()
 
@@ -76,7 +78,8 @@ class RosNodeLauncher(object):
         except Exception:
             # on load error the process will be killed to notify user
             # in node_manager about error
-            self.rosnode.get_logger().warning('Start server failed: %s' % traceback.format_exc())
+            self.rosnode.get_logger().warning('Start server failed: %s' %
+                                              traceback.format_exc())
             sys.stdout.write(traceback.format_exc())
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
@@ -96,23 +99,25 @@ class RosNodeLauncher(object):
     def _init_arg_parser(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-l', '--load', nargs=1, help='loads given file on start;'
-                                                        ' statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;'
-                                                        ' comma separated for multiple files')
+                            ' statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;'
+                            ' comma separated for multiple files')
         parser.add_argument('-a', '--autostart', nargs=1, help='loads given file on start and launch nodes after load launch file;'
-                                                            ' statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;'
-                                                            ' comma separated for multiple files')
-        parser.add_argument('--name', nargs='?', type=str, default='',  help='changes the displayed name of the daemon. Default: hostname')
-        parser.add_argument('--port', nargs='?', type=int, default=nmdport(),  help='change port for gRPC server')
+                            ' statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;'
+                            ' comma separated for multiple files')
+        parser.add_argument('--name', nargs='?', type=str, default='',
+                            help='changes the displayed name of the daemon. Default: hostname')
+        parser.add_argument('--port', nargs='?', type=int,
+                            default=nmdport(),  help='change port for gRPC server')
         return parser
 
     def _load_launches(self):
-            load_files = []
-            if self._load:
-                load_files = self._load[0].split(',')
-            start_files = []
-            if self._autostart:
-                start_files = self._autostart[0].split(',')
-            for lfile in load_files:
-                self.server.load_launch_file(lfile, autostart=False)
-            for sfile in start_files:
-                self.server.load_launch_file(sfile, autostart=True)
+        load_files = []
+        if self._load:
+            load_files = self._load[0].split(',')
+        start_files = []
+        if self._autostart:
+            start_files = self._autostart[0].split(',')
+        for lfile in load_files:
+            self.server.load_launch_file(lfile, autostart=False)
+        for sfile in start_files:
+            self.server.load_launch_file(sfile, autostart=True)

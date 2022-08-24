@@ -31,9 +31,9 @@ import rclpy
 # cache for performance reasons
 _local_addrs = None
 
-ROS_IP           ="ROS_IP"
-ROS_IPV6         ="ROS_IPV6"
-ROS_HOSTNAME     ="ROS_HOSTNAME"
+ROS_IP = "ROS_IP"
+ROS_IPV6 = "ROS_IPV6"
+ROS_HOSTNAME = "ROS_HOSTNAME"
 IP4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
 
 HOSTS_CACHE = dict()
@@ -86,6 +86,7 @@ def ros_host_suffix(hostname=''):
     addr = subdomain(addr)
     addr = addr.replace('.', '_')
     return addr
+
 
 def get_port(url):
     '''
@@ -202,7 +203,8 @@ def is_local(hostname, wait=True):
         socket.inet_aton(hostname)
         local_addresses = ['localhost'] + get_local_addresses()
         # check 127/8 and local addresses
-        result = hostname.startswith('127.') or hostname == '::1' or hostname in local_addresses
+        result = hostname.startswith(
+            '127.') or hostname == '::1' or hostname in local_addresses
         with _LOCK:
             # nm.rosnode.get_logger().debug("host::HOSTS_CACHE add local %s:%s" % (hostname, result))
             HOSTS_CACHE[hostname] = result
@@ -229,7 +231,8 @@ def __is_local(hostname):
     global _LOCK
     try:
         # If Python has ipv6 disabled but machine.address can be resolved somehow to an ipv6 address, then host[4][0] will be int
-        machine_ips = [host[4][0] for host in socket.getaddrinfo(hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)]
+        machine_ips = [host[4][0] for host in socket.getaddrinfo(
+            hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)]
     except socket.gaierror:
         with _LOCK:
             #nm.rosnode.get_logger().debug("host::HOSTS_CACHE resolve %s failed" % hostname)
@@ -237,11 +240,13 @@ def __is_local(hostname):
         return False
     local_addresses = ['localhost'] + get_local_addresses()
     # check 127/8 and local addresses
-    result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != []) or (set(machine_ips) & set(local_addresses) != set())
+    result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != [
+    ]) or (set(machine_ips) & set(local_addresses) != set())
     with _LOCK:
         #nm.rosnode.get_logger().debug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
         HOSTS_CACHE[hostname] = result
     return result
+
 
 def get_address_override():
     """
@@ -255,8 +260,9 @@ def get_address_override():
             try:
                 _, val = arg.split(':=')
                 return val
-            except: #split didn't unpack properly
-                raise ValueError("invalid ROS command-line remapping argument '%s'"%arg)
+            except:  # split didn't unpack properly
+                raise ValueError(
+                    "invalid ROS command-line remapping argument '%s'" % arg)
 
     # check ROS_HOSTNAME and ROS_IP environment variables, which are
     # aliases for each other
@@ -267,23 +273,28 @@ def get_address_override():
         else:
             parts = urlparse(hostname)
             if parts.scheme:
-                msg = 'invalid ROS_HOSTNAME (protocol ' + ('and port ' if parts.port else '') + 'should not be included)'
-                raise ValueError('invalid ROS_HOSTNAME (protocol ' + ('and port ' if parts.port else '') + 'should not be included)')
+                msg = 'invalid ROS_HOSTNAME (protocol ' + (
+                    'and port ' if parts.port else '') + 'should not be included)'
+                raise ValueError('invalid ROS_HOSTNAME (protocol ' +
+                                 ('and port ' if parts.port else '') + 'should not be included)')
             elif hostname.find(':') != -1:
                 # this can not be checked with urlparse()
                 # since it does not extract the port for a hostname like "foo:1234"
-                raise ValueError('invalid ROS_HOSTNAME (port should not be included)')
+                raise ValueError(
+                    'invalid ROS_HOSTNAME (port should not be included)')
         return hostname
     elif ROS_IP in os.environ:
         ip = os.environ[ROS_IP]
         if ip == '':
             raise ValueError('invalid ROS_IP (an empty string)')
         elif ip.find('://') != -1:
-            raise ValueError('invalid ROS_IP (protocol should not be included)')
+            raise ValueError(
+                'invalid ROS_IP (protocol should not be included)')
         elif ip.find('.') != -1 and ip.rfind(':') > ip.rfind('.'):
             raise ValueError('invalid ROS_IP (port should not be included)')
         elif ip.find('.') == -1 and ip.find(':') == -1:
-            raise ValueError('invalid ROS_IP (must be a valid IPv4 or IPv6 address)')
+            raise ValueError(
+                'invalid ROS_IP (must be a valid IPv4 or IPv6 address)')
         return ip
     return None
 
@@ -321,7 +332,7 @@ def get_local_address():
         # pick first non 127/8 address
         if not addr.startswith('127.') and not addr == '::1':
             return addr
-    else: # loopback
+    else:  # loopback
         if use_ipv6():
             return '::1'
         else:
@@ -352,9 +363,11 @@ def get_local_addresses():
                 # https://bugs.launchpad.net/ubuntu/+source/netifaces/+bug/753009
                 continue
             if socket.AF_INET in ifaddrs:
-                v4addrs.extend([addr['addr'] for addr in ifaddrs[socket.AF_INET]])
+                v4addrs.extend([addr['addr']
+                                for addr in ifaddrs[socket.AF_INET]])
             if socket.AF_INET6 in ifaddrs:
-                v6addrs.extend([addr['addr'] for addr in ifaddrs[socket.AF_INET6]])
+                v6addrs.extend([addr['addr']
+                                for addr in ifaddrs[socket.AF_INET6]])
         if use_ipv6():
             local_addrs = v6addrs + v4addrs
         else:
@@ -362,11 +375,14 @@ def get_local_addresses():
     else:
         # cross-platform branch, can only resolve one address
         if use_ipv6():
-            local_addrs = [host[4][0] for host in socket.getaddrinfo(socket.gethostname(), 0, 0, 0, socket.SOL_TCP)]
+            local_addrs = [host[4][0] for host in socket.getaddrinfo(
+                socket.gethostname(), 0, 0, 0, socket.SOL_TCP)]
         else:
-            local_addrs = [host[4][0] for host in socket.getaddrinfo(socket.gethostname(), 0, socket.AF_INET, 0, socket.SOL_TCP)]
+            local_addrs = [host[4][0] for host in socket.getaddrinfo(
+                socket.gethostname(), 0, socket.AF_INET, 0, socket.SOL_TCP)]
     _local_addrs = local_addrs
     return local_addrs
+
 
 def use_ipv6():
     return ROS_IPV6 in os.environ and os.environ[ROS_IPV6] == 'on'

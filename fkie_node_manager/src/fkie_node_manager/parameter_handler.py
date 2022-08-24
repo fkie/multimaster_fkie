@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Signal
 import threading
 try:
@@ -194,13 +193,16 @@ class RequestListThread(QObject, threading.Thread):
                 for p in params:
                     if p.startswith(self._ns):
                         result.append(p)
-                self.parameter_list_signal.emit(self._masteruri, code, msg, result)
+                self.parameter_list_signal.emit(
+                    self._masteruri, code, msg, result)
             except Exception:
                 import traceback
-                err_msg = "Error while retrieve the parameter list from %s: %s" % (self._masteruri, traceback.format_exc(1))
+                err_msg = "Error while retrieve the parameter list from %s: %s" % (
+                    self._masteruri, traceback.format_exc(1))
                 rospy.logwarn(err_msg)
 #        lines = traceback.format_exc(1).splitlines()
-                self.parameter_list_signal.emit(self._masteruri, -1, err_msg, [])
+                self.parameter_list_signal.emit(
+                    self._masteruri, -1, err_msg, [])
 
 
 class RequestValuesThread(QObject, threading.Thread):
@@ -233,13 +235,15 @@ class RequestValuesThread(QObject, threading.Thread):
                 r = param_server_multi()
                 for index, (code, msg, value) in enumerate(r):
                     result[self._params[index]] = (code, msg, value)
-                self.parameter_values_signal.emit(self._masteruri, 1, '', result)
+                self.parameter_values_signal.emit(
+                    self._masteruri, 1, '', result)
             except Exception:
                 import traceback
 #        err_msg = "Error while retrieve parameter values from %s: %s"%(self._masteruri, traceback.format_exc(1))
 #        rospy.logwarn(err_msg)
 #        lines = traceback.format_exc(1).splitlines()
-                self.parameter_values_signal.emit(self._masteruri, -1, traceback.format_exc(1), result)
+                self.parameter_values_signal.emit(
+                    self._masteruri, -1, traceback.format_exc(1), result)
 
 
 class DeliverValuesThread(QObject, threading.Thread):
@@ -282,7 +286,8 @@ class DeliverValuesThread(QObject, threading.Thread):
                 self.result_signal.emit(self._masteruri, 1, '', result)
             except Exception:
                 import traceback
-                err_msg = "Error while deliver parameter values to %s: %s" % (self._masteruri, traceback.format_exc(1))
+                err_msg = "Error while deliver parameter values to %s: %s" % (
+                    self._masteruri, traceback.format_exc(1))
                 rospy.logwarn(err_msg)
 #        lines = traceback.format_exc(1).splitlines()
                 self.result_signal.emit(self._masteruri, -1, err_msg, result)

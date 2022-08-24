@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import grpc
 import rospy
@@ -86,7 +85,8 @@ def get_insecure_channel(url, cached=False):
     rospy.logdebug("create insecure channel to %s" % url)
     channel = grpc.insecure_channel(url)
     if time.time() - starttime > 5.0:
-        rospy.logwarn("Open insecure gRPC channel took too long (%.3f sec)! Fix your network configuration!" % (time.time() - starttime))
+        rospy.logwarn("Open insecure gRPC channel took too long (%.3f sec)! Fix your network configuration!" % (
+            time.time() - starttime))
     if cached:
         INSECURE_CHANNEL_CACHE[url] = channel
     return channel

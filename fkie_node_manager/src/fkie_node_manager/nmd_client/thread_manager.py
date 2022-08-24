@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 import threading
 from python_qt_binding.QtCore import QObject

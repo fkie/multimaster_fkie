@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as sgrpc
@@ -46,7 +45,8 @@ class SettingsServicer(sgrpc.SettingsServiceServicer):
     def __init__(self):
         rospy.loginfo("Create settings servicer")
         sgrpc.SettingsServiceServicer.__init__(self)
-        self.settings = Settings(version=version.detect_version('fkie_node_manager_daemon')[0])
+        self.settings = Settings(
+            version=version.detect_version('fkie_node_manager_daemon')[0])
 
     def GetConfig(self, request, context):
         msg = smsg.Yaml()

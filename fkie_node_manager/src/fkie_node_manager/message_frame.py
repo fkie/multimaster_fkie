@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
@@ -51,7 +50,8 @@ class MessageData(object):
 
     def __init__(self, data, data_list=[]):
         self.data = data
-        self.data_list = data_list if data_list else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.data_list = data_list if data_list else []
 
     def __str__(self):
         return utf8(self.data)
@@ -88,7 +88,8 @@ class MessageQueue(object):
         if questionid in self._queue.keys():
             for txt, dt in self._queue[questionid]:
                 if txt == text and dt == data:
-                    no_in_list = [x for x in data.data_list if x not in dt.data_list]
+                    no_in_list = [
+                        x for x in data.data_list if x not in dt.data_list]
                     for item in no_in_list:
                         dt.data_list.append(item)
                     return
@@ -164,18 +165,22 @@ class MessageFrame(QFrame):
         self._new_request = False
         self._in_resp_process = False
         self.ui = QFrame()
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'MessageFrame.ui')
+        ui_file = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), 'ui', 'MessageFrame.ui')
         loadUi(ui_file, self.ui)
         color = QColor(255, 207, 121)
-        self.ui.questionOkButton.setIcon(nm.settings().icon('crystal_clear_button_apply.png'))
-        self.ui.questionCancelButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
+        self.ui.questionOkButton.setIcon(
+            nm.settings().icon('crystal_clear_button_apply.png'))
+        self.ui.questionCancelButton.setIcon(
+            nm.settings().icon('crystal_clear_button_close.png'))
         self.ui.listLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.ui.questionLabel.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.ui.setVisible(False)
         self.ui.listLabel.setVisible(False)
         self.ui.questionOkButton.clicked.connect(self._on_question_ok)
         self.ui.questionCancelButton.clicked.connect(self._on_question_cancel)
-        self.ui.checkBox_dnaa.stateChanged.connect(self._on_checkbox_state_changed)
+        self.ui.checkBox_dnaa.stateChanged.connect(
+            self._on_checkbox_state_changed)
         self._ask = 'ask'
         if info:
             color = QColor(232, 104, 80)
@@ -214,9 +219,11 @@ class MessageFrame(QFrame):
             self._new_request = self._read_next_item()
             self._frameui_4_request(self._new_request)
             if self.questionid in [self.TYPE_NODELET, self.TYPE_NOSCREEN]:
-                self.ui.checkBox_dnaa.setText("don't %s again, never!" % self._ask)
+                self.ui.checkBox_dnaa.setText(
+                    "don't %s again, never!" % self._ask)
             else:
-                self.ui.checkBox_dnaa.setText("don't %s again, for session" % self._ask)
+                self.ui.checkBox_dnaa.setText(
+                    "don't %s again, for session" % self._ask)
 
     def show_info(self, infoid, text, data=MessageData(None), color=None):
         self.show_question(infoid, text=text, data=data, color=color)
@@ -258,9 +265,11 @@ class MessageFrame(QFrame):
                     if hasattr(item, 'name'):
                         item_str = item.name
                 if ltext:
-                    self.ui.listLabel.setText("%s, %s" % (ltext, HTMLDelegate.toHTML(item_str)))
+                    self.ui.listLabel.setText("%s, %s" % (
+                        ltext, HTMLDelegate.toHTML(item_str)))
                 else:
-                    self.ui.listLabel.setText("%s" % (HTMLDelegate.toHTML(item_str)))
+                    self.ui.listLabel.setText(
+                        "%s" % (HTMLDelegate.toHTML(item_str)))
             self.ui.listLabel.setVisible(True)
         else:
             self.ui.listLabel.setText('')

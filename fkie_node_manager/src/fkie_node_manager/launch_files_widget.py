@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QColor, QKeySequence, QIcon, QPalette
@@ -84,26 +83,37 @@ class LaunchFilesWidget(QDockWidget):
         # initialize parameter
         self.__current_path = os.path.expanduser('~')
         # load the UI file
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'LaunchFilesDockWidget.ui')
-        loadUi(ui_file, self, custom_widgets={'EnhancedLineEdit': EnhancedLineEdit})
+        ui_file = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), 'ui', 'LaunchFilesDockWidget.ui')
+        loadUi(ui_file, self, custom_widgets={
+               'EnhancedLineEdit': EnhancedLineEdit})
         self.hostLabel.setVisible(False)
-        self.ui_button_progress_cancel_cfg.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
-        self.ui_button_reload.setIcon(nm.settings().icon('oxygen_view_refresh.png'))
-        self.ui_button_edit.setIcon(nm.settings().icon('crystal_clear_edit_launch.png'))
+        self.ui_button_progress_cancel_cfg.setIcon(
+            nm.settings().icon('crystal_clear_button_close.png'))
+        self.ui_button_reload.setIcon(
+            nm.settings().icon('oxygen_view_refresh.png'))
+        self.ui_button_edit.setIcon(
+            nm.settings().icon('crystal_clear_edit_launch.png'))
         self.ui_button_new.setIcon(nm.settings().icon('crystal_clear_add.png'))
-        self.ui_button_transfer.setIcon(nm.settings().icon('crystal_clear_launch_file_transfer.png'))
-        self.ui_button_save_profile.setIcon(nm.settings().icon('crystal_clear_profile_new.png'))
-        self.ui_button_load.setIcon(nm.settings().icon('crystal_clear_launch_file.png'))
+        self.ui_button_transfer.setIcon(nm.settings().icon(
+            'crystal_clear_launch_file_transfer.png'))
+        self.ui_button_save_profile.setIcon(
+            nm.settings().icon('crystal_clear_profile_new.png'))
+        self.ui_button_load.setIcon(
+            nm.settings().icon('crystal_clear_launch_file.png'))
         self._current_search = ''
         pal = self.palette()
         self._default_color = pal.color(QPalette.Window)
         # initialize the progress queue
-        self.progress_queue = ProgressQueue(self.ui_frame_progress_cfg, self.ui_bar_progress_cfg, self.ui_button_progress_cancel_cfg, 'Launch File')
+        self.progress_queue = ProgressQueue(
+            self.ui_frame_progress_cfg, self.ui_bar_progress_cfg, self.ui_button_progress_cancel_cfg, 'Launch File')
         # initialize the view for the launch files
-        self.launchlist_model = LaunchListModel(progress_queue=self.progress_queue, viewobj=self.ui_file_view)
+        self.launchlist_model = LaunchListModel(
+            progress_queue=self.progress_queue, viewobj=self.ui_file_view)
         self.launchlist_proxy_model = QSortFilterProxyModel(self)
         self.launchlist_proxy_model.setSourceModel(self.launchlist_model)
-        self.name_delegate = HTMLDelegate(check_for_ros_names=False, palette=self.palette())
+        self.name_delegate = HTMLDelegate(
+            check_for_ros_names=False, palette=self.palette())
         self.ui_file_view.setItemDelegateForColumn(0, self.name_delegate)
         self.ui_file_view.setModel(self.launchlist_proxy_model)
         self.ui_file_view.setAlternatingRowColors(True)
@@ -112,21 +122,25 @@ class LaunchFilesWidget(QDockWidget):
         self.ui_file_view.setDragEnabled(True)
         sm = self.ui_file_view.selectionModel()
         sm.selectionChanged.connect(self.on_ui_file_view_selection_changed)
-        self.launchlist_model.pathlist_handled.connect(self.on_pathlist_handled)
+        self.launchlist_model.pathlist_handled.connect(
+            self.on_pathlist_handled)
         self.launchlist_model.error_on_path.connect(self.on_error_on_path)
         self.ui_search_line.refresh_signal.connect(self.set_package_filter)
         self.ui_search_line.stop_signal.connect(self.stop)
         # connect to the button signals
         self.ui_button_reload.clicked.connect(self.on_reload_clicked)
         self.ui_button_edit.clicked.connect(self.on_edit_xml_clicked)
-        #self.ui_button_new.clicked.connect(self.on_new_xml_clicked)
+        # self.ui_button_new.clicked.connect(self.on_new_xml_clicked)
         self.ui_button_transfer.clicked.connect(self.on_transfer_file_clicked)
-        self.ui_button_save_profile.clicked.connect(self.on_save_profile_clicked)
+        self.ui_button_save_profile.clicked.connect(
+            self.on_save_profile_clicked)
         self.ui_button_load.clicked.connect(self.on_load_xml_clicked)
         # add menu to create fiel or directory
         self._menu_add = QMenu()
-        create_file_action = QAction(nm.settings().icon('crystal_clear_launch_file_new.png'), "create file", self, statusTip="", triggered=self.on_new_xml_clicked)
-        create_dir_action = QAction(nm.settings().icon('crystal_clear_folder.png'), "create directory", self, statusTip="", triggered=self.on_new_dir_clicked)
+        create_file_action = QAction(nm.settings().icon(
+            'crystal_clear_launch_file_new.png'), "create file", self, statusTip="", triggered=self.on_new_xml_clicked)
+        create_dir_action = QAction(nm.settings().icon('crystal_clear_folder.png'),
+                                    "create directory", self, statusTip="", triggered=self.on_new_dir_clicked)
         self._menu_add.addAction(create_file_action)
         self._menu_add.addAction(create_dir_action)
         self.ui_button_new.setMenu(self._menu_add)
@@ -148,7 +162,8 @@ class LaunchFilesWidget(QDockWidget):
         self._masteruri2name[masteruri.rstrip(os.path.sep)] = mastername
         mname = self.path2mastername(self.launchlist_model.current_path)
         if mname:
-            color = QColor.fromRgb(nm.settings().host_color(mname, self._default_color.rgb()))
+            color = QColor.fromRgb(nm.settings().host_color(
+                mname, self._default_color.rgb()))
             self._new_color(color)
 
     def path2mastername(self, grpc_path):
@@ -163,7 +178,8 @@ class LaunchFilesWidget(QDockWidget):
         '''
         Tries to load the launch file, if one was activated.
         '''
-        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(
+            self.ui_file_view.selectionModel().selectedIndexes(), False)
         mname = self.path2mastername(self.launchlist_model.current_path)
         for item in selected:
             try:
@@ -180,25 +196,29 @@ class LaunchFilesWidget(QDockWidget):
                         self.load_profile_signal.emit(item.path)
                     elif item.is_config_file():
                         self.edit_signal.emit(lfile)
-                mname = self.path2mastername(self.launchlist_model.current_path)
+                mname = self.path2mastername(
+                    self.launchlist_model.current_path)
                 self.hostLabel.setText('Remote @ <b>%s</b>' % mname)
                 if mname and self._first_path != self.launchlist_model.current_path:
                     self.hostLabel.setVisible(True)
                 else:
                     self.hostLabel.setVisible(False)
                 if mname:
-                    color = QColor.fromRgb(nm.settings().host_color(mname, self._default_color.rgb()))
+                    color = QColor.fromRgb(nm.settings().host_color(
+                        mname, self._default_color.rgb()))
                     self._new_color(color)
             except Exception as e:
                 import traceback
                 print(traceback.format_exc())
-                rospy.logwarn("Error while load launch file %s: %s" % (item, utf8(e)))
+                rospy.logwarn("Error while load launch file %s: %s" %
+                              (item, utf8(e)))
                 MessageBox.warning(self, "Load error",
                                    'Error while load launch file:\n%s' % item.name,
                                    "%s" % utf8(e))
 
     def _new_color(self, color):
-        bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
+        bg_style_launch_dock = "QWidget#ui_dock_widget_contents { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (
+            color.name(), self._default_color.name())
         self.setStyleSheet("%s" % (bg_style_launch_dock))
 
     def on_pathlist_handled(self, gpath):
@@ -210,7 +230,8 @@ class LaunchFilesWidget(QDockWidget):
         if gpath == self._current_search or gpath == self.launchlist_model.current_path:
             self.ui_search_line.set_process_active(False)
         if self.launchlist_model.is_in_root:
-            self._reload_timer = threading.Timer(2., nm.nmd().file.list_path_threaded)
+            self._reload_timer = threading.Timer(
+                2., nm.nmd().file.list_path_threaded)
             self._reload_timer.start()
 
     def _stop_timer_reload(self):
@@ -223,7 +244,8 @@ class LaunchFilesWidget(QDockWidget):
 
     def _on_timer_reload_callback(self, event=None):
         nm.nmd().file.list_path_threaded(self.launchlist_model.current_path)
-        self._reload_timer = threading.Timer(2., nm.nmd().file.list_path_threaded)
+        self._reload_timer = threading.Timer(
+            2., nm.nmd().file.list_path_threaded)
         self._reload_timer.start()
 
     def on_launch_selection_changed(self, selected, deselected):
@@ -243,7 +265,8 @@ class LaunchFilesWidget(QDockWidget):
         '''
         On selection of a launch file, the buttons are enabled otherwise disabled.
         '''
-        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(
+            self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
             islaunch = item.is_launch_file()
             isconfig = item.is_config_file()
@@ -255,7 +278,8 @@ class LaunchFilesWidget(QDockWidget):
     def set_package_filter(self, text):
         if text:
             if text.startswith(os.path.sep):
-                self._current_search = nmdurl.join(self.launchlist_model.current_grpc, text)
+                self._current_search = nmdurl.join(
+                    self.launchlist_model.current_grpc, text)
                 self.launchlist_model.set_path(text)
             else:
                 # search for a package
@@ -274,7 +298,8 @@ class LaunchFilesWidget(QDockWidget):
         '''
         Opens an XML editor to edit the launch file.
         '''
-        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(
+            self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
             path = self.launchlist_model.expand_item(item.path, item.id)
             if path is not None:
@@ -286,9 +311,11 @@ class LaunchFilesWidget(QDockWidget):
         '''
         # get new file from open dialog, use last path if one exists
         if not self.launchlist_model.is_in_root:
-            items = self.launchlist_model.add_new_item("new.launch", PathItem.LAUNCH_FILE)
+            items = self.launchlist_model.add_new_item(
+                "new.launch", PathItem.LAUNCH_FILE)
             if items:
-                index = self.launchlist_proxy_model.mapFromSource(self.launchlist_model.index(1, 0))
+                index = self.launchlist_proxy_model.mapFromSource(
+                    self.launchlist_model.index(1, 0))
                 self.ui_file_view.selectionModel().select(index, QItemSelectionModel.Select)
                 self.ui_file_view.setCurrentIndex(index)
                 self.ui_file_view.edit(index)
@@ -301,7 +328,8 @@ class LaunchFilesWidget(QDockWidget):
         if not self.launchlist_model.is_in_root:
             items = self.launchlist_model.add_new_item("new", PathItem.FOLDER)
             if items:
-                index = self.launchlist_proxy_model.mapFromSource(self.launchlist_model.index(1, 0))
+                index = self.launchlist_proxy_model.mapFromSource(
+                    self.launchlist_model.index(1, 0))
                 self.ui_file_view.selectionModel().select(index, QItemSelectionModel.Select)
                 self.ui_file_view.setCurrentIndex(index)
                 self.ui_file_view.edit(index)
@@ -310,7 +338,8 @@ class LaunchFilesWidget(QDockWidget):
         '''
         Emit the signal to copy the selected file to a remote host.
         '''
-        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(
+            self.ui_file_view.selectionModel().selectedIndexes(), False)
         paths = list()
         for item in selected:
             path = self.launchlist_model.expand_item(item.path, item.id)
@@ -321,7 +350,8 @@ class LaunchFilesWidget(QDockWidget):
 
     def on_save_profile_clicked(self):
         # save the profile
-        _netloc, path = nmdurl.split(self.launchlist_model.current_path, with_scheme=True)
+        _netloc, path = nmdurl.split(
+            self.launchlist_model.current_path, with_scheme=True)
         self.save_profile_signal.emit(path)
 
     def on_load_xml_clicked(self):
@@ -329,7 +359,8 @@ class LaunchFilesWidget(QDockWidget):
         Tries to load the selected launch file. The button is only enabled and this
         method is called, if the button was enabled by on_launch_selection_clicked()
         '''
-        selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+        selected = self._pathItemsFromIndexes(
+            self.ui_file_view.selectionModel().selectedIndexes(), False)
         for item in selected:
             path = self.launchlist_model.expand_item(item.path, item.id)
             if path is not None:
@@ -355,7 +386,8 @@ class LaunchFilesWidget(QDockWidget):
         if not self.ui_file_view.state() == QAbstractItemView.EditingState:
             # remove history file from list by pressing DEL
             if event == QKeySequence.Delete or (event.key() == Qt.Key_Delete and key_mod & Qt.ShiftModifier):
-                selected = self._pathItemsFromIndexes(self.ui_file_view.selectionModel().selectedIndexes(), False)
+                selected = self._pathItemsFromIndexes(
+                    self.ui_file_view.selectionModel().selectedIndexes(), False)
                 for item in selected:
                     if item in nm.settings().launch_history:
                         nm.settings().launch_history_remove(item.path)
@@ -364,18 +396,22 @@ class LaunchFilesWidget(QDockWidget):
                         if key_mod & Qt.ShiftModifier:
                             rem_uri, rem_path = nmdurl.split(item.path)
                             host = rem_uri.split(':')
-                            result = MessageBox.question(self, "Delete Question", "Delete %s\n@ %s" % (rem_path, host[0]), buttons=MessageBox.No | MessageBox.Yes)
+                            result = MessageBox.question(self, "Delete Question", "Delete %s\n@ %s" % (
+                                rem_path, host[0]), buttons=MessageBox.No | MessageBox.Yes)
                             if result == MessageBox.Yes:
                                 try:
                                     nm.nmd().file.delete(item.path)
-                                    self.launchlist_model.reload_current_path(clear_cache=True)
+                                    self.launchlist_model.reload_current_path(
+                                        clear_cache=True)
                                 except Exception as e:
-                                    rospy.logwarn("Error while delete %s: %s" % (item.path, utf8(e)))
+                                    rospy.logwarn(
+                                        "Error while delete %s: %s" % (item.path, utf8(e)))
                                     MessageBox.warning(self, "Delete error",
-                                                    'Error while delete:\n%s' % item.name,
-                                                   "%s" % utf8(e))
+                                                       'Error while delete:\n%s' % item.name,
+                                                       "%s" % utf8(e))
                         else:
-                            MessageBox.information(self, "Delete Info", "Use Shift+Del to delete files or directories", buttons=MessageBox.Ok)
+                            MessageBox.information(
+                                self, "Delete Info", "Use Shift+Del to delete files or directories", buttons=MessageBox.Ok)
             elif not key_mod and event.key() == Qt.Key_F4 and self.ui_button_edit.isEnabled():
                 # open selected launch file in xml editor by F4
                 self.on_edit_xml_clicked()

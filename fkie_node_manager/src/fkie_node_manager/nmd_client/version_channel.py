@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 from python_qt_binding.QtCore import Signal
 
@@ -56,7 +55,8 @@ class VersionChannel(ChannelInterface):
         return vstub.VersionStub(channel), channel
 
     def get_version_threaded(self, grpc_url='grpc://localhost:12321'):
-        self._threads.start_thread("gvt_%s" % grpc_url, target=self.get_version, args=(grpc_url, True))
+        self._threads.start_thread(
+            "gvt_%s" % grpc_url, target=self.get_version, args=(grpc_url, True))
 
     def get_version(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get version from %s" % (grpc_url))

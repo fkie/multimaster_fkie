@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Qt, Signal
 from python_qt_binding.QtGui import QIcon
 import os
@@ -53,6 +52,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 import fkie_node_manager as nm
 
+
 class SyncHighlighter(YamlHighlighter):
     '''
     Enabled the syntax highlightning for the sync interface.
@@ -70,8 +70,10 @@ class SyncHighlighter(YamlHighlighter):
                    "\\bresync_on_reconnect\\b", "\\bresync_on_reconnect_timeout\\b",
                    ]
         for tag in tagList:
-            self.rules.append((self._create_regexp(tag), self._create_format(Qt.darkBlue)))
-        self.rules.append((self._create_regexp("\\b\\*|\\*\\B|\\/\\*"), self._create_format(Qt.darkGreen, 'bold')))
+            self.rules.append((self._create_regexp(
+                tag), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp(
+            "\\b\\*|\\*\\B|\\/\\*"), self._create_format(Qt.darkGreen, 'bold')))
 
 
 class SyncDialog(QDialog):
@@ -92,7 +94,8 @@ class SyncDialog(QDialog):
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(2)
-        sizePolicy.setHeightForWidth(self.toolButton_SyncAll.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.toolButton_SyncAll.sizePolicy().hasHeightForWidth())
         self.toolButton_SyncAll.setSizePolicy(sizePolicy)
         self.toolButton_SyncAll.setObjectName("toolButton_SyncAll")
         self.verticalLayout.addWidget(self.toolButton_SyncAll)
@@ -114,55 +117,72 @@ class SyncDialog(QDialog):
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
-        sizePolicy.setHeightForWidth(self.toolButton_SyncTopicOnDemand.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.toolButton_SyncTopicOnDemand.sizePolicy().hasHeightForWidth())
         self.toolButton_SyncTopicOnDemand.setSizePolicy(sizePolicy)
-        self.toolButton_SyncTopicOnDemand.setObjectName("toolButton_SyncTopicOnDemand")
+        self.toolButton_SyncTopicOnDemand.setObjectName(
+            "toolButton_SyncTopicOnDemand")
         self.verticalLayout.addWidget(self.toolButton_SyncTopicOnDemand)
-        self.toolButton_SyncTopicOnDemand.setText(self._translate("Sync only topics on demand"))
-        self.toolButton_SyncTopicOnDemand.clicked.connect(self._on_sync_topics_on_demand_clicked)
+        self.toolButton_SyncTopicOnDemand.setText(
+            self._translate("Sync only topics on demand"))
+        self.toolButton_SyncTopicOnDemand.clicked.connect(
+            self._on_sync_topics_on_demand_clicked)
 
         self.toolButton_SelectInterface = QToolButton(self)
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
-        sizePolicy.setHeightForWidth(self.toolButton_SelectInterface.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.toolButton_SelectInterface.sizePolicy().hasHeightForWidth())
         self.toolButton_SelectInterface.setSizePolicy(sizePolicy)
-        self.toolButton_SelectInterface.setObjectName("toolButton_SelectInterface")
+        self.toolButton_SelectInterface.setObjectName(
+            "toolButton_SelectInterface")
         self.verticalLayout.addWidget(self.toolButton_SelectInterface)
-        self.toolButton_SelectInterface.setText(self._translate("Select an interface"))
-        self.toolButton_SelectInterface.clicked.connect(self._on_select_interface_clicked)
+        self.toolButton_SelectInterface.setText(
+            self._translate("Select an interface"))
+        self.toolButton_SelectInterface.clicked.connect(
+            self._on_select_interface_clicked)
 
         self.interface_field = QComboBox(self)
         self.interface_field.setInsertPolicy(QComboBox.InsertAlphabetically)
-        self.interface_field.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+        self.interface_field.setSizePolicy(QSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Fixed))
         self.interface_field.setEditable(True)
         self.interface_field.setVisible(False)
         self.interface_field.setObjectName("interface_field")
         self.verticalLayout.addWidget(self.interface_field)
-        self.interface_field.currentIndexChanged[str].connect(self._on_interface_selected)
+        self.interface_field.currentIndexChanged[str].connect(
+            self._on_interface_selected)
 
         self.toolButton_EditInterface = QToolButton(self)
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
-        sizePolicy.setHeightForWidth(self.toolButton_EditInterface.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.toolButton_EditInterface.sizePolicy().hasHeightForWidth())
         self.toolButton_EditInterface.setSizePolicy(sizePolicy)
         self.toolButton_EditInterface.setObjectName("toolButton_EditInterface")
         self.verticalLayout.addWidget(self.toolButton_EditInterface)
-        self.toolButton_EditInterface.setText(self._translate("Edit selected interface"))
-        self.toolButton_EditInterface.clicked.connect(self._on_edit_interface_clicked)
+        self.toolButton_EditInterface.setText(
+            self._translate("Edit selected interface"))
+        self.toolButton_EditInterface.clicked.connect(
+            self._on_edit_interface_clicked)
         self.toolButton_EditInterface.setVisible(False)
 
         self.toolButton_CreateInterface = QToolButton(self)
         sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(1)
-        sizePolicy.setHeightForWidth(self.toolButton_CreateInterface.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.toolButton_CreateInterface.sizePolicy().hasHeightForWidth())
         self.toolButton_CreateInterface.setSizePolicy(sizePolicy)
-        self.toolButton_CreateInterface.setObjectName("toolButton_CreateInterface")
+        self.toolButton_CreateInterface.setObjectName(
+            "toolButton_CreateInterface")
         self.verticalLayout.addWidget(self.toolButton_CreateInterface)
-        self.toolButton_CreateInterface.setText(self._translate("Create an interface"))
-        self.toolButton_CreateInterface.clicked.connect(self._on_create_interface_clicked)
+        self.toolButton_CreateInterface.setText(
+            self._translate("Create an interface"))
+        self.toolButton_CreateInterface.clicked.connect(
+            self._on_create_interface_clicked)
         self.toolButton_CreateInterface.setVisible(False)
 
         self.textedit = TextEdit('', self)
@@ -247,7 +267,8 @@ class SyncDialog(QDialog):
         self._sync_args.append(''.join(['_ignore_topics:=', '[]']))
         self._sync_args.append(''.join(['_ignore_publishers:=', '[]']))
         self._sync_args.append(''.join(['_ignore_subscribers:=', '[]']))
-        self._sync_args.append(''.join(['_sync_topics:=', '[/only_on_demand]']))
+        self._sync_args.append(
+            ''.join(['_sync_topics:=', '[/only_on_demand]']))
         self._sync_args.append(''.join(['_ignore_services:=', '[/*]']))
         self._sync_args.append(''.join(['_sync_services:=', '[]']))
         self._sync_args.append(''.join(['_sync_remote_nodes:=', 'False']))
@@ -269,12 +290,15 @@ class SyncDialog(QDialog):
             self.interface_field.addItems(['interface searching...'])
             self.interface_field.setCurrentIndex(0)
             self._fill_interface_thread = InterfacesThread()
-            self._fill_interface_thread.interfaces.connect(self._fill_interfaces)
+            self._fill_interface_thread.interfaces.connect(
+                self._fill_interfaces)
             self._fill_interface_thread.start()
         else:
-            self.toolButton_EditInterface.setEnabled(self.interface_field.currentText() in self._interfaces_files)
+            self.toolButton_EditInterface.setEnabled(
+                self.interface_field.currentText() in self._interfaces_files)
         self.buttonBox.clear()
-        self.buttonBox.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        self.buttonBox.setStandardButtons(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.interface_field.setFocus(Qt.TabFocusReason)
         self.resize(350, 80)
 
@@ -295,15 +319,18 @@ class SyncDialog(QDialog):
     def accept(self):
         if self.textedit.isVisible():
             try:
-                tmp_file = os.path.join(screen.LOG_PATH, 'tmp_sync_interface.sync')
+                tmp_file = os.path.join(
+                    screen.LOG_PATH, 'tmp_sync_interface.sync')
                 with open(tmp_file, 'w+') as f:
                     f.write(self.textedit.toPlainText())
                 from fkie_master_discovery.common import read_interface
                 read_interface(tmp_file)
                 if not self._new_iface and self.interface_field.currentText() in self._interfaces_files:
-                    fileName = self._interfaces_files[self.interface_field.currentText()]
+                    fileName = self._interfaces_files[self.interface_field.currentText(
+                    )]
                 else:
-                    fileName, _ = QFileDialog.getSaveFileName(self, 'Save sync interface', '/home', "Sync Files (*.sync)")
+                    fileName, _ = QFileDialog.getSaveFileName(
+                        self, 'Save sync interface', '/home', "Sync Files (*.sync)")
                 if fileName:
                     with open(fileName, 'w+') as f:
                         self._interface_filename = fileName
@@ -323,7 +350,8 @@ class SyncDialog(QDialog):
             if self._interfaces_files and interface in self._interfaces_files:
                 self._interface_filename = self._interfaces_files[interface]
                 self._sync_args = []
-                self._sync_args.append(''.join(['_interface_url:=', interface]))
+                self._sync_args.append(
+                    ''.join(['_interface_url:=', interface]))
                 QDialog.accept(self)
                 self.resetView()
         else:
@@ -427,7 +455,8 @@ class InterfacesThread(QObject, threading.Thread):
         '''
         try:
             # fill the input fields
-            self.root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+            self.root_paths = [os.path.normpath(
+                p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
             self._interfaces_files = {}
             for p in self.root_paths:
                 ret = self._get_interfaces(p)
@@ -436,7 +465,8 @@ class InterfacesThread(QObject, threading.Thread):
         except Exception:
             import traceback
             formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Error while list sync interfaces:\n\t%s", formatted_lines[-1])
+            rospy.logwarn(
+                "Error while list sync interfaces:\n\t%s", formatted_lines[-1])
 
     def _get_interfaces(self, path, package=None):
         # TODO: get interfaces from nmd

@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import re
 import rospy
 from python_qt_binding.QtCore import Qt
@@ -96,7 +95,8 @@ class ServiceItem(QStandardItem):
             self.setText(self.service.name)
             self._with_namespace = rospy.names.SEP in self.text()
         else:
-            new_name = self.service.name.replace(parent_item.get_namespace(), '', 1)
+            new_name = self.service.name.replace(
+                parent_item.get_namespace(), '', 1)
             self.setText(new_name)
             self._with_namespace = rospy.names.SEP in new_name
 
@@ -166,7 +166,8 @@ class ServiceItem(QStandardItem):
         '''
         try:
             if service.isLocal and service.type:
-                service_class = service.get_service_class(nm.is_local(get_hostname(service.uri)))
+                service_class = service.get_service_class(
+                    nm.is_local(get_hostname(service.uri)))
                 item.setText(service_class._type)
             elif service.type:
                 item.setText(service.type)
@@ -185,7 +186,8 @@ class ServiceItem(QStandardItem):
             item.setToolTip('')
         except Exception:
             if not service.isLocal:
-                tooltip = ''.join(['<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
+                tooltip = ''.join(
+                    ['<h4>', 'Service type is not available due to he running on another host.', '</h4>'])
                 item.setToolTip(''.join(['<div>', tooltip, '</div>']))
 
     def data(self, role):
@@ -271,7 +273,8 @@ class ServiceGroupItem(QStandardItem):
             name = namespace(self._name)
         result = name
         if self.parent_item is not None and type(self.parent_item) != QStandardItem:
-            result = normns(self.parent_item.get_namespace() + rospy.names.SEP) + normns(result + rospy.names.SEP)
+            result = normns(self.parent_item.get_namespace() +
+                            rospy.names.SEP) + normns(result + rospy.names.SEP)
         return normns(result)
 
     def count_topics(self):
@@ -370,14 +373,16 @@ class ServiceGroupItem(QStandardItem):
                         return item.get_group_item(rns, is_group)
                     return item
                 elif item > lns and not nocreate:
-                    items = ServiceGroupItem.create_item_list(lns, self, is_group=(is_group and not rns))
+                    items = ServiceGroupItem.create_item_list(
+                        lns, self, is_group=(is_group and not rns))
                     self.insertRow(i, items)
                     if rns:
                         return items[0].get_group_item(rns, is_group)
                     return items[0]
         if nocreate:
             return None
-        items = ServiceGroupItem.create_item_list(lns, self, is_group=(is_group and not rns))
+        items = ServiceGroupItem.create_item_list(
+            lns, self, is_group=(is_group and not rns))
         self.appendRow(items)
         if rns:
             return items[0].get_group_item(rns, is_group)
@@ -577,12 +582,15 @@ class ServiceModel(QStandardItemModel):
         '''
         QStandardItemModel.__init__(self)
         self.setColumnCount(len(ServiceModel.header))
-        self.setHorizontalHeaderLabels([label for label, _ in ServiceModel.header])
-        self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the ServiceItem subclass
+        self.setHorizontalHeaderLabels(
+            [label for label, _ in ServiceModel.header])
+        # workaround for using with PyQt: store the python object to keep the defined attributes in the ServiceItem subclass
+        self.pyqt_workaround = dict()
         topics = ['*/get_loggers', '*/set_logger_level']
         def_list = ['\A' + n.strip().replace('*', '.*') + '\Z' for n in topics]
         self._re_cap_systopics = re.compile('|'.join(def_list), re.I)
-        root_items = ServiceGroupItem.create_item_list(rospy.names.SEP, self.invisibleRootItem(), False)
+        root_items = ServiceGroupItem.create_item_list(
+            rospy.names.SEP, self.invisibleRootItem(), False)
         self.invisibleRootItem().appendRow(root_items)
         self._pyqt_workaround_add(rospy.names.SEP, root_items[0])
 
@@ -702,10 +710,12 @@ class ServiceModel(QStandardItemModel):
         return None
 
     def _pyqt_workaround_add(self, name, item):
-        self.pyqt_workaround[name] = item  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+        # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+        self.pyqt_workaround[name] = item
 
     def _pyqt_workaround_rem(self, name):
         try:
-            del self.pyqt_workaround[name]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+            # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+            del self.pyqt_workaround[name]
         except Exception:
             pass

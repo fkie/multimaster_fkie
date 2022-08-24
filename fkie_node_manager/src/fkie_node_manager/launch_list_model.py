@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 from python_qt_binding.QtCore import QMimeData, Qt, Signal
 try:
@@ -93,7 +92,8 @@ class PathItem(QStandardItem):
 #        self._url = url
 #        self.url_parse_result = urlparse(url)
         self._path = path
-        self.id = self._identify_path_on_ext(path) if path_id in [self.FILE] else path_id
+        self.id = self._identify_path_on_ext(path) if path_id in [
+            self.FILE] else path_id
         self._isnew = isnew
         pathname = name
         if pathname == 'src':
@@ -199,7 +199,8 @@ class PathItem(QStandardItem):
         if role == Qt.DisplayRole:
             # return the displayed item name
             if self.id == PathItem.RECENT_FILE or self.id == PathItem.RECENT_PROFILE:
-                return "%s   [%s]" % (self.name, self.package_name)  # .decode(sys.getfilesystemencoding())
+                # .decode(sys.getfilesystemencoding())
+                return "%s   [%s]" % (self.name, self.package_name)
             elif self.id == PathItem.REMOTE_DAEMON:
                 return "//%s" % self.name
             else:
@@ -223,13 +224,15 @@ class PathItem(QStandardItem):
                 if self.name != value:
                     # some sanity checks
                     if self.model()._exists(value):
-                        result = MessageBox.question(self.model().viewobj, "File exists", "File '%s' exists. Override?" % value, buttons=MessageBox.Yes | MessageBox.No)
+                        result = MessageBox.question(self.model(
+                        ).viewobj, "File exists", "File '%s' exists. Override?" % value, buttons=MessageBox.Yes | MessageBox.No)
                         if result == MessageBox.No:
                             return QStandardItem.setData(self, value, role)
                     if self.id not in [self.FOLDER]:
                         _filename, file_extension = os.path.splitext(value)
                         if file_extension not in nm.settings().launch_view_file_ext:
-                            result = MessageBox.question(self.model().viewobj, "Unknown extension", "New name has unknown extension '%s'. Rename anyway?" % file_extension, buttons=MessageBox.Yes | MessageBox.No)
+                            result = MessageBox.question(self.model(
+                            ).viewobj, "Unknown extension", "New name has unknown extension '%s'. Rename anyway?" % file_extension, buttons=MessageBox.Yes | MessageBox.No)
                             if result == MessageBox.No:
                                 return QStandardItem.setData(self, value, role)
                 new_path = os.path.join(os.path.dirname(self.path), value)
@@ -266,7 +269,8 @@ class PathItem(QStandardItem):
                     self._path = new_path
                 except Exception as err:
                     import traceback
-                    rospy.logwarn("Error while save new file: %s" % traceback.format_exc())
+                    rospy.logwarn("Error while save new file: %s" %
+                                  traceback.format_exc())
                     MessageBox.warning(None, "Rename failed", utf8(err))
         return QStandardItem.setData(self, value, role)
 
@@ -365,15 +369,18 @@ class LaunchListModel(QStandardItemModel):
         QStandardItemModel.__init__(self, parent)
         self.viewobj = viewobj
         self.setColumnCount(len(LaunchListModel.header))
-        self.setHorizontalHeaderLabels([label for label, _width in LaunchListModel.header])
-        self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+        self.setHorizontalHeaderLabels(
+            [label for label, _width in LaunchListModel.header])
+        # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+        self.pyqt_workaround = dict()
         self.items = []
         self._roots = {}
         self._current_path = nmdurl.nmduri()
         self._current_master = masteruri_from_master()
         self._current_master_name = ''
         self.ros_root_paths = {}  # {url: [root pasth(str)]}
-        self.ros_root_paths[self._current_path] = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+        self.ros_root_paths[self._current_path] = [os.path.normpath(
+            p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
         self._progress_queue = progress_queue
         nm.nmd().file.listed_path.connect(self._listed_path)
         nm.nmd().file.packages_available.connect(self._on_new_packages)
@@ -431,7 +438,8 @@ class LaunchListModel(QStandardItemModel):
         if self._is_root(self._current_path):
             nm.nmd().file.list_path_threaded(self._current_path)
             if nmdurl.equal_uri(self._current_path, masteruri_from_master()):
-                self._add_path(nmdurl.nmduri(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
+                self._add_path(nmdurl.nmduri(self._current_master),
+                               PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
 
     def is_current_nmd(self, url):
         return nmdurl.equal_uri(nmdurl.masteruri(url), nmdurl.masteruri(self._current_path))
@@ -442,7 +450,8 @@ class LaunchListModel(QStandardItemModel):
                 hitem_uri, _ = nmdurl.split(hitem, with_scheme=True)
                 current_uri = nmdurl.nmduri(self._current_path)
                 if nmdurl.equal_uri(hitem_uri, current_uri):
-                    self._add_path(hitem, PathItem.RECENT_FILE, 0, 0, os.path.basename(hitem))
+                    self._add_path(hitem, PathItem.RECENT_FILE,
+                                   0, 0, os.path.basename(hitem))
 
     def _on_new_packages(self, grpc_url):
         self.reload_current_path()
@@ -478,12 +487,14 @@ class LaunchListModel(QStandardItemModel):
                 path_id = PathItem.PACKAGE
             if path_id != PathItem.NOT_FOUND and not os.path.basename(path_item.path).startswith('.'):
                 # TODO: create filter for files
-                result_list.append((gpath, path_id, path_item.mtime, path_item.size, os.path.basename(path_item.path)))
+                result_list.append(
+                    (gpath, path_id, path_item.mtime, path_item.size, os.path.basename(path_item.path)))
         root_path = nmdurl.join(url, path)
         self._set_new_list(root_path, result_list)
         isroot = self._is_root(self._current_path)
         if isroot and not nmdurl.equal_uri(self._current_master, masteruri_from_master()):
-            self._add_path(nmdurl.nmduri(self._current_master), PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
+            self._add_path(nmdurl.nmduri(self._current_master),
+                           PathItem.REMOTE_DAEMON, 0, 0, get_hostname(self._current_master_name))
         self.pathlist_handled.emit(root_path)
 
     def _nmd_error(self, method, url, path, error):
@@ -497,7 +508,8 @@ class LaunchListModel(QStandardItemModel):
         detail_msg = utf8(error)
         if hasattr(error, 'details'):
             detail_msg = utf8(error.details())
-        path_item = PathItem.create_row_items(utf8("%s, please start node manager daemon" % detail_msg), PathItem.NOTHING, 0, 0, 'connecting to daemon...')
+        path_item = PathItem.create_row_items(utf8(
+            "%s, please start node manager daemon" % detail_msg), PathItem.NOTHING, 0, 0, 'connecting to daemon...')
         root.appendRow(path_item)
         self.pyqt_workaround[path_item[0].name] = path_item[0]
         self.error_on_path.emit(nmdurl.join(url, path), error)
@@ -650,12 +662,14 @@ class LaunchListModel(QStandardItemModel):
                 try:
                     if text == dest_path:
                         dest_path = self._autorename(dest_path)
-                        rospy.logdebug("Autorename destination from %s to %s" % (text, dest_path))
+                        rospy.logdebug(
+                            "Autorename destination from %s to %s" % (text, dest_path))
                     rospy.logdebug("Copy %s to %s" % (text, dest_path))
                     nm.nmd().file.copy(text, dest_path)
                     self.reload_current_path(clear_cache=True)
                 except Exception as err:
-                    MessageBox.warning(None, "Copy failed", "Copy failed: %s" % utf8(err))
+                    MessageBox.warning(None, "Copy failed",
+                                       "Copy failed: %s" % utf8(err))
                     import traceback
                     print(traceback.format_exc())
 
@@ -684,16 +698,19 @@ class LaunchListModel(QStandardItemModel):
         new_name = self._autorename(name)
         # add sorted a new entry
         try:
-            path_item = PathItem.create_row_items(nmdurl.join(self._current_path, new_name), path_id, 0, 0, new_name, isnew=True)
+            path_item = PathItem.create_row_items(nmdurl.join(
+                self._current_path, new_name), path_id, 0, 0, new_name, isnew=True)
             if root.rowCount() > 1:
                 root.insertRow(1, path_item)
             else:
                 root.appendRow(path_item)
-            self.pyqt_workaround[path_item[0].name] = path_item[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+            # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+            self.pyqt_workaround[path_item[0].name] = path_item[0]
             return path_item
         except Exception:
             import traceback
-            rospy.logwarn("Error while add new item: %s" % traceback.format_exc())
+            rospy.logwarn("Error while add new item: %s" %
+                          traceback.format_exc())
         return []
 
     def _exists(self, name):
@@ -745,7 +762,8 @@ class LaunchListModel(QStandardItemModel):
         if (path_id != PathItem.NOT_FOUND):
             # add sorted a new entry
             try:
-                path_item = PathItem.create_row_items(path, path_id, mtime, size, name)
+                path_item = PathItem.create_row_items(
+                    path, path_id, mtime, size, name)
                 for i in range(root.rowCount()):
                     curr_item = root.child(i)
                     insert_item = False
@@ -758,7 +776,8 @@ class LaunchListModel(QStandardItemModel):
                                 insert_item = True
                     if insert_item:
                         root.insertRow(i, path_item)
-                        self.pyqt_workaround[path_item[0].name] = path_item[0]  # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+                        # workaround for using with PyQt: store the python object to keep the defined attributes in the TopicItem subclass
+                        self.pyqt_workaround[path_item[0].name] = path_item[0]
                         return True
                 root.appendRow(path_item)
                 self.pyqt_workaround[path_item[0].name] = path_item[0]

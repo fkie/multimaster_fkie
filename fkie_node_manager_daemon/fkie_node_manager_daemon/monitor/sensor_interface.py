@@ -32,7 +32,7 @@ import fkie_node_manager_daemon as nmd
 class SensorInterface(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, hostname: str='', sensorname: str='noname', interval: float=1.0):
+    def __init__(self, hostname: str = '', sensorname: str = 'noname', interval: float = 1.0):
         nmd.rosnode.get_logger().info("Loading monitor service: %s" % type(self).__name__)
         self.hostname = hostname
         self.mutex = threading.RLock()
@@ -62,7 +62,7 @@ class SensorInterface(object):
         if self.is_active() and self._interval > 0:
             self.start_timer(self._interval, self._start_check_sensor)
 
-    def last_state(self, ts_now: float=0, filter_level:list=[], filter_ts: float=0):
+    def last_state(self, ts_now: float = 0, filter_level: list = [], filter_ts: float = 0):
         '''
         :param float ts_now: current timestamp
         :param int filter_level: minimal level
@@ -73,14 +73,16 @@ class SensorInterface(object):
         with self.mutex:
             if self._ts_last > 0:
                 if self._ts_last > filter_ts and self._stat_msg.level in filter_level:
-                    self.update_value_last_ts(self._stat_msg, ts_now, self._ts_last)
+                    self.update_value_last_ts(
+                        self._stat_msg, ts_now, self._ts_last)
                     return self._stat_msg
         return None
 
-    def update_value_last_ts(self, msg, nowts: float=0, ts: float=0):
+    def update_value_last_ts(self, msg, nowts: float = 0, ts: float = 0):
         if msg.values and msg.values[-1].key == 'Timestamp':
             del msg.values[-1]
-        msg.values.append(KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))
+        msg.values.append(
+            KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))
 
     def is_active(self):
         if not rclpy.ok():

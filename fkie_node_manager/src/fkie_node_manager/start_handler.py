@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import roslib
 import rospy
@@ -115,7 +114,8 @@ class StartHandler(object):
                         cmd = [cmd]
                 cmd_type = ''
                 if cmd is None or len(cmd) == 0:
-                    raise StartException('%s in package [%s] not found!' % (binary, package))
+                    raise StartException(
+                        '%s in package [%s] not found!' % (binary, package))
                 # compatibility for python scripts installed with catkin_install_python()
                 # avoid ask for select a binary
                 cmd = cls._remove_src_binary(cmd)
@@ -124,18 +124,18 @@ class StartHandler(object):
                     err = 'Multiple executables with same name in package [%s] found' % package
                     bsel = nm.BinarySelectionRequest(cmd, err)
                     raise nm.InteractionNeededError(bsel, cls.runNodeWithoutConfig,
-                                                              {'host': host,
-                                                               'package': package,
-                                                               'binary': binary,
-                                                               'name': name,
-                                                               'args': args,
-                                                               'masteruri': masteruri,
-                                                               'use_nmd': use_nmd,
-                                                               'auto_pw_request': auto_pw_request,
-                                                               'user': user,
-                                                               'pw': pw,
-                                                               'path': path
-                                                              })
+                                                    {'host': host,
+                                                     'package': package,
+                                                     'binary': binary,
+                                                     'name': name,
+                                                     'args': args,
+                                                     'masteruri': masteruri,
+                                                     'use_nmd': use_nmd,
+                                                     'auto_pw_request': auto_pw_request,
+                                                     'user': user,
+                                                     'pw': pw,
+                                                     'path': path
+                                                     })
                 else:
                     cmd_type = cmd[0]
             new_env = {}  # dict(os.environ)
@@ -150,13 +150,17 @@ class StartHandler(object):
                     if ros_hostname:
                         new_env['ROS_HOSTNAME'] = ros_hostname
             if use_nmd:
-                nm.nmd().launch.start_standalone_node(nmdurl.nmduri(), package, binary, name, namespace, args, new_env, masteruri, host)
+                nm.nmd().launch.start_standalone_node(nmdurl.nmduri(), package,
+                                                      binary, name, namespace, args, new_env, masteruri, host)
             else:
                 local_env = dict(os.environ)
                 local_env.update(new_env)
-                cmd_str = utf8(' '.join([screen.get_cmd(fullname, local_env), cmd_type, ' '.join(args2)]))
-                rospy.loginfo("Run without config: %s", fullname if use_nmd else cmd_str)
-                SupervisedPopen(shlex.split(cmd_str), env=local_env, object_id="Run without config", description="Run without config [%s]%s" % (utf8(package), utf8(binary)))
+                cmd_str = utf8(
+                    ' '.join([screen.get_cmd(fullname, local_env), cmd_type, ' '.join(args2)]))
+                rospy.loginfo("Run without config: %s",
+                              fullname if use_nmd else cmd_str)
+                SupervisedPopen(shlex.split(cmd_str), env=local_env, object_id="Run without config",
+                                description="Run without config [%s]%s" % (utf8(package), utf8(binary)))
         else:
             # run on a remote machine
             startcmd = [nm.settings().start_remote_script,
@@ -170,26 +174,34 @@ class StartHandler(object):
             rospy.loginfo("Run remote on %s: %s", host, ' '.join(startcmd))
             try:
                 error = ''
-                _, stdout, stderr, ok = nm.ssh().ssh_exec(host, startcmd, user, pw, auto_pw_request, close_stdin=True)
+                _, stdout, stderr, ok = nm.ssh().ssh_exec(
+                    host, startcmd, user, pw, auto_pw_request, close_stdin=True)
                 if ok:
                     output = stdout.read()
                     error = stderr.read()
                     stdout.close()
                     stderr.close()
                     if error:
-                        rospy.logwarn("ERROR while start '%s': %s", name, error)
-                        raise StartException("The host '%s' reports:\n%s" % (host, error))
+                        rospy.logwarn(
+                            "ERROR while start '%s': %s", name, error)
+                        raise StartException(
+                            "The host '%s' reports:\n%s" % (host, error))
                     if output:
                         if output.find(b"dn't") != -1:
-                            rospy.logwarn("Warning while start '%s': %s", name, output)
+                            rospy.logwarn(
+                                "Warning while start '%s': %s", name, output)
                         else:
-                            rospy.loginfo("STDOUT while start '%s': %s", name, output)
+                            rospy.loginfo(
+                                "STDOUT while start '%s': %s", name, output)
                 else:
                     if error:
-                        rospy.logwarn("ERROR while start '%s': %s", name, error)
-                        raise StartException("The host '%s' reports:\n%s" % (host, error))
+                        rospy.logwarn(
+                            "ERROR while start '%s': %s", name, error)
+                        raise StartException(
+                            "The host '%s' reports:\n%s" % (host, error))
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, {'host': host, 'package': package, 'binary': binary, 'name': name, 'args': args, 'masteruri': masteruri, 'use_nmd': use_nmd, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw, 'path': path})
+                raise nm.InteractionNeededError(e, cls.runNodeWithoutConfig, {'host': host, 'package': package, 'binary': binary, 'name': name,
+                                                                              'args': args, 'masteruri': masteruri, 'use_nmd': use_nmd, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw, 'path': path})
 
     @classmethod
     def _remove_src_binary(cls, cmdlist):
@@ -207,7 +219,6 @@ class StartHandler(object):
             # aks the user
             result = cmdlist
         return result
-
 
     @classmethod
     def _prepareROSMaster(cls, masteruri):
@@ -235,14 +246,18 @@ class StartHandler(object):
                 ros_hostname = nmdhost.get_ros_hostname(masteruri)
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
-                cmd_args = '%s roscore --port %d' % (screen.get_cmd('/roscore--%d' % master_port), master_port)
+                cmd_args = '%s roscore --port %d' % (
+                    screen.get_cmd('/roscore--%d' % master_port), master_port)
                 for n in [1, 2, 3, 4]:
                     try:
                         if n == 1:
-                            print("Launch ROS Master in screen  ... %s" % (cmd_args))
-                            SupervisedPopen(shlex.split(cmd_args), env=new_env, object_id="ROSCORE", description="Start roscore")
+                            print("Launch ROS Master in screen  ... %s" %
+                                  (cmd_args))
+                            SupervisedPopen(shlex.split(
+                                cmd_args), env=new_env, object_id="ROSCORE", description="Start roscore")
                         elif n == 2:
-                            print("ROS Master takes too long for start, wait for next 10 sec ...")
+                            print(
+                                "ROS Master takes too long for start, wait for next 10 sec ...")
                         elif n == 3:
                             print("A really slow start, wait for last 10 sec ...")
                         # wait for roscore to avoid connection problems while init_node
@@ -251,15 +266,18 @@ class StartHandler(object):
                         while result == -1 and count < 11:
                             try:
                                 master = xmlrpcclient.ServerProxy(masteruri)
-                                result, _, _ = master.getUri(rospy.get_name())  # _:=uri, msg
+                                result, _, _ = master.getUri(
+                                    rospy.get_name())  # _:=uri, msg
                                 return
                             except Exception:
                                 time.sleep(1)
                                 count += 1
                         if n == 4 and count >= 11:
-                            raise StartException('Cannot connect to ROS-Master: %s\n--> please run "roscore" manually!' % utf8(masteruri))
+                            raise StartException(
+                                'Cannot connect to ROS-Master: %s\n--> please run "roscore" manually!' % utf8(masteruri))
                     except Exception as e:
-                        raise Exception("Error while call '%s': %s" % (cmd_args, utf8(e)))
+                        raise Exception(
+                            "Error while call '%s': %s" % (cmd_args, utf8(e)))
             else:
                 raise Exception("ROS master '%s' is not reachable" % masteruri)
         finally:
@@ -285,11 +303,13 @@ class StartHandler(object):
         :see: rospy.SerivceProxy<http://docs.ros.org/kinetic/api/rospy/html/rospy.impl.tcpros_service.ServiceProxy-class.html>
         '''
         service = str(service)
-        rospy.loginfo("Call service %s[%s]: %s, %s", utf8(service), utf8(service_uri), utf8(service_type), utf8(service_args))
+        rospy.loginfo("Call service %s[%s]: %s, %s", utf8(service), utf8(
+            service_uri), utf8(service_type), utf8(service_args))
         from rospy.core import parse_rosrpc_uri, is_shutdown
 #    from rospy.msg import args_kwds_to_message
         from rospy.exceptions import TransportInitError, TransportException
-        from rospy.impl.tcpros_base import TCPROSTransport, DEFAULT_BUFF_SIZE  # ,TCPROSTransportProtocol
+        # ,TCPROSTransportProtocol
+        from rospy.impl.tcpros_base import TCPROSTransport, DEFAULT_BUFF_SIZE
         from rospy.impl.tcpros_service import TCPROSServiceClient
         from rospy.service import ServiceException
         request = service_type._request_class()
@@ -305,7 +325,8 @@ class StartHandler(object):
                     return '\n'.join([' * %s (type %s)' % (a, type(a).__name__) for a in args])
                 else:
                     return ' * %s (type %s)' % (args, type(args).__name__)
-            raise StartException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]" % (e, argsummary(service_args), genpy.message.get_printable_message_args(request)))
+            raise StartException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]" % (
+                e, argsummary(service_args), genpy.message.get_printable_message_args(request)))
 
 #    request = args_kwds_to_message(type._request_class, args, kwds)
         protocol = TCPROSServiceClient(service, service_type, headers={})
@@ -318,20 +339,24 @@ class StartHandler(object):
             transport.connect(dest_addr, dest_port, service_uri, timeout=5)
         except TransportInitError as e:
             # can be a connection or md5sum mismatch
-            raise StartException(''.join(["unable to connect to service: ", utf8(e)]))
+            raise StartException(
+                ''.join(["unable to connect to service: ", utf8(e)]))
         transport.send_message(request, 0)
         try:
             responses = transport.receive_once()
             if len(responses) == 0:
-                raise StartException("service [%s] returned no response" % service)
+                raise StartException(
+                    "service [%s] returned no response" % service)
             elif len(responses) > 1:
-                raise StartException("service [%s] returned multiple responses: %s" % (service, len(responses)))
+                raise StartException(
+                    "service [%s] returned multiple responses: %s" % (service, len(responses)))
         except TransportException as e:
             # convert lower-level exception to exposed type
             if is_shutdown():
                 raise StartException("node shutdown interrupted service call")
             else:
-                raise StartException("transport error completing service call: %s" % (utf8(e)))
+                raise StartException(
+                    "transport error completing service call: %s" % (utf8(e)))
         except ServiceException as e:
             raise StartException("Service error: %s" % (utf8(e)))
         finally:
@@ -342,10 +367,13 @@ class StartHandler(object):
     def open_terminal(self, host):
         if nm.is_local(host):
             cmd = nm.settings().terminal_cmd(['cd'], '')
-            SupervisedPopen(shlex.split(cmd), object_id="Start local terminal", shell=True)
+            SupervisedPopen(shlex.split(
+                cmd), object_id="Start local terminal", shell=True)
         else:
-            cmd = nm.settings().terminal_cmd(["ssh -XC %s@%s" % (nm.settings().host_user(host), host)], '', noclose=True)
-            SupervisedPopen(shlex.split(cmd), object_id="Start Terminal on %s" % host)
+            cmd = nm.settings().terminal_cmd(
+                ["ssh -XC %s@%s" % (nm.settings().host_user(host), host)], '', noclose=True)
+            SupervisedPopen(shlex.split(
+                cmd), object_id="Start Terminal on %s" % host)
 
     @classmethod
     def get_log_path(cls, host, nodes=[], auto_pw_request=False, user=None, pw=None):
@@ -358,15 +386,18 @@ class StartHandler(object):
             request = '[]' if len(nodes) != 1 else nodes[0]
             try:
                 socket.setdefaulttimeout(3)
-                _, stdout, _, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--ros_log_path', request], user, pw, auto_pw_request, close_stdin=True, close_stderr=True)
+                _, stdout, _, ok = nm.ssh().ssh_exec(host, [nm.settings(
+                ).start_remote_script, '--ros_log_path', request], user, pw, auto_pw_request, close_stdin=True, close_stderr=True)
                 if ok:
                     output = stdout.read()
                     stdout.close()
                     return output.strip()
                 else:
-                    raise StartException(utf8(''.join(['Get log path from "', host, '" failed'])))
+                    raise StartException(
+                        utf8(''.join(['Get log path from "', host, '" failed'])))
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.get_log_path, {'host': host, 'nodes': nodes, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+                raise nm.InteractionNeededError(e, cls.get_log_path, {
+                                                'host': host, 'nodes': nodes, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
             finally:
                 socket.setdefaulttimeout(None)
 
@@ -389,26 +420,32 @@ class StartHandler(object):
             screenLog = screen.get_logfile(node=nodename)
             if not only_roslog:
                 if os.path.isfile(screenLog):
-                    cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, screenLog], title_opt)
+                    cmd = nm.settings().terminal_cmd(
+                        [nm.settings().log_viewer, screenLog], title_opt)
                     rospy.loginfo("open log: %s", cmd)
-                    SupervisedPopen(shlex.split(cmd), object_id="Open log", description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
+                    SupervisedPopen(shlex.split(cmd), object_id="Open log",
+                                    description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
                     found = True
             # open roslog file
             roslog = screen.get_ros_logfile(nodename)
             if os.path.isfile(roslog) and (not only_screen or not found):
                 title_opt = title_opt.replace('LOG', 'ROSLOG')
-                cmd = nm.settings().terminal_cmd([nm.settings().log_viewer, roslog], title_opt)
+                cmd = nm.settings().terminal_cmd(
+                    [nm.settings().log_viewer, roslog], title_opt)
                 rospy.loginfo("open ROS log: %s", cmd)
-                SupervisedPopen(shlex.split(cmd), object_id="Open log", description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
+                SupervisedPopen(shlex.split(cmd), object_id="Open log",
+                                description="Open log for '%s' on '%s'" % (utf8(nodename), utf8(host)))
                 found = True
             if not found:
                 rospy.logwarn('no log files found for %s' % utf8(nodename))
             return found
         else:
             if not only_roslog:
-                _ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_screen_log', nodename], title_opt, user)
+                _ps = nm.ssh().ssh_x11_exec(host, [nm.settings(
+                ).start_remote_script, '--show_screen_log', nodename], title_opt, user)
             if not only_screen:
-                _ps = nm.ssh().ssh_x11_exec(host, [nm.settings().start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
+                _ps = nm.ssh().ssh_x11_exec(host, [nm.settings(
+                ).start_remote_script, '--show_ros_log', nodename], title_opt.replace('LOG', 'ROSLOG'), user)
         return False
 
     @classmethod
@@ -424,7 +461,8 @@ class StartHandler(object):
         try:
             nm.nmd().screen.delete_log(grpc_uri, [nodename])
         except Exception as err:
-            rospy.logwarn("delete log using SSH because of error: %s" % utf8(err))
+            rospy.logwarn(
+                "delete log using SSH because of error: %s" % utf8(err))
             host = get_hostname(grpc_uri)
             if nm.is_local(host):
                 screenLog = screen.get_logfile(node=nodename)
@@ -439,12 +477,14 @@ class StartHandler(object):
             else:
                 try:
                     # output ignored: output, error, ok
-                    _, stdout, _, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request, close_stdin=True, close_stdout=False, close_stderr=True)
+                    _, stdout, _, ok = nm.ssh().ssh_exec(host, [nm.settings(
+                    ).start_remote_script, '--delete_logs', nodename], user, pw, auto_pw_request, close_stdin=True, close_stdout=False, close_stderr=True)
                     if ok:
                         stdout.readlines()
                         stdout.close()
                 except nm.AuthenticationRequest as e:
-                    raise nm.InteractionNeededError(e, cls.delete_log, {'nodename': nodename, 'grpc_uri': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+                    raise nm.InteractionNeededError(e, cls.delete_log, {
+                                                    'nodename': nodename, 'grpc_uri': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def kill(self, host, pid, auto_pw_request=False, user=None, pw=None):
         '''
@@ -459,7 +499,8 @@ class StartHandler(object):
         try:
             self._kill_wo(host, pid, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.kill, {'host': host, 'pid': pid, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+            raise nm.InteractionNeededError(e, self.kill, {
+                                            'host': host, 'pid': pid, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _kill_wo(self, host, pid, auto_pw_request=False, user=None, pw=None):
         rospy.loginfo("kill %s on %s", utf8(pid), host)
@@ -469,7 +510,8 @@ class StartHandler(object):
         else:
             # kill on a remote machine
             cmd = ['kill -9', str(pid)]
-            _, stdout, stderr, ok = nm.ssh().ssh_exec(host, cmd, user, pw, False, close_stdin=True)
+            _, stdout, stderr, ok = nm.ssh().ssh_exec(
+                host, cmd, user, pw, False, close_stdin=True)
             if ok:
                 output = stdout.read()
                 error = stderr.read()
@@ -477,9 +519,11 @@ class StartHandler(object):
                 stderr.close()
                 if error:
                     rospy.logwarn("ERROR while kill %s: %s", utf8(pid), error)
-                    raise StartException(utf8(''.join(['The host "', host, '" reports:\n', error])))
+                    raise StartException(
+                        utf8(''.join(['The host "', host, '" reports:\n', error])))
                 if output:
-                    rospy.logdebug("STDOUT while kill %s on %s: %s", utf8(pid), host, output)
+                    rospy.logdebug("STDOUT while kill %s on %s: %s",
+                                   utf8(pid), host, output)
 
     def killall_roscore(self, host, auto_pw_request=False, user=None, pw=None):
         '''
@@ -493,26 +537,32 @@ class StartHandler(object):
         try:
             self._killall_roscore_wo(host, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.killall_roscore, {'host': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+            raise nm.InteractionNeededError(e, self.killall_roscore, {
+                                            'host': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _killall_roscore_wo(self, host, auto_pw_request=False, user=None, pw=None):
         rospy.loginfo("killall roscore on %s", host)
         cmd = ['killall', 'roscore']
         if nm.is_local(host):
-            SupervisedPopen(cmd, object_id="killall roscore", description="killall roscore")
+            SupervisedPopen(cmd, object_id="killall roscore",
+                            description="killall roscore")
         else:
             # kill on a remote machine
-            _, stdout, stderr, ok = nm.ssh().ssh_exec(host, cmd, user, pw, False, close_stdin=True)
+            _, stdout, stderr, ok = nm.ssh().ssh_exec(
+                host, cmd, user, pw, False, close_stdin=True)
             if ok:
                 output = stdout.read()
                 error = stderr.read()
                 stdout.close()
                 stderr.close()
                 if error:
-                    rospy.logwarn("ERROR while killall roscore on %s: %s" % (host, error))
-                    raise StartException('The host "%s" reports:\n%s' % (host, error))
+                    rospy.logwarn(
+                        "ERROR while killall roscore on %s: %s" % (host, error))
+                    raise StartException(
+                        'The host "%s" reports:\n%s' % (host, error))
                 if output:
-                    rospy.logdebug("STDOUT while killall roscore on %s: %s" % (host, output))
+                    rospy.logdebug(
+                        "STDOUT while killall roscore on %s: %s" % (host, output))
 
     def poweroff(self, host, auto_pw_request=False, user=None, pw=None):
         '''
@@ -526,13 +576,15 @@ class StartHandler(object):
         try:
             self._poweroff_wo(host, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.poweroff, {'host': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+            raise nm.InteractionNeededError(e, self.poweroff, {
+                                            'host': host, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _poweroff_wo(self, host, auto_pw_request=False, user=None, pw=None):
         if nm.is_local(host):
             rospy.logwarn("shutdown localhost localhost!")
             cmd = nm.settings().terminal_cmd(['sudo poweroff'], "poweroff")
-            SupervisedPopen(shlex.split(cmd), object_id="poweroff", description="poweroff")
+            SupervisedPopen(shlex.split(
+                cmd), object_id="poweroff", description="poweroff")
         else:
             rospy.loginfo("poweroff %s", host)
             # kill on a remote machine
@@ -550,7 +602,8 @@ class StartHandler(object):
         try:
             self._rosclean_wo(grpc_uri, auto_pw_request, user, pw)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, self.rosclean, {'grpc_uri': grpc_uri, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+            raise nm.InteractionNeededError(e, self.rosclean, {
+                                            'grpc_uri': grpc_uri, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     def _rosclean_wo(self, grpc_uri, auto_pw_request=False, user=None, pw=None):
         try:
@@ -559,10 +612,13 @@ class StartHandler(object):
             host = get_hostname(grpc_uri)
             if nm.is_local(host):
                 rospy.loginfo("rosclean purge on localhost!")
-                cmd = nm.settings().terminal_cmd(['rosclean purge -y'], "rosclean")
-                SupervisedPopen(shlex.split(cmd), object_id="rosclean", description="rosclean")
+                cmd = nm.settings().terminal_cmd(
+                    ['rosclean purge -y'], "rosclean")
+                SupervisedPopen(shlex.split(
+                    cmd), object_id="rosclean", description="rosclean")
             else:
-                rospy.logwarn("use SSH to run 'rosclean' because of error: %s" % utf8(err))
+                rospy.logwarn(
+                    "use SSH to run 'rosclean' because of error: %s" % utf8(err))
                 # kill on a remote machine
                 cmd = ['rosclean purge -y']
                 _ = nm.ssh().ssh_x11_exec(host, cmd, 'rosclean purge on %s' % host, user)
@@ -580,7 +636,8 @@ class StartHandler(object):
         except Exception as err:
             host = get_hostname(grpc_url)
             _uri, path = nmdurl.split(path)
-            rospy.logwarn("use SSH to transfer file '%s' to '%s', because of error: %s" % (path, host, utf8(err)))
+            rospy.logwarn("use SSH to transfer file '%s' to '%s', because of error: %s" % (
+                path, host, utf8(err)))
             cls.transfer_files(host, path, auto_pw_request, user, pw)
 
     @classmethod
@@ -606,24 +663,31 @@ class StartHandler(object):
                 else:
                     if host not in CACHED_PKG_PATH:
                         CACHED_PKG_PATH[host] = dict()
-                    _, stdout, stderr, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--package', pkg_name], user, pw, auto_pw_request, close_stdin=True)
+                    _, stdout, stderr, ok = nm.ssh().ssh_exec(host, [nm.settings(
+                    ).start_remote_script, '--package', pkg_name], user, pw, auto_pw_request, close_stdin=True)
                     output = stdout.read()
                     error = stderr.read()
                     stdout.close()
                     stderr.close()
                 if ok:
                     if error:
-                        rospy.logwarn("ERROR while transfer %s to %s: %s", path, host, error)
-                        raise StartException(utf8(''.join(['The host "', host, '" reports:\n', error])))
+                        rospy.logwarn(
+                            "ERROR while transfer %s to %s: %s", path, host, error)
+                        raise StartException(
+                            utf8(''.join(['The host "', host, '" reports:\n', error])))
                     if output:
                         CACHED_PKG_PATH[host][pkg_name] = output
-                        nm.ssh().transfer(host, path, os.path.join(output.strip(), subfile_path.strip(os.sep)), user)
+                        nm.ssh().transfer(host, path, os.path.join(
+                            output.strip(), subfile_path.strip(os.sep)), user)
                     else:
-                        raise StartException("Remote host no returned any answer. Is there the new version of node_manager installed?")
+                        raise StartException(
+                            "Remote host no returned any answer. Is there the new version of node_manager installed?")
                 else:
-                    raise StartException("Can't get path from remote host. Is there the new version of node_manager installed?")
+                    raise StartException(
+                        "Can't get path from remote host. Is there the new version of node_manager installed?")
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.transfer_files, {'host': host, 'path': path, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
+                raise nm.InteractionNeededError(e, cls.transfer_files, {
+                                                'host': host, 'path': path, 'auto_pw_request': auto_pw_request, 'user': user, 'pw': pw})
 
     @classmethod
     def ntpdate(cls, host, cmd, user=None, pw=None):
@@ -643,9 +707,11 @@ class StartHandler(object):
         if nm.is_local(host):
             cmd = nm.settings().terminal_cmd([cmd], title_opt, noclose=True)
             rospy.loginfo("EXEC: %s" % cmd)
-            _ps = SupervisedPopen(shlex.split(cmd), object_id=cmd, description=mesg)
+            _ps = SupervisedPopen(shlex.split(
+                cmd), object_id=cmd, description=mesg)
         else:
-            _ps = nm.ssh().ssh_x11_exec(host, [cmd, ';echo "";echo "this terminal will be closed in 10 sec...";sleep 10'], title_opt, user)
+            _ps = nm.ssh().ssh_x11_exec(host, [
+                cmd, ';echo "";echo "this terminal will be closed in 10 sec...";sleep 10'], title_opt, user)
         return False
 
     @classmethod
@@ -659,7 +725,8 @@ class StartHandler(object):
         :raise Exception: on errors while resolving host
         :see: :meth:`fkie_node_manager.is_local()`
         '''
-        startcfg = nm.nmd().launch.get_start_cfg(name, grpc_path, masteruri, reload_global_param=reload_global_param, loglevel=loglevel, logformat=logformat)
+        startcfg = nm.nmd().launch.get_start_cfg(name, grpc_path, masteruri,
+                                                 reload_global_param=reload_global_param, loglevel=loglevel, logformat=logformat)
         new_env = dict(startcfg.env)
         # set logging options
         if startcfg.namespace:
@@ -682,7 +749,8 @@ class StartHandler(object):
         if startcfg.respawn:
             if startcfg.respawn_delay > 0:
                 new_env['RESPAWN_DELAY'] = '%d' % startcfg.respawn_delay
-            respawn_params = launcher._get_respawn_params(startcfg.fullname, startcfg.params)
+            respawn_params = launcher._get_respawn_params(
+                startcfg.fullname, startcfg.params)
             if respawn_params['max'] > 0:
                 new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
             if respawn_params['min_runtime'] > 0:
@@ -704,7 +772,8 @@ class StartHandler(object):
                 if ros_hostname:
                     new_env['ROS_HOSTNAME'] = ros_hostname
             # load params to ROS master
-            launcher._load_parameters(masteruri, startcfg.params, startcfg.clear_params)
+            launcher._load_parameters(
+                masteruri, startcfg.params, startcfg.clear_params)
 
         abs_paths = list()  # tuples of (parameter name, old value, new value)
         not_found_packages = list()  # package names
@@ -732,19 +801,24 @@ class StartHandler(object):
         if not nm.is_local(on_hostname, wait=True):
             # start remote
             if not startcfg.package:
-                raise StartException("Can't run remote without a valid package name!")
+                raise StartException(
+                    "Can't run remote without a valid package name!")
             # setup environment
             env_command = ''
             if new_env:
                 try:
                     for k, v in new_env.items():
-                        v_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(v, on_hostname, auto_pw_request, user, pw)
+                        v_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(
+                            v, on_hostname, auto_pw_request, user, pw)
                         new_env[k] = v_value
                         if is_abs_path:
-                            abs_paths.append(('ENV', "%s=%s" % (k, v), "%s=%s" % (k, v_value)))
+                            abs_paths.append(('ENV', "%s=%s" %
+                                              (k, v), "%s=%s" % (k, v_value)))
                             if not found and package:
                                 not_found_packages.append(package)
-                    env_command = "env " + ' '.join(["%s=\'%s\'" % (k, v) for (k, v) in new_env.items()])
+                    env_command = "env " + \
+                        ' '.join(["%s=\'%s\'" % (k, v)
+                                  for (k, v) in new_env.items()])
                 except nm.AuthenticationRequest as e:
                     raise nm.InteractionNeededError(e, cls.bc_run_node, {'name': name,
                                                                          'grpc_path': grpc_path,
@@ -774,7 +848,8 @@ class StartHandler(object):
             output = ''
             try:
                 for a in startcfg.args:
-                    a_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(a, on_hostname, auto_pw_request, user, pw)
+                    a_value, is_abs_path, found, package = cls._bc_resolve_abs_paths(
+                        a, on_hostname, auto_pw_request, user, pw)
                     node_args.append(a_value)
                     if is_abs_path:
                         abs_paths.append(('ARGS', a, a_value))
@@ -783,34 +858,41 @@ class StartHandler(object):
 
                 startcmd[len(startcmd):] = node_args
                 startcmd[len(startcmd):] = args
-                rospy.loginfo("Run remote on %s: %s", on_hostname, utf8(' '.join(startcmd)))
-                _, stdout, stderr, ok = nm.ssh().ssh_exec(on_hostname, startcmd, user, pw, auto_pw_request, close_stdin=True)
+                rospy.loginfo("Run remote on %s: %s",
+                              on_hostname, utf8(' '.join(startcmd)))
+                _, stdout, stderr, ok = nm.ssh().ssh_exec(on_hostname, startcmd, user,
+                                                          pw, auto_pw_request, close_stdin=True)
                 output = stdout.read()
                 error = stderr.read()
                 stdout.close()
                 stderr.close()
             except nm.AuthenticationRequest as e:
-                raise nm.InteractionNeededError(e, cls.bc_run_node,{'name': name,
-                                                                    'grpc_path': grpc_path,
-                                                                    'masteruri': masteruri,
-                                                                    'reload_global_param': reload_global_param,
-                                                                    'loglevel': loglevel,
-                                                                    'logformat': logformat,
-                                                                    'auto_pw_request': auto_pw_request,
-                                                                    'user': user, 'pw': pw})
+                raise nm.InteractionNeededError(e, cls.bc_run_node, {'name': name,
+                                                                     'grpc_path': grpc_path,
+                                                                     'masteruri': masteruri,
+                                                                     'reload_global_param': reload_global_param,
+                                                                     'loglevel': loglevel,
+                                                                     'logformat': logformat,
+                                                                     'auto_pw_request': auto_pw_request,
+                                                                     'user': user, 'pw': pw})
             if ok:
                 if error:
-                    rospy.logwarn("ERROR while start '%s': %s", startcfg.fullname, error)
-                    raise StartException(utf8(''.join(['The host "', on_hostname, '" reports:\n', error])))
+                    rospy.logwarn("ERROR while start '%s': %s",
+                                  startcfg.fullname, error)
+                    raise StartException(
+                        utf8(''.join(['The host "', on_hostname, '" reports:\n', error])))
                 if output:
-                    rospy.logdebug("STDOUT while start '%s': %s", startcfg.fullname, output)
+                    rospy.logdebug("STDOUT while start '%s': %s",
+                                   startcfg.fullname, output)
             # inform about absolute paths in parameter value
             if len(abs_paths) > 0:
-                rospy.loginfo("Absolute paths found while start:\n%s", utf8('\n'.join([''.join([p, '\n  OLD: ', ov, '\n  NEW: ', nv]) for p, ov, nv in abs_paths])))
+                rospy.loginfo("Absolute paths found while start:\n%s", utf8('\n'.join(
+                    [''.join([p, '\n  OLD: ', ov, '\n  NEW: ', nv]) for p, ov, nv in abs_paths])))
 
             if len(not_found_packages) > 0:
                 packages = '\n'.join(not_found_packages)
-                raise StartException(utf8('\n'.join(['Some absolute paths are not renamed because following packages are not found on remote host:', packages])))
+                raise StartException(utf8('\n'.join(
+                    ['Some absolute paths are not renamed because following packages are not found on remote host:', packages])))
 
     @classmethod
     def _bc_resolve_abs_paths(cls, value, host, auto_pw_request, user, pw):
@@ -824,10 +906,12 @@ class StartHandler(object):
             if nm.is_local(host):
                 return value, True, True, ''
             else:
-                path = os.path.dirname(value) if os.path.isfile(value) else value
+                path = os.path.dirname(
+                    value) if os.path.isfile(value) else value
                 package, package_path = package_name(path)
                 if package:
-                    _, stdout, _, ok = nm.ssh().ssh_exec(host, ['rospack', 'find', package], user, pw, auto_pw_request, close_stdin=True, close_stderr=True)
+                    _, stdout, _, ok = nm.ssh().ssh_exec(
+                        host, ['rospack', 'find', package], user, pw, auto_pw_request, close_stdin=True, close_stderr=True)
                     output = stdout.read()
                     stdout.close()
                     if ok:

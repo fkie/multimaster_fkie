@@ -23,7 +23,7 @@ import threading
 import fkie_node_manager_daemon as nmd
 from .host import ros_host_suffix
 
-DEFAULT_CROSSBAR_PORT=12921
+DEFAULT_CROSSBAR_PORT = 12921
 
 NM_NS = '_node_manager'
 NM_NAMESPACE = '/%s' % NM_NS
@@ -39,7 +39,8 @@ GRPC_TIMEOUT = 15.0
 RESPAWN_SCRIPT = 'ros2 run fkie_node_manager respawn'
 ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
-LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
+LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get(
+    'ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
 ''':var LOG_PATH: logging path where all screen configuration and log files are stored.'''
 
 
@@ -50,7 +51,8 @@ class Settings:
         self.version = version
         self.filename = filename
         if not self.filename:
-            self.filename = os.path.expanduser('~/.config/ros.fkie/node_manager_daemon.yaml')
+            self.filename = os.path.expanduser(
+                '~/.config/ros.fkie/node_manager_daemon.yaml')
         cfg_path = os.path.dirname(self.filename)
         if not os.path.isdir(cfg_path):
             os.makedirs(cfg_path)
@@ -125,7 +127,8 @@ class Settings:
             else:
                 result = value
         except Exception as exc:
-            nmd.rosnode.get_logger().debug("Cant't get parameter '%s', full parameter path: '%s'; use default value: %s" % (exc, param_name, default_value))
+            nmd.rosnode.get_logger().debug("Cant't get parameter '%s', full parameter path: '%s'; use default value: %s" %
+                                           (exc, param_name, default_value))
         return result
 
     def set_param(self, param_name, value, tag=':value'):
@@ -158,7 +161,8 @@ class Settings:
                         changed = cfg_item[pname][val_tag] != value
                         cfg_item[pname][val_tag] = value
                     else:
-                        raise Exception('%s is a read only parameter!' % param_name)
+                        raise Exception(
+                            '%s is a read only parameter!' % param_name)
                 else:
                     changed = cfg_item[pname] != value
                     cfg_item[pname] = value
@@ -169,7 +173,8 @@ class Settings:
             if changed:
                 self.save()
         except Exception as exc:
-            nmd.rosnode.get_logger().debug("Cant't set parameter '%s', full parameter path: '%s'" % (exc, param_name))
+            nmd.rosnode.get_logger().debug(
+                "Cant't set parameter '%s', full parameter path: '%s'" % (exc, param_name))
 
     def reload(self):
         '''
@@ -179,7 +184,8 @@ class Settings:
         with self._mutex:
             try:
                 with open(self.filename, 'r') as stream:
-                    result = ruamel.yaml.load(stream, Loader=ruamel.yaml.Loader)
+                    result = ruamel.yaml.load(
+                        stream, Loader=ruamel.yaml.Loader)
                     if result is None:
                         nmd.rosnode.get_logger().info('reset configuration file %s' % self.filename)
                         self._cfg = self.default()
@@ -198,10 +204,12 @@ class Settings:
         '''
         with open(self.filename, 'w') as stream:
             try:
-                ruamel.yaml.dump(self._cfg, stream, Dumper=ruamel.yaml.RoundTripDumper)
+                ruamel.yaml.dump(self._cfg, stream,
+                                 Dumper=ruamel.yaml.RoundTripDumper)
                 nmd.rosnode.get_logger().debug("Configuration saved to '%s'" % self.filename)
             except ruamel.yaml.YAMLError as exc:
-                nmd.rosnode.get_logger().warn("Cant't save configuration to '%s': %s" % (self.filename, exc))
+                nmd.rosnode.get_logger().warn(
+                    "Cant't save configuration to '%s': %s" % (self.filename, exc))
 
     def yaml(self, _nslist=[]):
         '''
@@ -220,7 +228,8 @@ class Settings:
         :param str data: YAML as string representation.
         '''
         with self._mutex:
-            self._cfg = self._apply_recursive(ruamel.yaml.load(data, Loader=ruamel.yaml.Loader), self._cfg)
+            self._cfg = self._apply_recursive(ruamel.yaml.load(
+                data, Loader=ruamel.yaml.Loader), self._cfg)
             do_reset = self.param('global/reset', False)
             if do_reset:
                 nmd.rosnode.get_logger().info("Reset configuration requested!")
@@ -236,7 +245,8 @@ class Settings:
             try:
                 if isinstance(value, dict):
                     if self._is_writable(value):
-                        new_cfg[key] = self._apply_recursive(new_data[key], value)
+                        new_cfg[key] = self._apply_recursive(
+                            new_data[key], value)
                 elif key not in [':hint', ':default', ':ro', ':min', ':max', ':alt']:
                     if isinstance(new_data, dict):
                         new_cfg[key] = new_data[key]
@@ -246,7 +256,8 @@ class Settings:
                     new_cfg[key] = value
             except Exception:
                 import traceback
-                print("_apply_recursive error:", traceback.format_exc(), "use old value:", value)
+                print("_apply_recursive error:",
+                      traceback.format_exc(), "use old value:", value)
                 new_cfg[key] = value
         return new_cfg
 

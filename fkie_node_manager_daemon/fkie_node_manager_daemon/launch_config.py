@@ -57,7 +57,8 @@ class LaunchNode():
     def __init__(self, node, composable_container=None, composable_nodes=[]):
         self.node = node
         self.composable_container = composable_container
-        self.composable_nodes = composable_nodes if composable_nodes else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.composable_nodes = composable_nodes if composable_nodes else []
 
 
 class LaunchConfig(object):
@@ -65,7 +66,7 @@ class LaunchConfig(object):
     A class to handle the ROS configuration stored in launch file.
     '''
 
-    def __init__(self, launch_file, *, context=None, package=None, daemonuri='', launch_arguments:List[Tuple[Text, Text]]=[]):
+    def __init__(self, launch_file, *, context=None, package=None, daemonuri='', launch_arguments: List[Tuple[Text, Text]] = []):
         '''
         Creates the LaunchConfig object. The launch file will be not loaded on
         creation, first on request of roscfg value.
@@ -81,13 +82,17 @@ class LaunchConfig(object):
         :raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
         self.__launchfile = launch_file
-        self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
+        self.__package = package_name(os.path.dirname(self.__launchfile))[
+            0] if package is None else package
         self.__nmduri = url_nmduri(daemonuri)
         self.launch_arguments = launch_arguments
         argv = sys.argv[1:]
-        argv.extend(["%s:=%s" % (name, value) for (name, value) in launch_arguments])
-        self.__launch_context = context if context is not None else LaunchContext(argv=argv)
-        self.__launch_description = get_launch_description_from_any_launch_file(self.filename)
+        argv.extend(["%s:=%s" % (name, value)
+                     for (name, value) in launch_arguments])
+        self.__launch_context = context if context is not None else LaunchContext(
+            argv=argv)
+        self.__launch_description = get_launch_description_from_any_launch_file(
+            self.filename)
         # self.__launch_description = launch.LaunchDescription([
         #     launch.actions.IncludeLaunchDescription(
         #         launch.launch_description_sources.AnyLaunchDescriptionSource(
@@ -96,7 +101,7 @@ class LaunchConfig(object):
         #         launch_arguments=launch_arguments,
         #     ),
         # ])
-        #for ent in self.__launch_description.entities:
+        # for ent in self.__launch_description.entities:
         #    ent.execute(self.__launch_context)
         print("LD", dir(self.__launch_description))
         self._load()
@@ -140,7 +145,8 @@ class LaunchConfig(object):
         else:
             result, _ = self.load(self.argv)  # _:=argv
             if not result:
-                raise LaunchConfigException("not all argv are setted properly!")
+                raise LaunchConfigException(
+                    "not all argv are setted properly!")
             return self.__launch_description
 
     def _load(self, sub_obj=None) -> None:
@@ -185,8 +191,10 @@ class LaunchConfig(object):
                         entity.execute(self.__launch_context)
                     except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
                         print('err', dir(err))
-                        print('launch_description_source', dir(entity.launch_description_source.location))
-                        raise Exception('%s (%s)' % (err, entity.launch_description_source.location))
+                        print('launch_description_source', dir(
+                            entity.launch_description_source.location))
+                        raise Exception('%s (%s)' % (
+                            err, entity.launch_description_source.location))
                 elif hasattr(entity, 'execute'):
                     print("TY2", type(entity), dir(entity))
                     entity.execute(self.__launch_context)
@@ -230,7 +238,7 @@ class LaunchConfig(object):
                     #             # print('      + perform:', cmd.perform(self.__launch_context))
                     #         else:
                     #             print('      + CMD OTHER:', cmd, dir(cmd))
-#                    entity._perform_substitutions(self.context)
+                    #                    entity._perform_substitutions(self.context)
                     result.append(LaunchNode(entity))
                 elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
                     print("EXEC", type(entity), dir(entity))
@@ -244,7 +252,6 @@ class LaunchConfig(object):
 #                    entity.execute(self.__launch_context)
                     result.extend(self.nodes(entity))
 
-
         #     for entity in sub_obj.entities:
         #         if isinstance(entity, launch_ros.actions.node.Node):
         #             entity._perform_substitutions(self.context)
@@ -252,7 +259,7 @@ class LaunchConfig(object):
         #         else:
         #             print("TY2", type(entity))
         #             result.extend(self.nodes(entity))
-                
+
         # else:
         #     for entity in self.__launch_description.entities:
         #         if isinstance(entity, launch_ros.actions.node.Node):
@@ -273,7 +280,7 @@ class LaunchConfig(object):
                 # elif isinstance(entity, launch.actions.IncludeLaunchDescription):
                 #     print("INCLUDE", dir(entity))
         return result
-            
+
         # for entity in self.roscfg.entities:
         #     if isinstance(entity, launch_ros.actions.node.Node):
         #         result.append(entity)
@@ -300,8 +307,10 @@ class LaunchConfig(object):
             try:
                 return roslib.packages.find_resource(self.packagename, self.launchname).pop()
             except Exception:
-                raise LaunchConfigException('launch file %s not found!' % self.launchname)
-        raise LaunchConfigException('launch file %s not found!' % self.__launchfile)
+                raise LaunchConfigException(
+                    'launch file %s not found!' % self.launchname)
+        raise LaunchConfigException(
+            'launch file %s not found!' % self.__launchfile)
 
     @property
     def launchname(self):
@@ -351,7 +360,8 @@ class LaunchConfig(object):
             self._capabilities = None
             self._robot_description = None
             print('load', self.filename)
-            launch_description = get_launch_description_from_any_launch_file(self.filename)
+            launch_description = get_launch_description_from_any_launch_file(
+                self.filename)
             # AnyLaunchDescriptionSource(self.filename)
             # launch_description = launch.LaunchDescription([
             #     launch.actions.IncludeLaunchDescription(
@@ -362,7 +372,8 @@ class LaunchConfig(object):
             # parser = Parser.get_parser_from_extension('.launch')
             # self.__launch_context = LaunchContext(argv=sys.argv[1:])
             #launch_description = get_launch_description_from_frontend_launch_file(self.filename)
-            print("roscfg", launch_description, type(launch_description), dir(launch_description))
+            print("roscfg", launch_description, type(
+                launch_description), dir(launch_description))
 #            launch_description.execute(self.__launch_context)
 
             for ent in launch_description.entities:
@@ -373,13 +384,18 @@ class LaunchConfig(object):
                     for dsub_ent in ent.describe_sub_entities():
                         print("  descr_subent: ", dsub_ent, dir(dsub_ent))
                         if hasattr(dsub_ent, 'describe_sub_entities'):
-                            print("    descr_subent2: ", dsub_ent.describe_sub_entities())
-                            print("    get:sub_descr_subent2: ", dsub_ent.get_sub_entities())
+                            print("    descr_subent2: ",
+                                  dsub_ent.describe_sub_entities())
+                            print("    get:sub_descr_subent2: ",
+                                  dsub_ent.get_sub_entities())
                             for dsub_ent2 in dsub_ent.describe_sub_entities():
-                                print("    descr_subent2: ", dsub_ent2, dir(dsub_ent2))
+                                print("    descr_subent2: ",
+                                      dsub_ent2, dir(dsub_ent2))
                         if hasattr(dsub_ent, 'cmd'):
-                            dsub_ent._perform_substitutions(self.__launch_context)
-                            print('    PARAMETERS:', dsub_ent._Node__expanded_parameter_files)
+                            dsub_ent._perform_substitutions(
+                                self.__launch_context)
+                            print('    PARAMETERS:',
+                                  dsub_ent._Node__expanded_parameter_files)
                             for pp in dsub_ent._Node__expanded_parameter_files:
                                 with open(pp, 'r') as f:
                                     print(f.readlines())
@@ -389,31 +405,41 @@ class LaunchConfig(object):
                             for cmds in dsub_ent.cmd:
                                 for cmd in cmds:
                                     if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
-                                        print('  - CMD InExc:', cmd.describe(), dir(cmd.describe))
-                                        print('      + CMD exe:', cmd.executable[0].text)
-                                        print('      + CMD package:', cmd.package[0].text)
-                                        print('      + perform:', cmd.perform(self.__launch_context))
+                                        print('  - CMD InExc:',
+                                              cmd.describe(), dir(cmd.describe))
+                                        print('      + CMD exe:',
+                                              cmd.executable[0].text)
+                                        print('      + CMD package:',
+                                              cmd.package[0].text)
+                                        print('      + perform:',
+                                              cmd.perform(self.__launch_context))
                                     elif isinstance(cmd, launch.substitutions.text_substitution.TextSubstitution):
-                                        print('      + CMD:', cmd.text, dir(cmd))
-                                        print('      + perform:', cmd.perform(self.__launch_context))
+                                        print('      + CMD:',
+                                              cmd.text, dir(cmd))
+                                        print('      + perform:',
+                                              cmd.perform(self.__launch_context))
                                     elif isinstance(cmd, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
-                                        print('      + CMD:', cmd.describe(), dir(cmd))
+                                        print('      + CMD:',
+                                              cmd.describe(), dir(cmd))
                                     elif isinstance(cmd, launch.substitutions.local_substitution.LocalSubstitution):
-                                        print('      + CMD Subst:', cmd.expression, dir(cmd.expression))
+                                        print('      + CMD Subst:',
+                                              cmd.expression, dir(cmd.expression))
                                         # print('      + perform:', cmd.perform(self.__launch_context))
                                     else:
-                                        print('      + CMD OTHER:', cmd, dir(cmd))
+                                        print('      + CMD OTHER:',
+                                              cmd, dir(cmd))
                         if hasattr(dsub_ent, 'output'):
                             print('    OUTPUT:', dsub_ent.output)
                         if hasattr(dsub_ent, 'expanded_node_namespace'):
-                            print('    expanded_node_namespace:', dsub_ent.expanded_node_namespace)
+                            print('    expanded_node_namespace:',
+                                  dsub_ent.expanded_node_namespace)
                         if isinstance(dsub_ent, launch.actions.declare_launch_argument.DeclareLaunchArgument):
                             print('  perform ARG:', dsub_ent.name)
                             dsub_ent.execute(self.__launch_context)
                 if isinstance(ent, launch.actions.declare_launch_argument.DeclareLaunchArgument):
                     print('  perform ARG:', ent.name)
                     ent.execute(self.__launch_context)
-                            # print('   context after exec:', self.__launch_context.launch_configurations[dsub_ent.name])
+                    # print('   context after exec:', self.__launch_context.launch_configurations[dsub_ent.name])
 
             # if isinstance(entity, launch_ros.actions.node.Node):
             #     print(dir(entity))
@@ -426,7 +452,8 @@ class LaunchConfig(object):
             self.__launch_description = launch_description
             self.changed = True
         except launch.InvalidLaunchFileError as e:
-            test = list(re.finditer(r"environment variable '\w+' is not set", str(e)))
+            test = list(re.finditer(
+                r"environment variable '\w+' is not set", str(e)))
             message = str(e)
             if test:
                 message = '%s\nenvironment substitution is not supported, use "arg" instead!' % message
@@ -453,28 +480,35 @@ class LaunchConfig(object):
             if endIndex > -1:
                 arg_name = value[arg_match.end():endIndex].strip()
                 if arg == arg_name:
-                    raise LaunchConfigException("Can't resolve the argument `%s` argument: the argument referenced to itself!" % arg_name)
+                    raise LaunchConfigException(
+                        "Can't resolve the argument `%s` argument: the argument referenced to itself!" % arg_name)
                 if rec_inc > 100:
-                    raise LaunchConfigException("Can't resolve the argument `%s` in `%s` argument: recursion depth of 100 reached!" % (arg_name, arg))
+                    raise LaunchConfigException(
+                        "Can't resolve the argument `%s` in `%s` argument: recursion depth of 100 reached!" % (arg_name, arg))
                 if arg_name in argv_defaults:
-                    argv_defaults[arg] = value.replace(value[arg_match.start():endIndex + 1], argv_defaults[arg_name])
+                    argv_defaults[arg] = value.replace(
+                        value[arg_match.start():endIndex + 1], argv_defaults[arg_name])
                 elif arg_name in argv_values:
-                    argv_defaults[arg] = value.replace(value[arg_match.start():endIndex + 1], argv_values[arg_name])
+                    argv_defaults[arg] = value.replace(
+                        value[arg_match.start():endIndex + 1], argv_values[arg_name])
                 else:
-                    raise LaunchConfigException("Can't resolve the argument `%s` in `%s` argument" % (arg_name, arg))
+                    raise LaunchConfigException(
+                        "Can't resolve the argument `%s` in `%s` argument" % (arg_name, arg))
             else:
-                raise LaunchConfigException("Can't resolve the argument in `%s` argument: `)` not found" % arg)
+                raise LaunchConfigException(
+                    "Can't resolve the argument in `%s` argument: `)` not found" % arg)
             value = argv_defaults[arg]
             arg_match = re.search(r"\$\(\s*arg\s*", value)
 
     @classmethod
-    def get_args(cls, filename:str, provided_args:list) -> List[Argument]:
+    def get_args(cls, filename: str, provided_args: list) -> List[Argument]:
         '''
         :param list(fkie_node_manager_daemon.grpc_proto.launch_pb2.Argument) provided_args: provided args used to set 'value' in returned args
         :return: a list with args being used in the roslaunch file.
         :rtype: list(fkie_node_manager_daemon.grpc_proto.launch_pb2.Argument)
         '''
-        launch_description = get_launch_description_from_any_launch_file(filename)
+        launch_description = get_launch_description_from_any_launch_file(
+            filename)
         launch_arguments = launch_description.get_launch_arguments()
         result = []
         for argument_action in launch_arguments:
@@ -485,7 +519,8 @@ class LaunchConfig(object):
                     break
             default_str = ''
             if argument_action.default_value is not None:
-                default_str = ' + '.join([token.describe() for token in argument_action.default_value])
+                default_str = ' + '.join([token.describe()
+                                          for token in argument_action.default_value])
             arg = Argument(name=argument_action.name,
                            value=value,
                            default_value=default_str,
@@ -518,7 +553,7 @@ class LaunchConfig(object):
         #             self.__argv_values[arg_name] = arg_value
         # return arg_subs
 
-    def _decode(self, val:str) -> str:
+    def _decode(self, val: str) -> str:
         '''
         Replaces the '\\n' by LF (Line Feed) and decode the string entry to unicode.
 
@@ -549,10 +584,12 @@ class LaunchConfig(object):
                 if param.endswith('/robots'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 5:
-                            nm.rosnode.get_logger().warn("WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore; param: %s" % param)
+                            nm.rosnode.get_logger().warn(
+                                "WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
-                                self._robot_description[entry[0]] = {'type': entry[1], 'name': entry[2], 'images': entry[3].split(','), 'description': self._decode(entry[4])}
+                                self._robot_description[entry[0]] = {'type': entry[1], 'name': entry[2], 'images': entry[3].split(
+                                    ','), 'description': self._decode(entry[4])}
         return self._robot_description
 
     def get_capabilitie_desrc(self):
@@ -575,10 +612,12 @@ class LaunchConfig(object):
                 if param.endswith('capabilities'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 4:
-                            nm.rosnode.get_logger().warn("WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore; param: %s" % param)
+                            nm.rosnode.get_logger().warn(
+                                "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
-                                capabilies_descr[entry[0]] = {'type': '%s' % entry[1], 'images': entry[2].split(','), 'description': self._decode(entry[3])}
+                                capabilies_descr[entry[0]] = {'type': '%s' % entry[1], 'images': entry[2].split(
+                                    ','), 'description': self._decode(entry[3])}
             # get the capability nodes
             for item in self.roscfg.nodes:
                 node_fullname = ns_join(item.namespace, item.name)
@@ -622,7 +661,8 @@ class LaunchConfig(object):
                                                                      'images': [],
                                                                      'description': '',
                                                                      'nodes': []}
-                        result[machine_name][ns][p.value]['nodes'].append(node_fullname)
+                        result[machine_name][ns][p.value]['nodes'].append(
+                            node_fullname)
         self._capabilities = result
         return result
 
@@ -635,7 +675,7 @@ class LaunchConfig(object):
                 result[key] = value
         return result
 
-    def get_node(self, name:str, daemonuri:str='') -> [launch_ros.actions.node.Node, None]:
+    def get_node(self, name: str, daemonuri: str = '') -> [launch_ros.actions.node.Node, None]:
         '''
         Returns a configuration node for a given node name.
 
@@ -651,7 +691,7 @@ class LaunchConfig(object):
         return None
 
     @classmethod
-    def get_name_from_node(cls, node:launch_ros.actions.node.Node) -> str:
+    def get_name_from_node(cls, node: launch_ros.actions.node.Node) -> str:
         result = ''
         if hasattr(node, 'name') and node.name:
             if isinstance(node.name, str):
@@ -684,7 +724,8 @@ class LaunchConfig(object):
             if isinstance(node._Node__node_executable, str):
                 result = node._Node__node_executable
             else:
-                result = SEP.join([n.text for n in node._Node__node_executable])
+                result = SEP.join(
+                    [n.text for n in node._Node__node_executable])
             if result:
                 nmd.rosnode.get_logger().debug("Nodename '%s' from _Node__node_executable" % result)
         if not result and hasattr(node, 'cmd'):
@@ -693,15 +734,17 @@ class LaunchConfig(object):
                 nmd.rosnode.get_logger().debug("Nodename '%s' from cmd" % result)
         if result:
             if not result.startswith(SEP) and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
-                ns = node.expanded_node_namespace if hasattr(node, 'expanded_node_namespace') else SEP
+                ns = node.expanded_node_namespace if hasattr(
+                    node, 'expanded_node_namespace') else SEP
                 if not ns:
                     ns = SEP
                 result = ns_join(ns, result)
         else:
-            nmd.rosnode.get_logger().debug("No name for node found: %s %s" % (type(node), dir(node)))
+            nmd.rosnode.get_logger().debug("No name for node found: %s %s" %
+                                           (type(node), dir(node)))
             # print("describe", node.describe(), dir(node.describe()), str(node.describe()))
             # print("'cmd'", " ".join([str(n) for n in node.cmd]))
-                
+
         return result
 
     @classmethod
@@ -720,13 +763,13 @@ class LaunchConfig(object):
                 elif isinstance(cmd, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
                     print('      + CMD:', cmd.describe(), dir(cmd))
                 elif isinstance(cmd, launch.substitutions.local_substitution.LocalSubstitution):
-                    print('      + CMD Subst:', cmd.expression, dir(cmd.expression))
+                    print('      + CMD Subst:',
+                          cmd.expression, dir(cmd.expression))
                     # print('      + perform:', cmd.perform(self.__launch_context))
                 else:
                     print('      + CMD OTHER:', cmd, dir(cmd))
                 result += '_'
         return result
-    
 
     def get_robot_icon(self):
         '''

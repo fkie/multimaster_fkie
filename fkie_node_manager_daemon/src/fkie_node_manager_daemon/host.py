@@ -143,9 +143,11 @@ def is_local(hostname, wait=True):
         socket.inet_aton(hostname)
         local_addresses = ['localhost'] + get_local_addresses()
         # check 127/8 and local addresses
-        result = hostname.startswith('127.') or hostname == '::1' or hostname in local_addresses
+        result = hostname.startswith(
+            '127.') or hostname == '::1' or hostname in local_addresses
         with _LOCK:
-            rospy.logdebug("host::HOSTS_CACHE add local %s:%s" % (hostname, result))
+            rospy.logdebug("host::HOSTS_CACHE add local %s:%s" %
+                           (hostname, result))
             HOSTS_CACHE[hostname] = result
         return result
     except socket.error:
@@ -168,7 +170,8 @@ def __is_local(hostname):
     '''
     try:
         # If Python has ipv6 disabled but machine.address can be resolved somehow to an ipv6 address, then host[4][0] will be int
-        machine_ips = [host[4][0] for host in socket.getaddrinfo(hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)]
+        machine_ips = [host[4][0] for host in socket.getaddrinfo(
+            hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)]
     except socket.gaierror:
         with _LOCK:
             rospy.logdebug("host::HOSTS_CACHE resolve %s failed" % hostname)
@@ -176,7 +179,8 @@ def __is_local(hostname):
         return False
     local_addresses = ['localhost'] + get_local_addresses()
     # check 127/8 and local addresses
-    result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != []) or (set(machine_ips) & set(local_addresses) != set())
+    result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != [
+    ]) or (set(machine_ips) & set(local_addresses) != set())
     with _LOCK:
         rospy.logdebug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
         HOSTS_CACHE[hostname] = result

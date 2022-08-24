@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from xml.dom.minidom import parse  # , parseString
 import os
 import re
@@ -75,8 +74,10 @@ class LaunchConfig(object):
         '''
         self._monitor_servicer = monitor_servicer
         self.__launchfile = launch_file
-        self.__package = package_name(os.path.dirname(self.__launchfile))[0] if package is None else package
-        self.__masteruri = masteruri if masteruri else masteruri_from_master(True)
+        self.__package = package_name(os.path.dirname(self.__launchfile))[
+            0] if package is None else package
+        self.__masteruri = masteruri if masteruri else masteruri_from_master(
+            True)
         self.__roscfg = None
         self.argv = argv
         if self.argv is None:
@@ -116,7 +117,8 @@ class LaunchConfig(object):
         else:
             result, _ = self.load(self.argv)  # _:=argv
             if not result:
-                raise LaunchConfigException("not all argv are setted properly!")
+                raise LaunchConfigException(
+                    "not all argv are setted properly!")
             return self.__roscfg
 
     @property
@@ -132,8 +134,10 @@ class LaunchConfig(object):
             try:
                 return roslib.packages.find_resource(self.packagename, self.launchname).pop()
             except Exception:
-                raise LaunchConfigException('launch file %s not found!' % self.launchname)
-        raise LaunchConfigException('launch file %s not found!' % self.__launchfile)
+                raise LaunchConfigException(
+                    'launch file %s not found!' % self.launchname)
+        raise LaunchConfigException(
+            'launch file %s not found!' % self.__launchfile)
 
     @property
     def launchname(self):
@@ -197,7 +201,8 @@ class LaunchConfig(object):
                 diag_dep.header.stamp = rospy.Time.now()
             for n in roscfg.nodes:
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
-                associations_param = roslib.names.ns_join(node_fullname, 'associations')
+                associations_param = roslib.names.ns_join(
+                    node_fullname, 'associations')
                 if associations_param in roscfg.params:
                     ds = DiagnosticStatus()
                     ds.level = DiagnosticStatus.WARN
@@ -205,13 +210,15 @@ class LaunchConfig(object):
                     ds.message = 'Deprecated parameter detected'
                     ds.values.append(KeyValue('deprecated', 'associations'))
                     ds.values.append(KeyValue('new', 'nm/associations'))
-                    rospy.logwarn("'associations' is deprecated, use 'nm/associations'! found for node: %s in %s" % (node_fullname, self.filename))
+                    rospy.logwarn(
+                        "'associations' is deprecated, use 'nm/associations'! found for node: %s in %s" % (node_fullname, self.filename))
                     diag_dep.status.append(ds)
             if self._monitor_servicer is not None:
                 # set diagnostics
                 self._monitor_servicer._monitor._callback_diagnostics(diag_dep)
         except roslaunch.XmlParseException as e:
-            test = list(re.finditer(r"environment variable '\w+' is not set", utf8(e)))
+            test = list(re.finditer(
+                r"environment variable '\w+' is not set", utf8(e)))
             message = utf8(e)
             if test:
                 message = '%s\nenvironment substitution is not supported, use "arg" instead!' % message
@@ -238,17 +245,23 @@ class LaunchConfig(object):
             if endIndex > -1:
                 arg_name = value[arg_match.end():endIndex].strip()
                 if arg == arg_name:
-                    raise LaunchConfigException("Can't resolve the argument `%s` argument: the argument referenced to itself!" % arg_name)
+                    raise LaunchConfigException(
+                        "Can't resolve the argument `%s` argument: the argument referenced to itself!" % arg_name)
                 if rec_inc > 100:
-                    raise LaunchConfigException("Can't resolve the argument `%s` in `%s` argument: recursion depth of 100 reached!" % (arg_name, arg))
+                    raise LaunchConfigException(
+                        "Can't resolve the argument `%s` in `%s` argument: recursion depth of 100 reached!" % (arg_name, arg))
                 if arg_name in argv_defaults:
-                    argv_defaults[arg] = value.replace(value[arg_match.start():endIndex + 1], argv_defaults[arg_name])
+                    argv_defaults[arg] = value.replace(
+                        value[arg_match.start():endIndex + 1], argv_defaults[arg_name])
                 elif arg_name in argv_values:
-                    argv_defaults[arg] = value.replace(value[arg_match.start():endIndex + 1], argv_values[arg_name])
+                    argv_defaults[arg] = value.replace(
+                        value[arg_match.start():endIndex + 1], argv_values[arg_name])
                 else:
-                    raise LaunchConfigException("Can't resolve the argument `%s` in `%s` argument" % (arg_name, arg))
+                    raise LaunchConfigException(
+                        "Can't resolve the argument `%s` in `%s` argument" % (arg_name, arg))
             else:
-                raise LaunchConfigException("Can't resolve the argument in `%s` argument: `)` not found" % arg)
+                raise LaunchConfigException(
+                    "Can't resolve the argument in `%s` argument: `)` not found" % arg)
             value = argv_defaults[arg]
             arg_match = re.search(r"\$\(\s*arg\s*", value)
 
@@ -268,11 +281,13 @@ class LaunchConfig(object):
                 if filename.endswith('.launch') or filename.find('.launch.') > 0:
                     args[len(args):-1] = parse(filename).getElementsByTagName('arg')
             except Exception as e:
-                raise roslaunch.XmlParseException("Invalid roslaunch XML syntax: %s" % e)
+                raise roslaunch.XmlParseException(
+                    "Invalid roslaunch XML syntax: %s" % e)
             for arg in args:
                 arg_name = arg.getAttribute("name")
                 if not arg_name:
-                    raise roslaunch.XmlParseException("arg tag needs a name, xml is %s" % arg.toxml())
+                    raise roslaunch.XmlParseException(
+                        "arg tag needs a name, xml is %s" % arg.toxml())
                 # we only want argsargs at top level:
                 if not arg.parentNode.tagName == "launch":
                     continue
@@ -316,10 +331,12 @@ class LaunchConfig(object):
                 if param.endswith('/robots'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 5:
-                            rospy.logwarn("WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore; param: %s" % param)
+                            rospy.logwarn(
+                                "WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
-                                self._robot_description[entry[0]] = {'type': entry[1], 'name': entry[2], 'images': entry[3].split(','), 'description': self._decode(entry[4])}
+                                self._robot_description[entry[0]] = {'type': entry[1], 'name': entry[2], 'images': entry[3].split(
+                                    ','), 'description': self._decode(entry[4])}
         return self._robot_description
 
     def get_capabilitie_desrc(self):
@@ -342,23 +359,28 @@ class LaunchConfig(object):
                 if param.endswith('capabilities'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 4:
-                            rospy.logwarn("WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore; param: %s" % param)
+                            rospy.logwarn(
+                                "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
-                                capabilies_descr[entry[0]] = {'type': '%s' % entry[1], 'images': entry[2].split(','), 'description': self._decode(entry[3])}
+                                capabilies_descr[entry[0]] = {'type': '%s' % entry[1], 'images': entry[2].split(
+                                    ','), 'description': self._decode(entry[3])}
             # get the capability nodes
             for item in self.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
                 machine_name = item.machine_name if item.machine_name is not None and not item.machine_name == 'localhost' else ''
                 added = False
-                cap_param = roslib.names.ns_join(node_fullname, 'capability_group')
+                cap_param = roslib.names.ns_join(
+                    node_fullname, 'capability_group')
                 cap_ns = node_fullname
                 # find the capability group parameter in namespace
                 while cap_param not in self.roscfg.params and cap_param.count(roslib.names.SEP) > 1:
-                    cap_ns = roslib.names.namespace(cap_ns).rstrip(roslib.names.SEP)
+                    cap_ns = roslib.names.namespace(
+                        cap_ns).rstrip(roslib.names.SEP)
                     if not cap_ns:
                         cap_ns = roslib.names.SEP
-                    cap_param = roslib.names.ns_join(cap_ns, 'capability_group')
+                    cap_param = roslib.names.ns_join(
+                        cap_ns, 'capability_group')
                 if cap_ns == node_fullname:
                     cap_ns = item.namespace.rstrip(roslib.names.SEP)
                     if not cap_ns:
@@ -389,7 +411,8 @@ class LaunchConfig(object):
                                                                      'images': [],
                                                                      'description': '',
                                                                      'nodes': []}
-                        result[machine_name][ns][p.value]['nodes'].append(node_fullname)
+                        result[machine_name][ns][p.value]['nodes'].append(
+                            node_fullname)
         self._capabilities = result
         return result
 

@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import socket
 import threading
 import time
@@ -42,7 +41,8 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-from fkie_multimaster_msgs.msg import MasterState  # , LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
+# , LinkState, LinkStatesStamped, MasterState, ROSMaster, SyncMasterInfo, SyncTopicInfo
+from fkie_multimaster_msgs.msg import MasterState
 from fkie_multimaster_msgs.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
 import rospy
 
@@ -77,12 +77,14 @@ class Main(object):
         self._load_interface()
         # subscribe to changes notifier topics
         self._check_host = rospy.get_param('~check_host', True)
-        topic_names = interface_finder.get_changes_topic(masteruri_from_master(), check_host=self._check_host)
+        topic_names = interface_finder.get_changes_topic(
+            masteruri_from_master(), check_host=self._check_host)
         self.sub_changes = dict()
         '''@ivar: `dict` with topics {name: U{rospy.Subscriber<http://docs.ros.org/api/rospy/html/rospy.topics.Subscriber-class.html>}} publishes the changes of the discovered ROS masters.'''
         for topic_name in topic_names:
             rospy.loginfo("listen for updates on %s", topic_name)
-            self.sub_changes[topic_name] = rospy.Subscriber(topic_name, MasterState, self._rosmsg_callback_master_state)
+            self.sub_changes[topic_name] = rospy.Subscriber(
+                topic_name, MasterState, self._rosmsg_callback_master_state)
         self.__timestamp_local = None
         self.__own_state = None
         self.update_timer = None
@@ -91,10 +93,12 @@ class Main(object):
         self._timer_update_diagnostics = None
         self._join_threads = dict()  # threads waiting for stopping the sync thread
         # initialize the ROS services
-        rospy.Service('~get_sync_info', GetSyncInfo, self._rosservice_get_sync_info)
+        rospy.Service('~get_sync_info', GetSyncInfo,
+                      self._rosservice_get_sync_info)
         rospy.on_shutdown(self.finish)
         self._current_diagnistic_level = None
-        self.pub_diag = rospy.Publisher( "/diagnostics", DiagnosticArray, queue_size=10, latch=True)
+        self.pub_diag = rospy.Publisher(
+            "/diagnostics", DiagnosticArray, queue_size=10, latch=True)
         self.obtain_masters()
 
     def _rosmsg_callback_master_state(self, data):
@@ -112,7 +116,8 @@ class Main(object):
                     self.remove_master(data.master.name)
                 elif data.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
                     m = data.master
-                    self.update_master(m.name, m.uri, m.last_change.to_sec(), m.last_change_local.to_sec(), m.discoverer_name, m.monitoruri, m.online)
+                    self.update_master(m.name, m.uri, m.last_change.to_sec(
+                    ), m.last_change_local.to_sec(), m.discoverer_name, m.monitoruri, m.online)
 
     def _callback_perform_resync(self):
         if self.resync_timer is not None:
@@ -129,31 +134,39 @@ class Main(object):
             <http://docs.ros.org/api/fkie_master_discovery/html/modules.html#interface-finder-module>}
         '''
         if not rospy.is_shutdown():
-            service_names = interface_finder.get_listmaster_service(masteruri_from_master(), False, check_host=self._check_host)
+            service_names = interface_finder.get_listmaster_service(
+                masteruri_from_master(), False, check_host=self._check_host)
             for service_name in service_names:
                 try:
                     with self.__lock:
                         try:
                             socket.setdefaulttimeout(5)
-                            discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
+                            discoverMasters = rospy.ServiceProxy(
+                                service_name, DiscoverMasters)
                             resp = discoverMasters()
                             masters = []
                             master_names = [m.name for m in resp.masters]
-                            rospy.loginfo("ROS masters obtained from '%s': %s", service_name, master_names)
+                            rospy.loginfo(
+                                "ROS masters obtained from '%s': %s", service_name, master_names)
                             for m in resp.masters:
-                                if self._can_sync(m.name):  # do not sync to the master, if it is in ignore list or not in filled sync list
+                                # do not sync to the master, if it is in ignore list or not in filled sync list
+                                if self._can_sync(m.name):
                                     masters.append(m.name)
-                                self.update_master(m.name, m.uri, m.last_change.to_sec(), m.last_change_local.to_sec(), m.discoverer_name, m.monitoruri, m.online)
+                                self.update_master(m.name, m.uri, m.last_change.to_sec(
+                                ), m.last_change_local.to_sec(), m.discoverer_name, m.monitoruri, m.online)
                             for key in set(self.masters.keys()) - set(masters):
                                 self.remove_master(self.masters[key].name)
                         except rospy.ServiceException as e:
-                            rospy.logwarn("ERROR Service call 'list_masters' failed: %s", str(e))
+                            rospy.logwarn(
+                                "ERROR Service call 'list_masters' failed: %s", str(e))
                 except:
                     import traceback
-                    rospy.logwarn("ERROR while initial list masters: %s", traceback.format_exc())
+                    rospy.logwarn(
+                        "ERROR while initial list masters: %s", traceback.format_exc())
                 finally:
                     socket.setdefaulttimeout(None)
-            self.update_timer = threading.Timer(self.UPDATE_INTERVALL, self.obtain_masters)
+            self.update_timer = threading.Timer(
+                self.UPDATE_INTERVALL, self.obtain_masters)
             self.update_timer.start()
 
     def update_master(self, mastername, masteruri, timestamp, timestamp_local, discoverer_name, monitoruri, online):
@@ -181,28 +194,36 @@ class Main(object):
                     if self._can_sync(mastername):
                         # do not sync to the master, if it is in ignore list
                         if self.__resync_on_reconnect and mastername in self.masters:
-                            self.masters[mastername].set_online(online, self.__resync_on_reconnect_timeout)
+                            self.masters[mastername].set_online(
+                                online, self.__resync_on_reconnect_timeout)
                         if online:
                             if mastername in self.masters:
-                                    # updates only, if local changes are occured
-                                self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
+                                # updates only, if local changes are occured
+                                self.masters[mastername].update(
+                                    mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
                             else:
-                                self.masters[mastername] = SyncThread(mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__sync_topics_on_demand, callback_resync=self._callback_perform_resync)
+                                self.masters[mastername] = SyncThread(
+                                    mastername, masteruri, discoverer_name, monitoruri, 0.0, self.__sync_topics_on_demand, callback_resync=self._callback_perform_resync)
                                 if self.__own_state is not None:
-                                    self.masters[mastername].set_own_masterstate(MasterInfo.from_list(self.__own_state))
-                                self.masters[mastername].update(mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
+                                    self.masters[mastername].set_own_masterstate(
+                                        MasterInfo.from_list(self.__own_state))
+                                self.masters[mastername].update(
+                                    mastername, masteruri, discoverer_name, monitoruri, timestamp_local)
                 elif self.__timestamp_local != timestamp_local:  # self.__sync_topics_on_demand:
                     # get the master info from local discovery master and set it to all sync threads
                     self._localname = mastername
-                    self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
+                    self.own_state_getter = threading.Thread(
+                        target=self.get_own_state, args=(monitoruri,))
                     self.own_state_getter.start()
                 if self._timer_update_diagnostics is None or not self._timer_update_diagnostics.is_alive():
                     # check for topics type and checksum for all hosts. Not blocking!
-                    self._timer_update_diagnostics = threading.Thread(target=self._update_diagnostics_state)
+                    self._timer_update_diagnostics = threading.Thread(
+                        target=self._update_diagnostics_state)
                     self._timer_update_diagnostics.start()
         except:
             import traceback
-            rospy.logwarn("ERROR while update master[%s]: %s", str(mastername), traceback.format_exc())
+            rospy.logwarn("ERROR while update master[%s]: %s", str(
+                mastername), traceback.format_exc())
 
     def get_own_state(self, monitoruri):
         '''
@@ -218,15 +239,18 @@ class Main(object):
             with self.__lock:
                 # update the state for all sync threads
                 for (_, s) in self.masters.items():
-                    s.set_own_masterstate(own_state, self.__sync_topics_on_demand)
+                    s.set_own_masterstate(
+                        own_state, self.__sync_topics_on_demand)
                 self.__timestamp_local = own_state.timestamp_local
         except:
             import traceback
-            rospy.logwarn("ERROR while getting own state from '%s': %s", monitoruri, traceback.format_exc())
+            rospy.logwarn("ERROR while getting own state from '%s': %s",
+                          monitoruri, traceback.format_exc())
             socket.setdefaulttimeout(None)
             time.sleep(3)
             if self.own_state_getter is not None and not rospy.is_shutdown():
-                self.own_state_getter = threading.Thread(target=self.get_own_state, args=(monitoruri,))
+                self.own_state_getter = threading.Thread(
+                    target=self.get_own_state, args=(monitoruri,))
                 self.own_state_getter.start()
 
     def remove_master(self, ros_master_name):
@@ -240,12 +264,14 @@ class Main(object):
                 if ros_master_name in self.masters:
                     m = self.masters.pop(ros_master_name)
                     ident = uuid.uuid4()
-                    thread = threading.Thread(target=self._threading_stop_sync, args=(m, ident))
+                    thread = threading.Thread(
+                        target=self._threading_stop_sync, args=(m, ident))
                     self._join_threads[ident] = thread
                     thread.start()
         except Exception:
             import traceback
-            rospy.logwarn("ERROR while removing master[%s]: %s", ros_master_name, traceback.format_exc())
+            rospy.logwarn(
+                "ERROR while removing master[%s]: %s", ros_master_name, traceback.format_exc())
 
     def _threading_stop_sync(self, sync_thread, ident):
         if isinstance(sync_thread, SyncThread):
@@ -253,7 +279,8 @@ class Main(object):
             sync_thread.stop()
             with self.__lock:
                 del self._join_threads[ident]
-            rospy.loginfo("  Finished synchronization to `%s`" % sync_thread.name)
+            rospy.loginfo("  Finished synchronization to `%s`" %
+                          sync_thread.name)
             del sync_thread
 
     def finish(self, msg=''):
@@ -279,7 +306,8 @@ class Main(object):
                 self.remove_master(key)
         # wait for their ending
         while len(self._join_threads) > 0:
-            rospy.loginfo("  Wait for ending of %s threads ...", str(len(self._join_threads)))
+            rospy.loginfo("  Wait for ending of %s threads ...",
+                          str(len(self._join_threads)))
             time.sleep(1)
         rospy.loginfo("Synchronization is now off")
 
@@ -311,20 +339,28 @@ class Main(object):
         try:
             data = read_interface(interface_file) if interface_file else {}
             # set the ignore hosts list
-            self._re_ignore_hosts = create_pattern('ignore_hosts', data, interface_file, [])
+            self._re_ignore_hosts = create_pattern(
+                'ignore_hosts', data, interface_file, [])
             # set the sync hosts list
-            self._re_sync_hosts = create_pattern('sync_hosts', data, interface_file, [])
+            self._re_sync_hosts = create_pattern(
+                'sync_hosts', data, interface_file, [])
             self.__sync_topics_on_demand = False
             if interface_file:
                 if 'sync_topics_on_demand' in data:
                     self.__sync_topics_on_demand = data['sync_topics_on_demand']
             elif rospy.has_param('~sync_topics_on_demand'):
-                self.__sync_topics_on_demand = rospy.get_param('~sync_topics_on_demand')
-            rospy.loginfo("sync_topics_on_demand: %s", self.__sync_topics_on_demand)
-            self.__resync_on_reconnect = rospy.get_param('~resync_on_reconnect', True)
-            rospy.loginfo("resync_on_reconnect: %s", self.__resync_on_reconnect)
-            self.__resync_on_reconnect_timeout = rospy.get_param('~resync_on_reconnect_timeout', 0)
-            rospy.loginfo("resync_on_reconnect_timeout: %s", self.__resync_on_reconnect_timeout)
+                self.__sync_topics_on_demand = rospy.get_param(
+                    '~sync_topics_on_demand')
+            rospy.loginfo("sync_topics_on_demand: %s",
+                          self.__sync_topics_on_demand)
+            self.__resync_on_reconnect = rospy.get_param(
+                '~resync_on_reconnect', True)
+            rospy.loginfo("resync_on_reconnect: %s",
+                          self.__resync_on_reconnect)
+            self.__resync_on_reconnect_timeout = rospy.get_param(
+                '~resync_on_reconnect_timeout', 0)
+            rospy.loginfo("resync_on_reconnect_timeout: %s",
+                          self.__resync_on_reconnect_timeout)
         except:
             import traceback
             # kill the ros node, to notify the user about the error
@@ -368,7 +404,8 @@ class Main(object):
                     diag_state = DiagnosticStatus()
                     diag_state.level = level
                     diag_state.name = rospy.get_name()
-                    diag_state.message = 'Wrong topic md5sum @ %s and %s' % (mname, self._localname)
+                    diag_state.message = 'Wrong topic md5sum @ %s and %s' % (
+                        mname, self._localname)
                     diag_state.hardware_id = self.hostname
                     for (topicname, _node, _nodeuri), tmtype in warnings.items():
                         if isinstance(tmtype, tuple):
@@ -384,7 +421,8 @@ class Main(object):
                     diag_state = DiagnosticStatus()
                     diag_state.level = level
                     diag_state.name = rospy.get_name()
-                    diag_state.message = 'Wrong topics type @ %s and %s' % (mname, self._localname)
+                    diag_state.message = 'Wrong topics type @ %s and %s' % (
+                        mname, self._localname)
                     diag_state.hardware_id = self.hostname
                     for (topicname, _node, _nodeuri), tmtype in warnings.items():
                         ttype = tmtype

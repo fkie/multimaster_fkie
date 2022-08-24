@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 import fkie_node_manager as nm
 
@@ -61,7 +60,8 @@ class DetachableTabDialog(QDialog):
         layout.setContentsMargins(3, 3, 3, 3)
         layout.addWidget(self.tab_widget)
         self.setWindowFlags(Qt.Window)
-        tab_index = self.tab_widget.addTab(content_widget, content_widget.name())
+        tab_index = self.tab_widget.addTab(
+            content_widget, content_widget.name())
         self.tab_widget.setCurrentIndex(tab_index)
         self.tab_widget.empty_tabbar_signal.connect(self._close_if_empty)
 

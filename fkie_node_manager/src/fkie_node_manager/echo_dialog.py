@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import itertools
 import math
@@ -119,15 +118,20 @@ class EchoDialog(QDialog):
         QDialog.__init__(self, parent=parent)
         self._masteruri = masteruri
         masteruri_str = '' if masteruri is None else '[%s]' % masteruri
-        echo_dialog_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'EchoDialog.ui')
+        echo_dialog_file = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), 'ui', 'EchoDialog.ui')
         loadUi(echo_dialog_file, self)
         self.setObjectName(' - '.join(['EchoDialog', topic, masteruri_str]))
         self.setAttribute(Qt.WA_DeleteOnClose, True)
         self.setWindowFlags(Qt.Window)
-        self.setWindowTitle('%s %s %s' % ('Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
-        self.setWindowIcon(nm.settings().icon('crystal_clear_prop_run_echo.png'))
-        self.clearButton.setIcon(nm.settings().icon('crystal_clear_show_delete_log.png'))
-        self.topicControlButton.setIcon(nm.settings().icon('sekkyumu_stop.png'))
+        self.setWindowTitle('%s %s %s' % (
+            'Echo --- ' if not show_only_rate else 'Hz --- ', topic, masteruri_str))
+        self.setWindowIcon(nm.settings().icon(
+            'crystal_clear_prop_run_echo.png'))
+        self.clearButton.setIcon(nm.settings().icon(
+            'crystal_clear_show_delete_log.png'))
+        self.topicControlButton.setIcon(
+            nm.settings().icon('sekkyumu_stop.png'))
         self.resize(900, 512)
 
         self.topic = topic
@@ -158,21 +162,31 @@ class EchoDialog(QDialog):
         self._msgs = []
 
         self.filterFrame.setVisible(False)
-        self.topicControlButton.clicked.connect(self.on_topic_control_btn_clicked)
+        self.topicControlButton.clicked.connect(
+            self.on_topic_control_btn_clicked)
         self.clearButton.clicked.connect(self.on_clear_btn_clicked)
         if show_only_rate:
             self.filterButton.setVisible(False)
         else:
             self.filterButton.clicked.connect(self.on_filter_clicked)
-            self.showStringsCheckBox.toggled.connect(self.on_no_str_checkbox_toggled)
-            self.maxLenStringComboBox.activated[str].connect(self.combobox_reduce_ch_activated)
-            self.showArraysCheckBox.toggled.connect(self.on_no_arr_checkbox_toggled)
-            self.maxDigitsComboBox.activated[str].connect(self.combobox_reduce_digits_activated)
-            self.enableMsgFilterCheckBox.toggled.connect(self.on_enable_msg_filter_checkbox_toggled)
-            self.msgFilterCheckBox.toggled.connect(self.on_msg_filter_checkbox_toggled)
-            self.maxLenComboBox.activated[str].connect(self.on_combobox_chars_activated)
-            self.maxHzComboBox.activated[str].connect(self.on_combobox_hz_activated)
-            self.displayCountComboBox.activated[str].connect(self.on_combobox_count_activated)
+            self.showStringsCheckBox.toggled.connect(
+                self.on_no_str_checkbox_toggled)
+            self.maxLenStringComboBox.activated[str].connect(
+                self.combobox_reduce_ch_activated)
+            self.showArraysCheckBox.toggled.connect(
+                self.on_no_arr_checkbox_toggled)
+            self.maxDigitsComboBox.activated[str].connect(
+                self.combobox_reduce_digits_activated)
+            self.enableMsgFilterCheckBox.toggled.connect(
+                self.on_enable_msg_filter_checkbox_toggled)
+            self.msgFilterCheckBox.toggled.connect(
+                self.on_msg_filter_checkbox_toggled)
+            self.maxLenComboBox.activated[str].connect(
+                self.on_combobox_chars_activated)
+            self.maxHzComboBox.activated[str].connect(
+                self.on_combobox_hz_activated)
+            self.displayCountComboBox.activated[str].connect(
+                self.on_combobox_count_activated)
             self.combobox_reduce_ch_activated(self.MESSAGE_LINE_LIMIT)
             self.on_combobox_chars_activated(self.MESSAGE_CHARS_LIMIT)
             self.on_combobox_hz_activated(self.MESSAGE_HZ_LIMIT)
@@ -192,7 +206,8 @@ class EchoDialog(QDialog):
                 errmsg = "Cannot load message class for [%s]. Did you build messages?" % msg_type
         except Exception as e:
             self.__msg_class = None
-            errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s" % (msg_type, utf8(e))
+            errmsg = "Cannot load message class for [%s]. Did you build messagest?\nError: %s" % (
+                msg_type, utf8(e))
         # variables for Subscriber
         self.msg_signal.connect(self._append_message)
         self.sub = None
@@ -212,11 +227,14 @@ class EchoDialog(QDialog):
             self.__msg_class = None
             self._on_display_anchorClicked(QUrl(self._masteruri))
         elif self.__msg_class is None:
-            errtxt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">\n%s</pre>' % (errmsg)
-            self.display.setText('<a href="%s">open using SSH</a>' % (masteruri))
+            errtxt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">\n%s</pre>' % (
+                errmsg)
+            self.display.setText(
+                '<a href="%s">open using SSH</a>' % (masteruri))
             self.display.append(errtxt)
         else:
-            self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
+            self.sub = rospy.Subscriber(
+                self.topic, self.__msg_class, self._msg_handle)
 
         self.print_hz_timer = QTimer()
         self.print_hz_timer.timeout.connect(self._on_calc_hz)
@@ -268,11 +286,13 @@ class EchoDialog(QDialog):
 
     def on_no_str_checkbox_toggled(self, state):
         self.maxLenStringComboBox.setEnabled(state)
-        self.field_filter_fn = self.create_field_filter(not state, not self.showArraysCheckBox.isChecked())
+        self.field_filter_fn = self.create_field_filter(
+            not state, not self.showArraysCheckBox.isChecked())
 
     def on_no_arr_checkbox_toggled(self, state):
         self.maxDigitsComboBox.setEnabled(state)
-        self.field_filter_fn = self.create_field_filter(not self.showStringsCheckBox.isChecked(), not state)
+        self.field_filter_fn = self.create_field_filter(
+            not self.showStringsCheckBox.isChecked(), not state)
 
     def combobox_reduce_ch_activated(self, ch_txt):
         try:
@@ -306,8 +326,10 @@ class EchoDialog(QDialog):
         self.maxLenComboBox.setEnabled(state)
         self.maxHzComboBox.setEnabled(state)
         if self.enabled_message_filter:
-            self.on_combobox_chars_activated(self.maxLenComboBox.currentText(), False)
-            self.on_combobox_hz_activated(self.maxHzComboBox.currentText(), False)
+            self.on_combobox_chars_activated(
+                self.maxLenComboBox.currentText(), False)
+            self.on_combobox_hz_activated(
+                self.maxHzComboBox.currentText(), False)
         else:
             self.chars_limit = 0
             self.receiving_hz = 0
@@ -335,7 +357,8 @@ class EchoDialog(QDialog):
             self.display.clear()
             with self.lock:
                 for msg, current_time in self._msgs:
-                    self._append_message(msg, self._latched, current_time, False)
+                    self._append_message(
+                        msg, self._latched, current_time, False)
 
     def on_combobox_hz_activated(self, hz_txt, update_display=True):
         if not self.enabled_message_filter:
@@ -351,7 +374,8 @@ class EchoDialog(QDialog):
             self.display.clear()
             with self.lock:
                 for msg, current_time in self._msgs:
-                    self._append_message(msg, self._latched, current_time, False)
+                    self._append_message(
+                        msg, self._latched, current_time, False)
 
     def on_combobox_count_activated(self, count_txt):
         try:
@@ -373,11 +397,13 @@ class EchoDialog(QDialog):
         try:
             if self.sub is None and self.ssh_output_file is None:
                 if self.__msg_class:
-                    self.sub = rospy.Subscriber(self.topic, self.__msg_class, self._msg_handle)
+                    self.sub = rospy.Subscriber(
+                        self.topic, self.__msg_class, self._msg_handle)
                     self._start_time = time.time()
                 else:
                     self._on_display_anchorClicked(QUrl(self._masteruri))
-                self.topicControlButton.setIcon(nm.settings().icon('sekkyumu_stop.png'))
+                self.topicControlButton.setIcon(
+                    nm.settings().icon('sekkyumu_stop.png'))
             else:
                 if self.sub is not None:
                     self.sub.unregister()
@@ -386,12 +412,15 @@ class EchoDialog(QDialog):
                     self.ssh_output_file.close()
                     self.ssh_error_file.close()
                     self.ssh_output_file = None
-                self.topicControlButton.setIcon(nm.settings().icon('sekkyumu_play.png'))
+                self.topicControlButton.setIcon(
+                    nm.settings().icon('sekkyumu_play.png'))
         except Exception as e:
-            rospy.logwarn('Error while stop/play echo for topic %s: %s' % (self.topic, utf8(e)))
+            rospy.logwarn('Error while stop/play echo for topic %s: %s' %
+                          (self.topic, utf8(e)))
 
     def _msg_handle(self, data):
-        self.msg_signal.emit(data, (data._connection_header['latching'] != '0'))
+        self.msg_signal.emit(
+            data, (data._connection_header['latching'] != '0'))
 
     def _append_message(self, msg, latched, current_time=None, store=True):
         '''
@@ -433,7 +462,8 @@ class EchoDialog(QDialog):
             self._last_received_ts = current_time
         if not self.show_only_rate:
             # convert message to string and reduce line width to current limit
-            msg = self.strify_message(msg, field_filter=self.field_filter_fn, fixed_numeric_width=self.digits_after_in_array)
+            msg = self.strify_message(
+                msg, field_filter=self.field_filter_fn, fixed_numeric_width=self.digits_after_in_array)
             if isinstance(msg, tuple):
                 msg = msg[0]
             msg = self._trim_width(msg)
@@ -447,7 +477,8 @@ class EchoDialog(QDialog):
                 txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>' % self._scrapped_msgs_sl
                 self.display.append(txt)
                 self._scrapped_msgs_sl = 0
-            txt = '<pre style="background-color:#FFFCCC; color:#000000;font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
+            txt = '<pre style="background-color:#FFFCCC; color:#000000;font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (
+                datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), msg)
             # set the count of the displayed messages on receiving the first message
             self._update_max_msg_count(txt)
             self.display.append(txt)
@@ -492,7 +523,9 @@ class EchoDialog(QDialog):
         if self.line_limit != 0:
             a = ''
             for l in msg.splitlines():
-                a = a + (l if len(l) <= self.line_limit else l[0:self.line_limit - 3] + '...') + '\n'
+                a = a + \
+                    (l if len(l) <=
+                     self.line_limit else l[0:self.line_limit - 3] + '...') + '\n'
             result = a
         return result
 
@@ -505,7 +538,8 @@ class EchoDialog(QDialog):
         if self._blocks_in_msg is None:
             td = QTextDocument(txt)
             self._blocks_in_msg = td.blockCount()
-            self.display.document().setMaximumBlockCount(self._blocks_in_msg * self.max_displayed_msgs)
+            self.display.document().setMaximumBlockCount(
+                self._blocks_in_msg * self.max_displayed_msgs)
 
     def _on_calc_hz(self):
         if rospy.is_shutdown():
@@ -534,11 +568,14 @@ class EchoDialog(QDialog):
                 avg = sum_bytes / len(self.bytes)
                 last = self.bytes[-1]
                 if avg != last:
-                    message_bytes = "size[ last: %s, avg: %s ]" % (self._normilize_size_print(last), self._normilize_size_print(avg))
+                    message_bytes = "size[ last: %s, avg: %s ]" % (
+                        self._normilize_size_print(last), self._normilize_size_print(avg))
                 else:
-                    message_bytes = "size: %s" % (self._normilize_size_print(last))
+                    message_bytes = "size: %s" % (
+                        self._normilize_size_print(last))
                 byte_rate = float(sum_bytes) / float(sum_times)
-                message_bytes += " bw: %s/s" % (self._normilize_size_print(byte_rate))
+                message_bytes += " bw: %s/s" % (
+                    self._normilize_size_print(byte_rate))
             # the code from ROS rostopic
             n = len(self.times)
             if n < 2:
@@ -550,11 +587,13 @@ class EchoDialog(QDialog):
             if self.SHOW_JITTER or self.show_only_rate:
                 max_delta = max(self.times)
                 min_delta = min(self.times)
-                message_jitter = "jitter[ min: %.3fs   max: %.3fs ]" % (min_delta, max_delta)
+                message_jitter = "jitter[ min: %.3fs   max: %.3fs ]" % (
+                    min_delta, max_delta)
             # std dev
             self.last_printed_count = self.message_count
             if self.SHOW_STD_DEV or self.show_only_rate:
-                std_dev = math.sqrt(sum((x - mean) ** 2 for x in self.times) / n)
+                std_dev = math.sqrt(
+                    sum((x - mean) ** 2 for x in self.times) / n)
                 message_std_dev = "std dev: %.5fs" % (std_dev)
             if self.SHOW_WINDOW_SIZE or self.show_only_rate:
                 message_window = "window: %s" % (n + 1)
@@ -569,7 +608,8 @@ class EchoDialog(QDialog):
                     self._state_message += msg
             self._print_status()
             if self.show_only_rate:
-                self.display.append("%s    %s" % (self._state_message, message_bytes))
+                self.display.append("%s    %s" %
+                                    (self._state_message, message_bytes))
 
     def _normilize_size_print(self, size):
         if size > 999999:
@@ -598,7 +638,8 @@ class EchoDialog(QDialog):
                     self._count_messages(current_time)
                     # limit the displayed text width
                     m = self._trim_width(m)
-                    txt = '<pre style="background-color:#FFFCCC; color:#000000;font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), m)
+                    txt = '<pre style="background-color:#FFFCCC; color:#000000;font-family:Fixedsys,Courier; padding:10px;">---------- %s --------------------\n%s</pre>' % (
+                        datetime.now().strftime("%d.%m.%Y %H:%M:%S.%f"), m)
                     # set the count of the displayed messages on receiving the first message
                     self._update_max_msg_count(txt)
                     self.display.append(txt)
@@ -627,7 +668,8 @@ class EchoDialog(QDialog):
             if self._current_msg.find('\n') != -1:
                 messages = self._current_msg.split('\n')
                 for m in messages[:-1]:
-                    txt = '<div style="font-family:Fixedsys,Courier;">%s</div>' % (m)
+                    txt = '<div style="font-family:Fixedsys,Courier;">%s</div>' % (
+                        m)
                     self.display.append(txt)
                 self._current_msg = messages[-1]
 
@@ -635,19 +677,24 @@ class EchoDialog(QDialog):
         try:
             ok = False
             if self.show_only_rate:
-                self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic hz %s' % (self.topic)], user, pw, auto_pw_request=True, get_pty=True)
-                self.statusLabel.setText('connected to %s over SSH' % url.host())
+                self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(
+                    url.host(), ['rostopic hz %s' % (self.topic)], user, pw, auto_pw_request=True, get_pty=True)
+                self.statusLabel.setText(
+                    'connected to %s over SSH' % url.host())
             else:
                 nostr = '--nostr' if not self.showStringsCheckBox.isChecked() else ''
                 noarr = '--noarr' if not self.showArraysCheckBox.isChecked() else ''
-                self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(), ['rostopic echo %s %s %s' % (nostr, noarr, self.topic)], user, pw, auto_pw_request=True, get_pty=True)
+                self.ssh_input_file, self.ssh_output_file, self.ssh_error_file, ok = nm.ssh().ssh_exec(url.host(
+                ), ['rostopic echo %s %s %s' % (nostr, noarr, self.topic)], user, pw, auto_pw_request=True, get_pty=True)
             if ok:
                 self.display.clear()
                 target = self._read_output_hz if self.show_only_rate else self._read_output
-                thread = threading.Thread(target=target, args=((self.ssh_output_file,)))
+                thread = threading.Thread(
+                    target=target, args=((self.ssh_output_file,)))
                 thread.setDaemon(True)
                 thread.start()
-                thread = threading.Thread(target=self._read_error, args=((self.ssh_error_file,)))
+                thread = threading.Thread(
+                    target=self._read_error, args=((self.ssh_error_file,)))
                 thread.setDaemon(True)
                 thread.start()
             elif self.ssh_output_file:
@@ -734,7 +781,8 @@ class EchoDialog(QDialog):
                 return "[]"
             val0 = val[0]
             if type(val0) in (int, float) and digits_after_in_array is not None:
-                list_str = '[' + ''.join(cls.strify_message(v, indent, time_offset, current_time, field_filter, digits_after_in_array) + ', ' for v in val).rstrip(', ') + ']'
+                list_str = '[' + ''.join(cls.strify_message(v, indent, time_offset, current_time,
+                                                            field_filter, digits_after_in_array) + ', ' for v in val).rstrip(', ') + ']'
                 return list_str
             elif type(val0) in (int, float, str, bool):
                 # TODO: escape strings properly
@@ -764,7 +812,8 @@ class EchoDialog(QDialog):
                     slot_name = f
                     if isinstance(cval, (list, tuple)):
                         slot_name = "%s[%d]" % (f, len(cval))
-                    slots.append(p % (utf8(slot_name), cls.strify_message(cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
+                    slots.append(p % (utf8(slot_name), cls.strify_message(
+                        cval, ni, time_offset, current_time, field_filter, fixed_numeric_width)))
             vals = '\n'.join(slots)
             if indent:
                 return '\n' + vals

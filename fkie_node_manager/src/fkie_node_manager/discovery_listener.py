@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Signal
 import socket
 import threading
@@ -46,11 +45,13 @@ from fkie_node_manager_daemon.common import utf8
 
 try:
     import std_srvs.srv
-    from fkie_multimaster_msgs.msg import LinkStatesStamped, MasterState, ROSMaster  # , LinkState, SyncMasterInfo, SyncTopicInfo
+    # , LinkState, SyncMasterInfo, SyncTopicInfo
+    from fkie_multimaster_msgs.msg import LinkStatesStamped, MasterState, ROSMaster
     from fkie_multimaster_msgs.srv import DiscoverMasters  # , GetSyncInfo
 except ImportError as e:
     import sys
-    sys.stderr.write("Can't import messages and services of fkie_multimaster_msgs. Is fkie_multimaster_msgs package compiled?")
+    sys.stderr.write(
+        "Can't import messages and services of fkie_multimaster_msgs. Is fkie_multimaster_msgs package compiled?")
     raise ImportError(utf8(e))
 
 
@@ -169,30 +170,38 @@ class MasterListThread(QObject, threading.Thread):
         '''
         if self._masteruri:
             found = False
-            service_names = interface_finder.get_listmaster_service(self._masteruri, self._wait, check_host=self._check_host)
+            service_names = interface_finder.get_listmaster_service(
+                self._masteruri, self._wait, check_host=self._check_host)
             err_msg = ''
             for service_name in service_names:
-                rospy.logdebug("service 'list_masters' found on %s as %s", self._masteruri, service_name)
+                rospy.logdebug(
+                    "service 'list_masters' found on %s as %s", self._masteruri, service_name)
                 if self._wait:
                     rospy.wait_for_service(service_name)
                 socket.setdefaulttimeout(3)
-                discoverMasters = rospy.ServiceProxy(service_name, DiscoverMasters)
+                discoverMasters = rospy.ServiceProxy(
+                    service_name, DiscoverMasters)
                 try:
                     resp = discoverMasters()
                 except rospy.ServiceException as e:
-                    err_msg = "Service call 'list_masters' failed: %s" % utf8(e)
+                    err_msg = "Service call 'list_masters' failed: %s" % utf8(
+                        e)
                     rospy.logwarn(err_msg)
-                    self.err_signal.emit(self._masteruri, "Service call '%s' failed: %s" % (service_name, err_msg), False)
+                    self.err_signal.emit(self._masteruri, "Service call '%s' failed: %s" % (
+                        service_name, err_msg), False)
                 else:
                     if resp.masters:
-                        self.master_list_signal.emit(self._masteruri, service_name, resp.masters)
+                        self.master_list_signal.emit(
+                            self._masteruri, service_name, resp.masters)
                         found = True
                     else:
-                        self.err_signal.emit(self._masteruri, "local 'master_discovery' reports empty master list, it seems he has a problem", False)
+                        self.err_signal.emit(
+                            self._masteruri, "local 'master_discovery' reports empty master list, it seems he has a problem", False)
                 finally:
                     socket.setdefaulttimeout(None)
             if not found:
-                self.err_signal.emit(self._masteruri, "no service 'list_masters' found on %s" % self._masteruri, False)
+                self.err_signal.emit(
+                    self._masteruri, "no service 'list_masters' found on %s" % self._masteruri, False)
 
 
 class MasterRefreshThread(QObject, threading.Thread):
@@ -214,20 +223,25 @@ class MasterRefreshThread(QObject, threading.Thread):
         '''
         '''
         if self._masteruri:
-            service_names = interface_finder.get_refresh_service(self._masteruri, self._wait, check_host=self._check_host)
+            service_names = interface_finder.get_refresh_service(
+                self._masteruri, self._wait, check_host=self._check_host)
             err_msg = ''
             for service_name in service_names:
-                rospy.logdebug("service 'refresh' found on %s as %s", self._masteruri, service_name)
+                rospy.logdebug("service 'refresh' found on %s as %s",
+                               self._masteruri, service_name)
                 if self._wait:
                     rospy.wait_for_service(service_name)
                 socket.setdefaulttimeout(3)
-                refreshMasters = rospy.ServiceProxy(service_name, std_srvs.srv.Empty)
+                refreshMasters = rospy.ServiceProxy(
+                    service_name, std_srvs.srv.Empty)
                 try:
                     _ = refreshMasters()
                     self.ok_signal.emit(self._masteruri)
                 except rospy.ServiceException as e:
-                    rospy.logwarn("ERROR Service call 'refresh' failed: %s", utf8(e))
-                    self.err_signal.emit(self._masteruri, "ERROR Service call 'refresh' failed: %s" % utf8(err_msg), True)
+                    rospy.logwarn(
+                        "ERROR Service call 'refresh' failed: %s", utf8(e))
+                    self.err_signal.emit(
+                        self._masteruri, "ERROR Service call 'refresh' failed: %s" % utf8(err_msg), True)
                 finally:
                     socket.setdefaulttimeout(None)
 
@@ -262,7 +276,8 @@ class MasterStateTopic(QObject):
             self.sub_changes = []
             for topic_name in topic_names:
                 rospy.loginfo("listen for updates on %s", topic_name)
-                sub_changes = rospy.Subscriber(topic_name, MasterState, self.handlerMasterStateMsg)
+                sub_changes = rospy.Subscriber(
+                    topic_name, MasterState, self.handlerMasterStateMsg)
                 self.sub_changes.append(sub_changes)
                 result = topic_name
             self.sub_names = topic_names
@@ -277,7 +292,8 @@ class MasterStateTopic(QObject):
                 try:
                     s.unregister()
                 except Exception as e:
-                    rospy.logwarn("Error while unregister master state topic %s" % e)
+                    rospy.logwarn(
+                        "Error while unregister master state topic %s" % e)
             del self.sub_changes
 
     def handlerMasterStateMsg(self, msg):
@@ -315,7 +331,8 @@ class MasterStatisticTopic(QObject):
         topic_names = interface_finder.get_stats_topic(masteruri, wait)
         for topic_name in topic_names:
             rospy.loginfo("listen for connection statistics on %s", topic_name)
-            sub_stats = rospy.Subscriber(topic_name, LinkStatesStamped, self.handlerMasterStatsMsg)
+            sub_stats = rospy.Subscriber(
+                topic_name, LinkStatesStamped, self.handlerMasterStatsMsg)
             self.sub_stats.append(sub_stats)
             result = topic_name
         return result
@@ -369,7 +386,8 @@ class OwnMasterMonitoring(QObject):
         self._do_finish = False
         self._masteruri = self._master_monitor.getMasteruri()
         self._local_addr = self._master_monitor.getMastername()
-        self._masterMonitorThread = threading.Thread(target=self.mastermonitor_loop)
+        self._masterMonitorThread = threading.Thread(
+            target=self.mastermonitor_loop)
         self._masterMonitorThread.setDaemon(True)
         self._masterMonitorThread.start()
         self._last_error = (time.time(), None)
@@ -406,8 +424,10 @@ class OwnMasterMonitoring(QObject):
                         state = MasterState(MasterState.STATE_CHANGED,
                                             ROSMaster(utf8(self._local_addr),
                                                       utf8(self._masteruri),
-                                                      rospy.Time(mon_state.timestamp),
-                                                      rospy.Time(mon_state.timestamp_local),
+                                                      rospy.Time(
+                                                          mon_state.timestamp),
+                                                      rospy.Time(
+                                                          mon_state.timestamp_local),
                                                       True,
                                                       rospy.get_name(),
                                                       ''.join(['http://localhost:', utf8(self._master_monitor.rpcport)])))
@@ -422,10 +442,12 @@ class OwnMasterMonitoring(QObject):
                     if not self._master_monitor.crossbar_connected:
                         self.crossbar_signal.emit(False)
             except MasterConnectionException as mce:
-                self._handle_exception("MasterConnectionException while master check loop", mce)
+                self._handle_exception(
+                    "MasterConnectionException while master check loop", mce)
             except RuntimeError as ree:
                 # will thrown on exit of the app while try to emit the signal
-                self._handle_exception("RuntimeError while master check loop", ree)
+                self._handle_exception(
+                    "RuntimeError while master check loop", ree)
             if not rospy.is_shutdown() and not self._do_finish:
                 time.sleep(1.0 / current_check_hz)
 

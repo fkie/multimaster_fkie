@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import shlex
 import subprocess
 import sys
@@ -96,17 +95,22 @@ class ScreenHandler(object):
         '''
         # create a title of the terminal
         if use_log_widget:
-            nm._MAIN_FORM.open_screen_dock(masteruri, screen_name, nodename, user)
+            nm._MAIN_FORM.open_screen_dock(
+                masteruri, screen_name, nodename, user)
             return
         host = get_hostname(masteruri)
         title_opt = 'SCREEN %s on %s' % (nodename, host)
         if nm.is_local(host):
-            cmd = nm.settings().terminal_cmd([screen.SCREEN, '-x', screen_name], title_opt)
+            cmd = nm.settings().terminal_cmd(
+                [screen.SCREEN, '-x', screen_name], title_opt)
             rospy.loginfo("Open screen terminal: %s", cmd)
-            SupervisedPopen(shlex.split(cmd), object_id=title_opt, description="Open screen terminal: %s" % title_opt)
+            SupervisedPopen(shlex.split(cmd), object_id=title_opt,
+                            description="Open screen terminal: %s" % title_opt)
         else:
-            rospy.loginfo("Open remote screen terminal for %s to %s" % (nodename, host))
-            _ps = nm.ssh().ssh_x11_exec(host, [screen.SCREEN, '-x', screen_name], title_opt, user)
+            rospy.loginfo("Open remote screen terminal for %s to %s" %
+                          (nodename, host))
+            _ps = nm.ssh().ssh_x11_exec(
+                host, [screen.SCREEN, '-x', screen_name], title_opt, user)
 
     @classmethod
     def open_screen(cls, node, grpc_url, auto_item_request=False, use_log_widget=False, user=None, pw=None, items=[], use_nmd=True):
@@ -129,7 +133,8 @@ class ScreenHandler(object):
             if items:
                 for item in items:
                     # open the selected screen
-                    cls.open_screen_terminal(muri, item, node, use_log_widget, user)
+                    cls.open_screen_terminal(
+                        muri, item, node, use_log_widget, user)
             else:
                 # get the available screens
                 screens = {}
@@ -137,12 +142,16 @@ class ScreenHandler(object):
                     if use_nmd:
                         screens = nm.nmd().screen.get_screens(grpc_url, node)
                     else:
-                        screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
+                        screens = cls._bc_get_active_screens(
+                            host, node, False, user=user, pwd=pw)
                 except grpc.RpcError as e:
-                    rospy.logwarn("can not connect to node manager daemon, detect screens using ssh...")
-                    screens = cls._bc_get_active_screens(host, node, False, user=user, pwd=pw)
+                    rospy.logwarn(
+                        "can not connect to node manager daemon, detect screens using ssh...")
+                    screens = cls._bc_get_active_screens(
+                        host, node, False, user=user, pwd=pw)
                 if len(screens) == 1:
-                    cls.open_screen_terminal(muri, list(screens.keys())[0], node, use_log_widget,user)
+                    cls.open_screen_terminal(muri, list(screens.keys())[
+                                             0], node, use_log_widget, user)
                 else:
                     # create a list to let the user make a choice, which screen must be open
                     choices = {}
@@ -152,19 +161,25 @@ class ScreenHandler(object):
                     # Open selection
                     if len(choices) > 0:
                         if len(choices) == 1:
-                            cls.open_screen_terminal(muri, choices[0], node, use_log_widget=False, user=user)
+                            cls.open_screen_terminal(
+                                muri, choices[0], node, use_log_widget=False, user=user)
                         elif auto_item_request:
                             from select_dialog import SelectDialog
-                            items, _ = SelectDialog.getValue('Show screen', '', list(choices.keys()), False, store_geometry='show_screens')
+                            items, _ = SelectDialog.getValue('Show screen', '', list(
+                                choices.keys()), False, store_geometry='show_screens')
                             for item in items:
                                 # open the selected screen
-                                cls.open_screen_terminal(muri, choices[item], node, use_log_widget=False, user=user)
+                                cls.open_screen_terminal(
+                                    muri, choices[item], node, use_log_widget=False, user=user)
                         else:
-                            raise ScreenSelectionRequest(choices, 'Show screen')
+                            raise ScreenSelectionRequest(
+                                choices, 'Show screen')
                     else:
                         if use_log_widget:
-                            nm._MAIN_FORM.open_screen_dock(muri, '', node, user)
-                        raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter().openLog, {'nodename' : node, 'host': host, 'user': user })
+                            nm._MAIN_FORM.open_screen_dock(
+                                muri, '', node, user)
+                        raise nm.InteractionNeededError(NoScreenOpenLogRequest(node, host), nm.starter(
+                        ).openLog, {'nodename': node, 'host': host, 'user': user})
                 return len(screens) > 0
         except nm.AuthenticationRequest as e:
             raise nm.InteractionNeededError(e, cls.open_screen,
@@ -176,7 +191,7 @@ class ScreenHandler(object):
                                              'pw': pw,
                                              'items': items,
                                              'use_nmd': use_nmd
-                                            })
+                                             })
         except ScreenSelectionRequest as e:
             # set use_log_widget to False on multiple screens for same node
             raise nm.InteractionNeededError(e, cls.open_screen,
@@ -188,7 +203,7 @@ class ScreenHandler(object):
                                              'pw': pw,
                                              'items': items,
                                              'use_nmd': use_nmd
-                                            })
+                                             })
 
     @classmethod
     def kill_screens(cls, node, grpc_url, auto_ok_request=True, user=None, pw=None):
@@ -206,7 +221,8 @@ class ScreenHandler(object):
                 do_kill = True
                 if auto_ok_request:
                     from fkie_node_manager.detailed_msg_box import MessageBox
-                    result = MessageBox.question(None, "Kill SCREENs?", '\n'.join(list(screens.keys())), buttons=MessageBox.Ok | MessageBox.Cancel)
+                    result = MessageBox.question(None, "Kill SCREENs?", '\n'.join(
+                        list(screens.keys())), buttons=MessageBox.Ok | MessageBox.Cancel)
                     if result == MessageBox.Ok:
                         do_kill = True
                 if do_kill:
@@ -219,14 +235,16 @@ class ScreenHandler(object):
                                 # nm.starter()._kill_wo(host, int(pid), auto_ok_request, user, pw)
                             except Exception:
                                 import traceback
-                                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", utf8(pid), utf8(host), traceback.format_exc(1))
+                                rospy.logwarn("Error while kill screen (PID: %s) on host '%s': %s", utf8(
+                                    pid), utf8(host), traceback.format_exc(1))
                     nm.nmd().screen.wipe_screens(grpc_url)
                     # if nm.is_local(host):
                     #     SupervisedPopen([screen.SCREEN, '-wipe'], object_id='screen -wipe', description="screen: clean up the socket with -wipe")
                     # else:
                     #     nm.ssh().ssh_exec(host, [screen.SCREEN, '-wipe'], close_stdin=True, close_stdout=True, close_stderr=True)
         except nm.AuthenticationRequest as e:
-            raise nm.InteractionNeededError(e, cls.kill_screens,  {'node': node, 'grpc_url': grpc_url, 'auto_ok_request': auto_ok_request, 'user': user, 'pw': pw})
+            raise nm.InteractionNeededError(e, cls.kill_screens,  {
+                                            'node': node, 'grpc_url': grpc_url, 'auto_ok_request': auto_ok_request, 'user': user, 'pw': pw})
 
 # #############################################################################
 #         for backward compatibility
@@ -248,11 +266,13 @@ class ScreenHandler(object):
         output = None
         result = {}
         if nm.is_local(host):
-            ps = SupervisedPopen(shlex.split('%s -ls' % screen.SCREEN), stdout=subprocess.PIPE)
+            ps = SupervisedPopen(shlex.split('%s -ls' %
+                                             screen.SCREEN), stdout=subprocess.PIPE)
             output = ps.stdout.read()
             ps.stdout.close()
         else:
-            _, stdout, _, _ = nm.ssh().ssh_exec(host, [screen.SCREEN, ' -ls'], user, pwd, auto_pw_request, close_stdin=True, close_stderr=True)
+            _, stdout, _, _ = nm.ssh().ssh_exec(host, [
+                screen.SCREEN, ' -ls'], user, pwd, auto_pw_request, close_stdin=True, close_stderr=True)
             output = stdout.read()
             stdout.close()
         if output:

@@ -135,7 +135,8 @@ def _get_topic(masteruri, ttype, wait=True, check_host=True):
                             if check_host:
                                 # get the URI of the publisher node
                                 for n in l:
-                                    code, msg, val = master.lookupNode(rospy.get_name(), n)
+                                    code, msg, val = master.lookupNode(
+                                        rospy.get_name(), n)
                                     # only local publisher will be tacked
                                     if code == 1:
                                         hode_host = get_hostname(val)
@@ -146,10 +147,12 @@ def _get_topic(masteruri, ttype, wait=True, check_host=True):
                             else:
                                 result.append(topic)
             if not result and wait:
-                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for topic with type '%s' @%s." % (own_host, nodes_host, ttype, own_host))
+                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for topic with type '%s' @%s." % (
+                    own_host, nodes_host, ttype, own_host))
                 time.sleep(1)
         elif not result and wait:
-            rospy.logwarn("Can't get published topics from ROS master: %s, %s. Will keep trying!" % (code, msg))
+            rospy.logwarn(
+                "Can't get published topics from ROS master: %s, %s. Will keep trying!" % (code, msg))
             time.sleep(1)
         if not wait:
             return result
@@ -245,7 +248,8 @@ def _get_service(masteruri, name, wait=True, check_host=True):
                 if srv.endswith(name):
                     # only local service will be tacked
                     if check_host:
-                        code, msg, val = master.lookupService(rospy.get_name(), srv)
+                        code, msg, val = master.lookupService(
+                            rospy.get_name(), srv)
                         if code == 1:
                             hode_host = get_hostname(val)
                             if hode_host == own_host:
@@ -255,10 +259,12 @@ def _get_service(masteruri, name, wait=True, check_host=True):
                     else:
                         result.append(srv)
             if not result and wait:
-                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for service '%s' @%s." % (own_host, nodes_host, name, own_host))
+                rospy.logwarn("master_discovery node appear not to running @%s, only found on %s. Wait for service '%s' @%s." % (
+                    own_host, nodes_host, name, own_host))
                 time.sleep(1)
         elif not result and wait:
-            rospy.logwarn("can't get state from ROS master: %s, %s" % (code, msg))
+            rospy.logwarn(
+                "can't get state from ROS master: %s, %s" % (code, msg))
             time.sleep(1)
         if not wait:
             return result

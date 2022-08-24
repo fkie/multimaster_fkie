@@ -21,12 +21,11 @@
 from rclpy.time import Time, CONVERSION_CONSTANT
 
 
-def rostime2float(rcltime:Time):
+def rostime2float(rcltime: Time):
     return float('.'.join(str(ele) for ele in rcltime.seconds_nanoseconds()))
 
 
-def float2rostime(value:float):
+def float2rostime(value: float):
     seconds = int(value)
     nanoseconds = (value - seconds) * CONVERSION_CONSTANT
     return Time(seconds=seconds, nanoseconds=nanoseconds)
-    

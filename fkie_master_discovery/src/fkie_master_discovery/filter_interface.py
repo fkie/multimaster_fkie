@@ -69,9 +69,11 @@ class FilterInterface(object):
         '''
         Reads the parameter and creates the pattern using :mod:`fkie_master_discovery.common.create_pattern()`
         '''
-        self.__interface_file = interface_file = resolve_url(get_ros_param('~interface_url', ''))
+        self.__interface_file = interface_file = resolve_url(
+            get_ros_param('~interface_url', ''))
         self.__mastername = mastername
-        self.__data = data = read_interface(interface_file) if interface_file else {}
+        self.__data = data = read_interface(
+            interface_file) if interface_file else {}
         # set the pattern for ignore and sync lists
         self._re_ignore_nodes = create_pattern('ignore_nodes', data, interface_file,
                                                ignore_nodes, mastername)
@@ -96,7 +98,8 @@ class FilterInterface(object):
             if 'sync_remote_nodes' in data:
                 self._sync_remote_nodes = data['sync_remote_nodes']
         else:
-            self._sync_remote_nodes = get_ros_param('~sync_remote_nodes', self._sync_remote_nodes)
+            self._sync_remote_nodes = get_ros_param(
+                '~sync_remote_nodes', self._sync_remote_nodes)
         if do_not_sync:
             self._re_do_not_sync = gen_pattern(do_not_sync, 'do_not_sync')
         else:
@@ -117,10 +120,12 @@ class FilterInterface(object):
             string_types = (str,)
         if isinstance(_do_not_sync, string_types):
             # create a list from string
-            _do_not_sync = _do_not_sync.strip('[').rstrip(']').replace(' ', ',').split(',')
+            _do_not_sync = _do_not_sync.strip(
+                '[').rstrip(']').replace(' ', ',').split(',')
             # remove empty values
             _do_not_sync = [val for val in _do_not_sync if val]
-        self._re_do_not_sync = gen_pattern(_do_not_sync, 'do_not_sync', print_info=False)
+        self._re_do_not_sync = gen_pattern(
+            _do_not_sync, 'do_not_sync', print_info=False)
 
     def update_sync_topics_pattern(self, topics=[]):
         '''
@@ -130,7 +135,8 @@ class FilterInterface(object):
 
         :type topics: list of strings
         '''
-        self._re_sync_topics = create_pattern('sync_topics', self.__data, self.__interface_file, topics, self.__mastername)
+        self._re_sync_topics = create_pattern(
+            'sync_topics', self.__data, self.__interface_file, topics, self.__mastername)
 
     def sync_remote_nodes(self):
         '''
@@ -384,9 +390,12 @@ class FilterInterface(object):
             result._re_ignore_services = _from_str(l[5])
             result._re_sync_services = _from_str(l[6])
             result._re_ignore_type = _from_str(l[7])
-            result._re_ignore_publishers = _from_str(l[8] if len(l) > 8 else '')
-            result._re_ignore_subscribers = _from_str(l[9] if len(l) > 9 else '')
-            result._re_do_not_sync_from_list = _from_str(l[10] if len(l) > 10 else '')
+            result._re_ignore_publishers = _from_str(
+                l[8] if len(l) > 8 else '')
+            result._re_ignore_subscribers = _from_str(
+                l[9] if len(l) > 9 else '')
+            result._re_do_not_sync_from_list = _from_str(
+                l[10] if len(l) > 10 else '')
             result.is_valid = True
             return result
         except:

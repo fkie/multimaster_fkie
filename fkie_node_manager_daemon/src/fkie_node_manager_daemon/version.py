@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import roslib
 import subprocess
@@ -65,19 +64,21 @@ def detect_version(package):
                 with open("%s/DATE" % pkg_path) as f:
                     datetag = f.read().split()
                     if datetag:
-                        date = datetag[0]#.decode('utf-8')
+                        date = datetag[0]  # .decode('utf-8')
             except Exception as err:
                 sys.stderr.write("version detection error: %s\n" % utf8(err))
         elif os.path.isdir("%s/../.git" % pkg_path):
             try:
                 os.chdir(pkg_path)
-                ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always', '--abbrev=8'], stdout=subprocess.PIPE, object_id='get git version')
-                output = ps.stdout.read()#.decode('utf-8')
+                ps = SupervisedPopen(['git', 'describe', '--tags', '--dirty', '--always',
+                                      '--abbrev=8'], stdout=subprocess.PIPE, object_id='get git version')
+                output = ps.stdout.read()  # .decode('utf-8')
                 version = output.strip()
-                ps = SupervisedPopen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE, object_id='get git date')
+                ps = SupervisedPopen(['git', 'show', '-s', '--format=%ci'],
+                                     stdout=subprocess.PIPE, object_id='get git date')
                 output = ps.stdout.read().split()
                 if output:
-                    date = output[0]#.decode('utf-8')
+                    date = output[0]  # .decode('utf-8')
             except Exception as err:
                 sys.stderr.write("version detection error: %s\n" % utf8(err))
         else:
@@ -89,7 +90,8 @@ def detect_version(package):
                     version = version_tags[0].firstChild.data
                     version = version
                 else:
-                    sys.stderr.write("version detection: no version tag in package.xml found!")
+                    sys.stderr.write(
+                        "version detection: no version tag in package.xml found!")
             else:
                 sys.stderr.write("version detection: package.xml not found!")
     except Exception as err:

@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from . import exceptions
@@ -64,19 +63,26 @@ class LaunchStub(object):
         arguments = args
         if arguments is None:
             arguments = {}
-        request = lmsg.LoadLaunchRequest(package=package, launch=launch, path=path, request_args=request_args, masteruri=masteruri, host=host)
-        request.args.extend([lmsg.Argument(name=name, value=value) for name, value in arguments.items()])
-        response = self.lm_stub.LoadLaunch(request, timeout=settings.GRPC_TIMEOUT)
+        request = lmsg.LoadLaunchRequest(
+            package=package, launch=launch, path=path, request_args=request_args, masteruri=masteruri, host=host)
+        request.args.extend([lmsg.Argument(name=name, value=value)
+                             for name, value in arguments.items()])
+        response = self.lm_stub.LoadLaunch(
+            request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code == OK:
             pass
         elif response.status.code == MULTIPLE_LAUNCHES:
-            raise exceptions.LaunchSelectionRequest([_path for _path in response.path], response.status.error_msg)
+            raise exceptions.LaunchSelectionRequest(
+                [_path for _path in response.path], response.status.error_msg)
         elif response.status.code == PARAMS_REQUIRED:
-            raise exceptions.ParamSelectionRequest({arg.name: arg.value for arg in response.args}, response.status.error_msg)
+            raise exceptions.ParamSelectionRequest(
+                {arg.name: arg.value for arg in response.args}, response.status.error_msg)
         elif response.status.code == ALREADY_OPEN:
-            raise exceptions.AlreadyOpenException(response.path[0], response.status.error_msg)
+            raise exceptions.AlreadyOpenException(
+                response.path[0], response.status.error_msg)
         else:
-            raise exceptions.RemoteException(response.status.code, response.status.error_msg)
+            raise exceptions.RemoteException(
+                response.status.code, response.status.error_msg)
         return response.path[0], {arg.name: arg.value for arg in response.args}
 
     def reload_launch(self, path, masteruri=''):
@@ -85,21 +91,26 @@ class LaunchStub(object):
         :rtype: str, [str]
         '''
         request = lmsg.LaunchFile(path=path, masteruri=masteruri)
-        response = self.lm_stub.ReloadLaunch(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.lm_stub.ReloadLaunch(
+            request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code != OK:
             if response.status.code == FILE_NOT_FOUND:
-                raise exceptions.ResourceNotFound(path, response.status.error_msg)
+                raise exceptions.ResourceNotFound(
+                    path, response.status.error_msg)
             else:
-                raise exceptions.RemoteException(response.status.code, response.status.error_msg)
+                raise exceptions.RemoteException(
+                    response.status.code, response.status.error_msg)
         return response.path, response.changed_nodes
 
     def get_loaded_files(self):
         request = lmsg.Empty()
-        response = self.lm_stub.GetLoadedFiles(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.lm_stub.GetLoadedFiles(
+            request, timeout=settings.GRPC_TIMEOUT)
         result = []
         for loaded_file in response:
             args = {arg.name: arg.value for arg in loaded_file.args}
-            result.append((loaded_file.package, loaded_file.path, args, loaded_file.masteruri, loaded_file.host))
+            result.append((loaded_file.package, loaded_file.path,
+                           args, loaded_file.masteruri, loaded_file.host))
         return result
 
     def get_mtimes(self, path):
@@ -108,7 +119,8 @@ class LaunchStub(object):
         :rtype: str, double {str: double}
         '''
         request = lmsg.LaunchFile(path=path, masteruri='')
-        response = self.lm_stub.GetMtime(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.lm_stub.GetMtime(
+            request, timeout=settings.GRPC_TIMEOUT)
         return response.path, response.mtime, response.included_files
 
     def get_changed_binaries(self, nodes):
@@ -120,31 +132,39 @@ class LaunchStub(object):
         '''
         request = lmsg.Nodes()
         request.names.extend(nodes)
-        response = self.lm_stub.GetChangedBinaries(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.lm_stub.GetChangedBinaries(
+            request, timeout=settings.GRPC_TIMEOUT)
         return {node.name: node.mtime for node in response.nodes}
 
     def unload_launch(self, path, masteruri=''):
         '''
         '''
         request = lmsg.LaunchFile(path=path, masteruri=masteruri)
-        response = self.lm_stub.UnloadLaunch(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.lm_stub.UnloadLaunch(
+            request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code != OK:
             if response.status.code == FILE_NOT_FOUND:
-                raise exceptions.ResourceNotFound(path, response.status.error_msg)
+                raise exceptions.ResourceNotFound(
+                    path, response.status.error_msg)
             else:
-                raise exceptions.RemoteException(response.status.code, response.status.error_msg)
+                raise exceptions.RemoteException(
+                    response.status.code, response.status.error_msg)
         return response.path[0]
 
     def get_nodes(self, request_description=False, masteruri=''):
         result = []
-        request = lmsg.ListNodesRequest(request_description=request_description, masteruri=masteruri)
-        response_stream = self.lm_stub.GetNodes(request, timeout=settings.GRPC_TIMEOUT)
+        request = lmsg.ListNodesRequest(
+            request_description=request_description, masteruri=masteruri)
+        response_stream = self.lm_stub.GetNodes(
+            request, timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             descriptions = []
             for descr in response.description:
-                rd = RobotDescription(machine=descr.machine, robot_name=descr.robot_name, robot_type=descr.robot_type, robot_images=list(descr.robot_images), robot_descr=descr.robot_descr)
+                rd = RobotDescription(machine=descr.machine, robot_name=descr.robot_name, robot_type=descr.robot_type, robot_images=list(
+                    descr.robot_images), robot_descr=descr.robot_descr)
                 for cap in descr.capabilities:
-                    cp = Capability(name=cap.name, namespace=cap.namespace, cap_type=cap.type, images=[img for img in cap.images], description=cap.description, nodes=[n for n in cap.nodes])
+                    cp = Capability(name=cap.name, namespace=cap.namespace, cap_type=cap.type, images=[
+                                    img for img in cap.images], description=cap.description, nodes=[n for n in cap.nodes])
                     rd.capabilities.append(cp)
                 descriptions.append(rd)
             nodelets = {}
@@ -159,7 +179,8 @@ class LaunchStub(object):
             except Exception:
                 # ignore messages without associations
                 pass
-            ld = LaunchDescription(response.launch_file, response.masteruri, response.host, list(response.node), descriptions, nodelets, associations)
+            ld = LaunchDescription(response.launch_file, response.masteruri, response.host, list(
+                response.node), descriptions, nodelets, associations)
             result.append(ld)
         return result
 
@@ -168,8 +189,10 @@ class LaunchStub(object):
         :return: Returns the result from grpc server
         :rtype: stream lmsg.IncludedFilesReply
         '''
-        request = lmsg.IncludedFilesRequest(path=path, recursive=recursive, unique=unique, pattern=include_pattern, search_in_ext=search_in_ext)
-        request.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in include_args.items())
+        request = lmsg.IncludedFilesRequest(
+            path=path, recursive=recursive, unique=unique, pattern=include_pattern, search_in_ext=search_in_ext)
+        request.include_args.extend(lmsg.Argument(
+            name=name, value=value) for name, value in include_args.items())
         return self.lm_stub.GetIncludedFiles(request, timeout=settings.GRPC_TIMEOUT)
 
     def get_included_files_set(self, root, recursive=True, include_args={}, include_pattern=[], search_in_ext=[]):
@@ -185,7 +208,8 @@ class LaunchStub(object):
         :return: Returns a list of included files.
         :rtype: list(str)
         '''
-        reply = self._get_included_files(path=root, recursive=recursive, unique=True, include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)
+        reply = self._get_included_files(path=root, recursive=recursive, unique=True,
+                                         include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)
         result = set()
         for response in reply:
             result.add(response.path)
@@ -204,7 +228,8 @@ class LaunchStub(object):
         :return: Returns an iterator for IncludedFile
         :rtype: fkie_node_manager_daemon.common.IncludedFile
         '''
-        reply = self._get_included_files(path=root, recursive=recursive, unique=False, include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)
+        reply = self._get_included_files(path=root, recursive=recursive, unique=False,
+                                         include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)
         for response in reply:
             args = {arg.name: arg.value for arg in response.include_args}
             yield IncludedFile(response.root_path, response.linenr, response.path, response.exists, response.rawname, response.rec_depth, args, size=response.size)
@@ -216,12 +241,14 @@ class LaunchStub(object):
         :rtype: tuple(str, bool)
         '''
         request = lmsg.InterpretPaths(paths=paths)
-        reply = self.lm_stub.InterpretPath(request, timeout=settings.GRPC_TIMEOUT)
+        reply = self.lm_stub.InterpretPath(
+            request, timeout=settings.GRPC_TIMEOUT)
         for response in reply:
             if response.status.code == OK:
                 yield (response.path, response.exists)
             else:
-                raise exceptions.ResourceNotFound('', response.status.error_msg)
+                raise exceptions.ResourceNotFound(
+                    '', response.status.error_msg)
 
     def _gen_node_list(self, nodes):
         for name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param, cmd_prefix in nodes:
@@ -240,7 +267,8 @@ class LaunchStub(object):
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         :raise exceptions.LaunchSelectionRequest: on multiple launch files
         '''
-        response_stream = self.lm_stub.StartNode(self._gen_node_list([(name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param, cmd_prefix)]), timeout=settings.GRPC_TIMEOUT)
+        response_stream = self.lm_stub.StartNode(self._gen_node_list(
+            [(name, opt_binary, opt_launch, loglevel, logformat, masteruri, reload_global_param, cmd_prefix)]), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             if response.status.code == 0:
                 pass
@@ -249,11 +277,14 @@ class LaunchStub(object):
             elif response.status.code == NODE_NOT_FOUND:
                 raise exceptions.StartException(response.status.error_msg)
             elif response.status.code == MULTIPLE_BINARIES:
-                raise exceptions.BinarySelectionRequest([path for path in response.path], response.status.error_msg)
+                raise exceptions.BinarySelectionRequest(
+                    [path for path in response.path], response.status.error_msg)
             elif response.status.code == MULTIPLE_LAUNCHES:
-                raise exceptions.LaunchSelectionRequest([path for path in response.launch], response.status.error_msg)
+                raise exceptions.LaunchSelectionRequest(
+                    [path for path in response.launch], response.status.error_msg)
             elif response.status.code == CONNECTION_ERROR:
-                raise exceptions.ConnectionException(response.name, response.status.error_msg)
+                raise exceptions.ConnectionException(
+                    response.name, response.status.error_msg)
 
     def start_standalone_node(self, startcfg):
         '''
@@ -265,13 +296,16 @@ class LaunchStub(object):
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         '''
         request = startcfg.to_msg()
-        response = self.lm_stub.StartStandaloneNode(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.lm_stub.StartStandaloneNode(
+            request, timeout=settings.GRPC_TIMEOUT)
         if response.status.code == 0:
             pass
         elif response.status.code == MULTIPLE_BINARIES:
-            raise exceptions.BinarySelectionRequest([path for path in response.path], 'Multiple executables')
+            raise exceptions.BinarySelectionRequest(
+                [path for path in response.path], 'Multiple executables')
         elif response.status.code == FILE_NOT_FOUND:
-            raise exceptions.StartException("Can't find %s in %s" % (startcfg.binary, startcfg.package))
+            raise exceptions.StartException(
+                "Can't find %s in %s" % (startcfg.binary, startcfg.package))
         elif response.status.code == ERROR:
             raise exceptions.StartException(response.status.error_msg)
 
@@ -287,7 +321,8 @@ class LaunchStub(object):
         :raise exceptions.BinarySelectionRequest: on multiple binaries
         :raise exceptions.LaunchSelectionRequest: on multiple launch files
         '''
-        response = self.lm_stub.GetStartCfg(lmsg.Node(name=name, opt_binary='', opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param), timeout=settings.GRPC_TIMEOUT)
+        response = self.lm_stub.GetStartCfg(lmsg.Node(name=name, opt_binary='', opt_launch=opt_launch, loglevel=loglevel,
+                                                      logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param), timeout=settings.GRPC_TIMEOUT)
         startcfg = None
         if response.status.code == 0:
             startcfg = StartConfig.from_msg(response.startcfg)
@@ -296,9 +331,11 @@ class LaunchStub(object):
         elif response.status.code == NODE_NOT_FOUND:
             raise exceptions.StartException(response.status.error_msg)
         elif response.status.code == MULTIPLE_LAUNCHES:
-            raise exceptions.LaunchSelectionRequest([path for path in response.launch], response.status.error_msg)
+            raise exceptions.LaunchSelectionRequest(
+                [path for path in response.launch], response.status.error_msg)
         elif response.status.code == CONNECTION_ERROR:
-            raise exceptions.ConnectionException(response.name, response.status.error_msg)
+            raise exceptions.ConnectionException(
+                response.name, response.status.error_msg)
         return startcfg
 
     def reset_package_path(self):

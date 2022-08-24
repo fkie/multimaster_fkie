@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QImage, QPixmap
 
@@ -72,10 +71,12 @@ class MessageBox(QDialog):
     Save = 4       # A "Save" button defined with the AcceptRole .
     Cancel = 8     # A "Cancel" button defined with the RejectRole .
     Close = 16     # A "Close" button defined with the RejectRole .
-    Discard = 32   # A "Discard" or "Don't Save" button, depending on the platform, defined with the DestructiveRole .
+    # A "Discard" or "Don't Save" button, depending on the platform, defined with the DestructiveRole .
+    Discard = 32
     Apply = 64     # An "Apply" button defined with the ApplyRole .
     Reset = 128    # A "Reset" button defined with the ResetRole .
-    RestoreDefaults = 256  # A "Restore Defaults" button defined with the ResetRole .
+    # A "Restore Defaults" button defined with the ResetRole .
+    RestoreDefaults = 256
     Help = 512       # A "Help" button defined with the HelpRole .
     SaveAll = 1024   # A "Save All" button defined with the AcceptRole .
     Yes = 2048       # A "Yes" button defined with the YesRole .
@@ -85,12 +86,14 @@ class MessageBox(QDialog):
     Abort = 32768    # An "Abort" button defined with the RejectRole .
     Retry = 65536    # A "Retry" button defined with the AcceptRole .
     Ignore = 131072  # An "Ignore" button defined with the AcceptRole .
-    Avoid = 262144   # An "'Don't show again'" button defined with the HelpRole, returns a default AcceptButton .
+    # An "'Don't show again'" button defined with the HelpRole, returns a default AcceptButton .
+    Avoid = 262144
 
     def __init__(self, icon, title, text, detailed_text="", buttons=Cancel | Ok, parent=None):
         QDialog.__init__(self, parent=parent)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowTitleHint)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint & ~Qt.WindowMinimizeButtonHint)
+        self.setWindowFlags(self.windowFlags(
+        ) & ~Qt.WindowContextHelpButtonHint & ~Qt.WindowMinimizeButtonHint)
         self.setObjectName('MessageBox')
         self._use_checkbox = True
         self.text = text
@@ -106,21 +109,27 @@ class MessageBox(QDialog):
         if icon == self.NoIcon:
             pass
         elif icon == self.Question:
-            pixmap = nm.settings().pixmap('question.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            pixmap = nm.settings().pixmap('question.png').scaled(
+                56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         elif icon == self.Information:
-            pixmap = nm.settings().pixmap('info.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            pixmap = nm.settings().pixmap('info.png').scaled(
+                56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         elif icon == self.Warning:
-            pixmap = nm.settings().pixmap('warning.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            pixmap = nm.settings().pixmap('warning.png').scaled(
+                56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         elif icon == self.Critical:
-            pixmap = nm.settings().pixmap('critical.png').scaled(56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-        spacerItem = QSpacerItem(10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
+            pixmap = nm.settings().pixmap('critical.png').scaled(
+                56, 56, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        spacerItem = QSpacerItem(
+            10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.icon_label = QLabel()
         if pixmap is not None:
             self.icon_label.setPixmap(pixmap)
         self.icon_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.horizontalLayout.addWidget(self.icon_label)
-        spacerItem = QSpacerItem(10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(
+            10, 60, QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         # add message
         self.message_label = QLabel(text)
@@ -148,7 +157,8 @@ class MessageBox(QDialog):
             self.btn_show_details.setCheckable(True)
             self.btn_show_details.setChecked(True)
             self.btn_show_details.toggled.connect(self.on_toggled_details)
-            self.buttonBox.addButton(self.btn_show_details, QDialogButtonBox.ActionRole)
+            self.buttonBox.addButton(
+                self.btn_show_details, QDialogButtonBox.ActionRole)
             # create area for detailed text
             self.textEdit = textEdit = QTextEdit(self)
             textEdit.setObjectName("textEdit")
@@ -189,11 +199,13 @@ class MessageBox(QDialog):
         self.textEdit.setVisible(checked)
         if not self.isMaximized():
             self.setMinimumSize(self.verticalLayout.totalMinimumSize())
-            self.resize(self._current_size.width(), self.verticalLayout.totalSizeHint().height())
+            self.resize(self._current_size.width(),
+                        self.verticalLayout.totalSizeHint().height())
 
     @staticmethod
     def about(parent, title, text, detailed_text='', buttons=Close):
-        box = MessageBox(MessageBox.Information, title, text, detailed_text=detailed_text, buttons=buttons, parent=parent)
+        box = MessageBox(MessageBox.Information, title, text,
+                         detailed_text=detailed_text, buttons=buttons, parent=parent)
         if MessageBox.Yes & buttons:
             box.setAcceptButton(MessageBox.Yes)
         if MessageBox.Cancel & buttons:
@@ -204,7 +216,8 @@ class MessageBox(QDialog):
 
     @staticmethod
     def information(parent, title, text, detailed_text='', buttons=Close):
-        box = MessageBox(MessageBox.Information, title, text, detailed_text=detailed_text, buttons=buttons, parent=parent)
+        box = MessageBox(MessageBox.Information, title, text,
+                         detailed_text=detailed_text, buttons=buttons, parent=parent)
         if MessageBox.Yes & buttons:
             box.setAcceptButton(MessageBox.Yes)
         if MessageBox.Cancel & buttons:
@@ -215,7 +228,8 @@ class MessageBox(QDialog):
 
     @staticmethod
     def question(parent, title, text, detailed_text='', buttons=Yes | No | Cancel):
-        box = MessageBox(MessageBox.Question, title, text, detailed_text=detailed_text, buttons=buttons, parent=parent)
+        box = MessageBox(MessageBox.Question, title, text,
+                         detailed_text=detailed_text, buttons=buttons, parent=parent)
         if MessageBox.Yes & buttons:
             box.setAcceptButton(MessageBox.Yes)
         if MessageBox.Cancel & buttons:
@@ -226,7 +240,8 @@ class MessageBox(QDialog):
 
     @staticmethod
     def warning(parent, title, text, detailed_text='', buttons=Ok):
-        box = MessageBox(MessageBox.Warning, title, text, detailed_text=detailed_text, buttons=buttons, parent=parent)
+        box = MessageBox(MessageBox.Warning, title, text,
+                         detailed_text=detailed_text, buttons=buttons, parent=parent)
         if MessageBox.Yes & buttons:
             box.setAcceptButton(MessageBox.Yes)
         if MessageBox.Cancel & buttons:
@@ -237,7 +252,8 @@ class MessageBox(QDialog):
 
     @staticmethod
     def critical(parent, title, text, detailed_text='', buttons=Ok):
-        box = MessageBox(MessageBox.Critical, title, text, detailed_text=detailed_text, buttons=buttons, parent=parent)
+        box = MessageBox(MessageBox.Critical, title, text,
+                         detailed_text=detailed_text, buttons=buttons, parent=parent)
         if MessageBox.Yes & buttons:
             box.setAcceptButton(MessageBox.Yes)
         if MessageBox.Cancel & buttons:

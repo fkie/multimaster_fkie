@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 from python_qt_binding.QtCore import Signal
 
@@ -56,7 +55,8 @@ class SettingsChannel(ChannelInterface):
         return scstub.SettingsStub(channel), channel
 
     def get_config_threaded(self, grpc_url='grpc://localhost:12321'):
-        self._threads.start_thread("gcfgt_%s" % grpc_url, target=self.get_config, args=(grpc_url, True))
+        self._threads.start_thread(
+            "gcfgt_%s" % grpc_url, target=self.get_config, args=(grpc_url, True))
 
     def get_config(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get config from %s" % (grpc_url))

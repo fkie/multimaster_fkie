@@ -140,16 +140,19 @@ class LaunchContext:
                 return _dict[key]
 
             def __setattr__(self, key, value):
-                raise AttributeError("can't set attribute '{}', locals are read-only".format(key))
+                raise AttributeError(
+                    "can't set attribute '{}', locals are read-only".format(key))
 
         return AttributeDict(self._get_combined_locals())
 
     def _push_launch_configurations(self):
-        self.__launch_configurations_stack.append(dict(self.__launch_configurations))
+        self.__launch_configurations_stack.append(
+            dict(self.__launch_configurations))
 
     def _pop_launch_configurations(self):
         if not self.__launch_configurations_stack:
-            raise RuntimeError('launch_configurations stack unexpectedly empty')
+            raise RuntimeError(
+                'launch_configurations stack unexpectedly empty')
         self.__launch_configurations = self.__launch_configurations_stack.pop()
 
     @property
@@ -171,15 +174,16 @@ class LaunchContext:
 
     def emit_event_sync(self, event: Event) -> None:
         """Emit an event synchronously."""
-        self.__logger.debug("emitting event synchronously: '{}'".format(event.name))
+        self.__logger.debug(
+            "emitting event synchronously: '{}'".format(event.name))
         print("LaunchContext: emit_event_sync", event, dir(event))
-        #self._event_queue.put_nowait(event)
+        # self._event_queue.put_nowait(event)
 
     async def emit_event(self, event: Event) -> None:
         """Emit an event."""
         self.__logger.debug("emitting event: '{}'".format(event.name))
         print("LaunchContext: emit_event", event, dir(event))
-        #await self._event_queue.put(event)
+        # await self._event_queue.put(event)
 
     def perform_substitution(self, substitution: Substitution) -> Text:
         """Perform substitution on given Substitution."""

@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
@@ -66,7 +65,9 @@ class DetachableTabDock(QDockWidget):
         QDockWidget.__init__(self, parent)
         self.setObjectName("ScreenDock")
         self.setWindowTitle("Screens")
-        self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable)  # | QDockWidget.DockWidgetClosable)
+        # | QDockWidget.DockWidgetClosable)
+        self.setFeatures(QDockWidget.DockWidgetFloatable |
+                         QDockWidget.DockWidgetMovable)
         self._parent_dock = None
         self._open_dialogs = []
         self.tab_widget = DetachableTabWidget(self)
@@ -92,12 +93,15 @@ class DetachableTabDock(QDockWidget):
                 # create a new dock widget
                 dt = DetachableTabDock(self.parentWidget())
                 dt.setWindowTitle('SubScreen')
-                dt.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
+                dt.setFeatures(QDockWidget.DockWidgetFloatable |
+                               QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
                 dt._parent_dock = self
                 dt.tab_widget.attach_tab(widget, name)
                 dt.tab_widget.empty_tabbar_signal.connect(dt._close_if_empty)
-                dt.tab_widget.tab_removed_signal.connect(self._forward_tab_removed)
-                dt.tab_widget.close_tab_request_signal.connect(self._forward_close_tab_requested)
+                dt.tab_widget.tab_removed_signal.connect(
+                    self._forward_tab_removed)
+                dt.tab_widget.close_tab_request_signal.connect(
+                    self._forward_close_tab_requested)
                 dt.closed_signal.connect(self._on_dialog_closed)
                 self._open_dialogs.append(dt)
                 self.parentWidget().addDockWidget(Qt.BottomDockWidgetArea, dt)
@@ -105,7 +109,8 @@ class DetachableTabDock(QDockWidget):
     def on_detach(self, name, widget, point, geometry, by_double_click):
         if self._parent_dock is not None:
             # lets handle on_detach by parent dock
-            self._parent_dock.on_detach(name, widget, point, geometry, by_double_click)
+            self._parent_dock.on_detach(
+                name, widget, point, geometry, by_double_click)
             return
         attached = False
         if self.tab_widget.prepared_for_drop():
@@ -125,9 +130,12 @@ class DetachableTabDock(QDockWidget):
             # detached_tab.setWindowIcon(icon)
             detached_tab.setObjectName(name)
             detached_tab.setGeometry(geometry)
-            detached_tab.tab_widget.tab_removed_signal.connect(self._forward_tab_removed)
-            detached_tab.tab_widget.close_tab_request_signal.connect(self._forward_close_tab_requested)
-            detached_tab.tab_widget.detach_signal.connect(self.on_detach_from_dialog)
+            detached_tab.tab_widget.tab_removed_signal.connect(
+                self._forward_tab_removed)
+            detached_tab.tab_widget.close_tab_request_signal.connect(
+                self._forward_close_tab_requested)
+            detached_tab.tab_widget.detach_signal.connect(
+                self.on_detach_from_dialog)
             detached_tab.move(point)
             detached_tab.closed_signal.connect(self._on_dialog_closed)
             detached_tab.show()

@@ -34,7 +34,6 @@ def get_node_name(name):
 
 class RosTopic:
     def __init__(self, name: str, msgtype: str) -> None:
-        print("  topic", name, msgtype)
         self.name = name
         self.msgtype = msgtype
         self.publisher: List[str] = []

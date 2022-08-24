@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Signal
 import threading
 
@@ -121,7 +120,8 @@ class ProgressQueue(QObject):
             self.__running = True
             self._progress_bar.setToolTip(self.__progress_queue[0].descr)
             dscr_len = int(self._progress_bar.size().width() / 10)
-            self._progress_bar.setFormat("%v/%m - " + self.__progress_queue[0].descr[0:dscr_len])
+            self._progress_bar.setFormat(
+                "%v/%m - " + self.__progress_queue[0].descr[0:dscr_len])
             self._progress_bar.setValue(0)
             self.__progress_queue[0].start()
 
@@ -170,7 +170,8 @@ class ProgressQueue(QObject):
         btns = (MessageBox.Ignore | MessageBox.Avoid)
         if len(self.__progress_queue) > 1:
             btns = (btns | MessageBox.Abort)
-        res = MessageBox(MessageBox.Critical, title, msg, detailed_msg, buttons=btns).exec_()
+        res = MessageBox(MessageBox.Critical, title, msg,
+                         detailed_msg, buttons=btns).exec_()
         if res == MessageBox.Abort:
             self.__progress_queue = []
             self._progress_frame.setVisible(False)
@@ -183,9 +184,12 @@ class ProgressQueue(QObject):
             if self.__progress_queue:
                 try:
                     pthread = self.__progress_queue[self._progress_bar.value()]
-                    pthread.finished_signal.disconnect(self._progress_thread_finished)
-                    pthread.error_signal.disconnect(self._progress_thread_error)
-                    pthread.request_interact_signal.disconnect(self._on_request_interact)
+                    pthread.finished_signal.disconnect(
+                        self._progress_thread_finished)
+                    pthread.error_signal.disconnect(
+                        self._progress_thread_error)
+                    pthread.request_interact_signal.disconnect(
+                        self._on_request_interact)
 #          self.__progress_queue[self._progress_bar.value()].terminate()
                 except Exception:
                     pass
@@ -216,7 +220,8 @@ class ProgressQueue(QObject):
             pt.start()
         elif isinstance(req.request, nm.ScreenSelectionRequest):
             from fkie_node_manager.select_dialog import SelectDialog
-            items, _ = SelectDialog.getValue('Show screen', '', list(req.request.choices.keys()), False, store_geometry='screen_select')
+            items, _ = SelectDialog.getValue('Show screen', '', list(
+                req.request.choices.keys()), False, store_geometry='screen_select')
             if not items:
                 self._progress_thread_finished(ident)
                 return
@@ -229,7 +234,8 @@ class ProgressQueue(QObject):
             pt.start()
         elif isinstance(req.request, nm.BinarySelectionRequest):
             from fkie_node_manager.select_dialog import SelectDialog
-            items, _ = SelectDialog.getValue('Multiple executables', '', req.request.choices, True, store_geometry='binary_select')
+            items, _ = SelectDialog.getValue(
+                'Multiple executables', '', req.request.choices, True, store_geometry='binary_select')
             if not items:
                 self._progress_thread_finished(ident)
                 return
@@ -241,9 +247,11 @@ class ProgressQueue(QObject):
             pt.start()
         elif isinstance(req.request, nm.LaunchArgsSelectionRequest):
             from fkie_node_manager.parameter_dialog import ParameterDialog
-            input_dia = ParameterDialog(req.request.args_dict, store_geometry="launch_dialog")
+            input_dia = ParameterDialog(
+                req.request.args_dict, store_geometry="launch_dialog")
             input_dia.setFilterVisible(False)
-            input_dia.setWindowTitle('Enter the argv for %s' % req.request.launchfile)
+            input_dia.setWindowTitle(
+                'Enter the argv for %s' % req.request.launchfile)
             if input_dia.exec_():
                 params = input_dia.getKeywords()
                 argv = []
@@ -260,7 +268,8 @@ class ProgressQueue(QObject):
                 self._progress_thread_finished(ident)
                 return
         elif isinstance(req.request, nm.NoScreenOpenLogRequest):
-            self.no_screen_error_signal.emit(req.request.node, req.request.host)
+            self.no_screen_error_signal.emit(
+                req.request.node, req.request.host)
             self._progress_thread_finished(ident)
 
 
@@ -314,7 +323,8 @@ class ProgressThread(QObject, threading.Thread):
         except InteractionNeededError as ine:
             self.request_interact_signal.emit(self._id, self.descr, ine)
         except DetailedError as err:
-            self.error_signal.emit(self._id, err.title, err.text, err.detailed_text)
+            self.error_signal.emit(self._id, err.title,
+                                   err.text, err.detailed_text)
         except Exception:
             import traceback
 #      print traceback.print_exc()
@@ -324,7 +334,9 @@ class ProgressThread(QObject, threading.Thread):
             while not last_line and len(formatted_lines) > index:
                 index += 1
                 last_line = formatted_lines[-index]
-            rospy.logwarn("%s failed:\n\t%s", utf8(self.descr), utf8(last_line))
+            rospy.logwarn("%s failed:\n\t%s", utf8(
+                self.descr), utf8(last_line))
             self.error_signal.emit(self._id, 'Progress Job Error',
-                                   "%s failed:\n%s" % (utf8(self.descr), utf8(last_line)),
+                                   "%s failed:\n%s" % (
+                                       utf8(self.descr), utf8(last_line)),
                                    utf8(traceback.format_exc(4)))

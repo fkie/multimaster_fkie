@@ -26,9 +26,10 @@ using TypeSupport_cpp = rmw_fastrtps_cpp::TypeSupport;
 // copy from rmw_fastrtps_cpp/type_support_common.hpp
 inline std::string
 _create_type_name(
-  const message_type_support_callbacks_t * members)
+    const message_type_support_callbacks_t *members)
 {
-  if (!members) {
+  if (!members)
+  {
     RMW_SET_ERROR_MSG("members handle is null");
     return "";
   }
@@ -36,15 +37,16 @@ _create_type_name(
   std::ostringstream ss;
   std::string message_namespace(members->message_namespace_);
   std::string message_name(members->message_name_);
-  if (!message_namespace.empty()) {
+  if (!message_namespace.empty())
+  {
     ss << message_namespace << "::";
   }
   ss << "dds_::" << message_name << "_";
   return ss.str();
 }
 
-std::string register_type(eprosima::fastrtps::Participant* participant, const void** type_support_impl);
+std::string register_type(eprosima::fastrtps::Participant *participant, const void **type_support_impl);
 
-#endif  // rmw_dds_common_FOUND
+#endif // rmw_dds_common_FOUND
 
-#endif  // MESSAGE_TYPE_SUPPORT_HPP_
+#endif // MESSAGE_TYPE_SUPPORT_HPP_

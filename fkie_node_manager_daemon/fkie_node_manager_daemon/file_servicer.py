@@ -111,7 +111,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 if chunk.file.package:
                     pkg_path = get_pkg_path(chunk.file.package)
                     if pkg_path:
-                        path = os.path.join(pkg_path, chunk.file.path.lstrip(os.path.sep))
+                        path = os.path.join(
+                            pkg_path, chunk.file.path.lstrip(os.path.sep))
                 else:
                     path = chunk.file.path
                 result = fms.SaveFileContentReply()
@@ -231,22 +232,27 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 pkg_name, ppath = package_name(path_src)
                 if pkg_name:
                     # we need relative package path without leading slash
-                    path_dst = request.path.replace(ppath, '').lstrip(os.path.sep)
+                    path_dst = request.path.replace(
+                        ppath, '').lstrip(os.path.sep)
                 else:
                     result.code = ERROR
                     result.error_msg = 'no package found! If no destination path is given, only launch files from packages can be copied!'
                     result.error_file = request.path
             if path_dst:
-                nmd.rosnode.get_logger().debug("Copy '%s' to '%s' [package: '%s'] @ %s (overwrite: %s)" % (path_src, path_dst, pkg_name, dest_uri, request.overwrite))
+                nmd.rosnode.get_logger().debug("Copy '%s' to '%s' [package: '%s'] @ %s (overwrite: %s)" % (
+                    path_src, path_dst, pkg_name, dest_uri, request.overwrite))
                 with FileIO(path_src, 'r') as outfile:
-                    mtime = 0.0 if request.overwrite else os.path.getmtime(path_src)
+                    mtime = 0.0 if request.overwrite else os.path.getmtime(
+                        path_src)
                     content = outfile.read()
                     # get channel to the remote grpc server
-                    channel = remote.open_channel(dest_uri, rosnode=nmd.rosnode)
+                    channel = remote.open_channel(
+                        dest_uri, rosnode=nmd.rosnode)
                     if channel is not None:
                         # save file on remote server
                         fs = fms_grpc.FileServiceStub(channel)
-                        response_stream = fs.SaveFileContent(self._gen_save_content_list(path_dst, content, mtime, pkg_name), timeout=settings.GRPC_TIMEOUT)
+                        response_stream = fs.SaveFileContent(self._gen_save_content_list(
+                            path_dst, content, mtime, pkg_name), timeout=settings.GRPC_TIMEOUT)
                         for response in response_stream:
                             if response.status.code == OK:
                                 result.code = OK
@@ -313,7 +319,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
                     if path not in added_paths:
                         self.DIR_CACHE[path] = file_type
                         added_paths.append(path)
-                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                            path), size=os.path.getsize(path), type=file_type))
                 except Exception as _:
                     pass
         else:
@@ -321,11 +328,14 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 # list the path
                 dirlist = os.listdir(request.path)
                 for cfile in dirlist:
-                    path = os.path.normpath('%s%s%s' % (request.path, os.path.sep, cfile))
+                    path = os.path.normpath('%s%s%s' % (
+                        request.path, os.path.sep, cfile))
                     if os.path.isfile(path):
-                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=PATH_FILE))
+                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                            path), size=os.path.getsize(path), type=PATH_FILE))
                     elif path in self.DIR_CACHE:
-                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=self.DIR_CACHE[path]))
+                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                            path), size=os.path.getsize(path), type=self.DIR_CACHE[path]))
                     elif os.path.isdir(path):
                         try:
                             fileList = os.listdir(path)
@@ -335,7 +345,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
                             else:
                                 file_type = PATH_DIR
                             self.DIR_CACHE[path] = file_type
-                            path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                            path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                                path), size=os.path.getsize(path), type=file_type))
                         except Exception as _:
                             pass
             except OSError as ose:
@@ -362,7 +373,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
         try:
             ret = get_packages(None)
             for name, path in ret.items():
-                package = fms.PackageObj(name=name, path=os.path.join(path, 'share', name))
+                package = fms.PackageObj(
+                    name=name, path=os.path.join(path, 'share', name))
                 result.items.extend([package])
             result.status.code = OK
         except Exception as err:
@@ -389,7 +401,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 if f and f[0] != '.' and f not in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
                     self._get_binaries(os.path.join(path, f), binaries)
         elif os.path.isfile(path) and os.access(path, os.X_OK):
-            binaries.append(fms.PathObj(path=path, mtime=os.path.getmtime(path)))
+            binaries.append(fms.PathObj(
+                path=path, mtime=os.path.getmtime(path)))
 
     def GetPackageBinaries(self, request, context):
         result = fms.PathList()
@@ -400,7 +413,8 @@ class FileServicer(fms_grpc.FileServiceServicer):
             result.items.extend(binaries)
             # find binaries in catkin workspace
             from catkin.find_in_workspaces import find_in_workspaces as catkin_find
-            search_paths = catkin_find(search_dirs=['libexec', 'share'], project=request.name, first_matching_workspace_only=True)
+            search_paths = catkin_find(search_dirs=[
+                                       'libexec', 'share'], project=request.name, first_matching_workspace_only=True)
             for p in search_paths:
                 self._get_binaries(p, binaries)
         except Exception:
@@ -465,7 +479,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                 return True
             elif 'rospack_nosubdirs' in files:
                 del dirs[:]
-                continue #leaf
+                continue  # leaf
             # small optimization
             elif '.svn' in dirs:
                 dirs.remove('.svn')

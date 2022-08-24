@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 EFILE_CHANGED = 125
 ''':var EFILE_CHANGED: file changed in meantime.'''
 EFILE_REMOVED = 126

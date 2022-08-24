@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 import fkie_multimaster_msgs.grpc.version_pb2 as vmsg
@@ -43,7 +42,8 @@ class VersionServicer(vgrpc.VersionServiceServicer):
     def __init__(self):
         rospy.loginfo("Create version servicer")
         vgrpc.VersionServiceServicer.__init__(self)
-        self._version, self._date = version.detect_version('fkie_node_manager_daemon')
+        self._version, self._date = version.detect_version(
+            'fkie_node_manager_daemon')
 
     def GetVersion(self, request, context):
         reply = vmsg.Version()

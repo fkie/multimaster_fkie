@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import Qt, Signal, QPoint, QSize
 try:
     from python_qt_binding.QtGui import QCheckBox, QDialog, QFrame, QDialogButtonBox, QLabel, QLineEdit, QScrollArea, QWidget
@@ -82,8 +81,10 @@ class SelectDialog(QDialog):
 #      descriptionLayout.setContentsMargins(1, 1, 1, 1)
             if icon:
                 self.icon_label = QLabel(self.description_frame)
-                self.icon_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-                self.icon_label.setPixmap(QPixmap(icon).scaled(30, 30, Qt.KeepAspectRatio))
+                self.icon_label.setSizePolicy(
+                    QSizePolicy.Fixed, QSizePolicy.Fixed)
+                self.icon_label.setPixmap(
+                    QPixmap(icon).scaled(30, 30, Qt.KeepAspectRatio))
                 descriptionLayout.addWidget(self.icon_label)
             self.description_label = QLabel(self.description_frame)
             self.description_label.setWordWrap(True)
@@ -111,19 +112,23 @@ class SelectDialog(QDialog):
             self._ignore_next_toggle = False
             self.select_all_checkbox = QCheckBox('all entries')
             self.select_all_checkbox.setTristate(True)
-            self.select_all_checkbox.stateChanged.connect(self._on_select_all_checkbox_stateChanged)
+            self.select_all_checkbox.stateChanged.connect(
+                self._on_select_all_checkbox_stateChanged)
             self.verticalLayout.addWidget(self.select_all_checkbox)
             self.content.toggled.connect(self._on_main_toggle)
         if self.checkitem1:
             self.checkitem1_checkbox = QCheckBox(self.checkitem1)
-            self.checkitem1_checkbox.stateChanged.connect(self._on_select_checkitem1_checkbox_stateChanged)
+            self.checkitem1_checkbox.stateChanged.connect(
+                self._on_select_checkitem1_checkbox_stateChanged)
             self.verticalLayout.addWidget(self.checkitem1_checkbox)
         if self.checkitem2:
             self.checkitem2_checkbox = QCheckBox(self.checkitem2)
-            self.checkitem2_checkbox.stateChanged.connect(self._on_select_checkitem2_checkbox_stateChanged)
+            self.checkitem2_checkbox.stateChanged.connect(
+                self._on_select_checkitem2_checkbox_stateChanged)
             self.verticalLayout.addWidget(self.checkitem2_checkbox)
         if not items:
-            spacerItem = QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding)
+            spacerItem = QSpacerItem(
+                1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding)
             self.verticalLayout.addItem(spacerItem)
 
         self._close_timer = None
@@ -217,7 +222,8 @@ class SelectDialog(QDialog):
 
     @staticmethod
     def getValue(title, description='', items=list(), exclusive=False, preselect_all=False, icon='', parent=None, select_if_single=True, checkitem1='', checkitem2='', closein=0, store_geometry=''):
-        selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent, select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2, closein=closein, store_geometry=store_geometry)
+        selectDia = SelectDialog(items, exclusive=exclusive, preselect_all=preselect_all, description=description, icon=icon, parent=parent,
+                                 select_if_single=select_if_single, checkitem1=checkitem1, checkitem2=checkitem2, closein=closein, store_geometry=store_geometry)
         selectDia.setWindowTitle(title)
         SelectDialog.MODAL_DIALOG = selectDia
         if selectDia.exec_():
@@ -236,6 +242,7 @@ class SelectDialog(QDialog):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
     def _store_geometry(self):
         if self._geometry_name:

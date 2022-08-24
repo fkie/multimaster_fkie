@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QPoint, QSize, Qt, Signal
 from python_qt_binding.QtGui import QColor, QIcon, QKeySequence, QPalette, QTextCursor
 import os
@@ -176,8 +175,10 @@ class Editor(QMainWindow):
         try:
             pal = self.tabWidget.palette()
             self._default_color = pal.color(QPalette.Window)
-            color = QColor.fromRgb(nm.settings().host_color(master_name, self._default_color.rgb()))
-            bg_style_launch_dock = "QWidget#editorMain { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (color.name(), self._default_color.name())
+            color = QColor.fromRgb(nm.settings().host_color(
+                master_name, self._default_color.rgb()))
+            bg_style_launch_dock = "QWidget#editorMain { background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 %s, stop: 0.7 %s);}" % (
+                color.name(), self._default_color.name())
             self.setStyleSheet('%s' % (bg_style_launch_dock))
         except Exception as _:
             pass
@@ -199,7 +200,8 @@ class Editor(QMainWindow):
         self.upperButton.clicked.connect(self.on_upperButton_clicked)
         self.upperButton.setIcon(nm.settings().icon('up.png'))
         self.upperButton.setShortcut("Ctrl+U")
-        self.upperButton.setToolTip('Open the file which include the current file (Ctrl+U)')
+        self.upperButton.setToolTip(
+            'Open the file which include the current file (Ctrl+U)')
         self.upperButton.setFlat(True)
         self.horizontalLayout.addWidget(self.upperButton)
 
@@ -226,13 +228,15 @@ class Editor(QMainWindow):
         self.saveButton.setFlat(True)
         self.horizontalLayout.addWidget(self.saveButton)
         # add spacer
-        spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(
+            515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         # add line number label
         self.pos_label = QLabel()
         self.horizontalLayout.addWidget(self.pos_label)
         # add spacer
-        spacerItem = QSpacerItem(515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        spacerItem = QSpacerItem(
+            515, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         # add show log button
         self.show_log_button = QPushButton("Log>>", self)
@@ -248,7 +252,8 @@ class Editor(QMainWindow):
         self.graphButton.setText("Includ&e Graph >>")
         self.graphButton.setCheckable(True)
         self.graphButton.setShortcut("Ctrl+E")
-        self.graphButton.setToolTip('Shows include and include from files (Ctrl+E)')
+        self.graphButton.setToolTip(
+            'Shows include and include from files (Ctrl+E)')
         self.graphButton.setFlat(True)
         self.horizontalLayout.addWidget(self.graphButton)
         # add the search button
@@ -276,16 +281,19 @@ class Editor(QMainWindow):
     def _create_log_bar(self):
         self.log_dock = QDockWidget(self)
         self.log_dock.setObjectName('LogFrame')
-        self.log_dock.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self.log_dock.setFeatures(
+            QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
         self.log_bar = QWidget(self)
         self.horizontal_layout_log_bar = QHBoxLayout(self.log_bar)
         self.horizontal_layout_log_bar.setContentsMargins(2, 0, 2, 0)
-        self.horizontal_layout_log_bar.setObjectName("horizontal_layout_log_bar")
+        self.horizontal_layout_log_bar.setObjectName(
+            "horizontal_layout_log_bar")
         # add info label
         self._log_warning_count = 0
         self.log_browser = QTextEdit()
         self.log_browser.setObjectName("log_browser")
-        self.log_browser.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.log_browser.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.log_browser.setLineWrapMode(QTextEdit.NoWrap)
         # self.log_browser.setMaximumHeight(120)
         color = QColor(255, 255, 235)
@@ -295,7 +303,8 @@ class Editor(QMainWindow):
         # add hide button
         self.clear_log_button = QPushButton("clear", self)
         self.clear_log_button.setObjectName("clear_log_button")
-        self.clear_log_button.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum)
+        self.clear_log_button.setSizePolicy(
+            QSizePolicy.Minimum, QSizePolicy.Maximum)
         self.clear_log_button.clicked.connect(self.on_clear_log_button_clicked)
         self.clear_log_button.setFlat(True)
         self.horizontal_layout_log_bar.addWidget(self.clear_log_button)
@@ -323,7 +332,8 @@ class Editor(QMainWindow):
                 else:
                     self.on_toggled_replace(True)
             else:
-                self.replaceButton.setChecked(not self.replaceButton.isChecked())
+                self.replaceButton.setChecked(
+                    not self.replaceButton.isChecked())
         elif event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_E:
             if self.tabWidget.currentWidget().hasFocus():
                 if not self.graphButton.isChecked():
@@ -392,14 +402,18 @@ class Editor(QMainWindow):
                 linenumber_editor = LineNumberWidget(editor)
                 tab_index = 0
                 if insert_index > -1:
-                    tab_index = self.tabWidget.insertTab(insert_index, linenumber_editor, tab_name)
+                    tab_index = self.tabWidget.insertTab(
+                        insert_index, linenumber_editor, tab_name)
                 else:
-                    tab_index = self.tabWidget.addTab(linenumber_editor, tab_name)
+                    tab_index = self.tabWidget.addTab(
+                        linenumber_editor, tab_name)
                 self.files.append(filename)
                 editor.setCurrentPath(os.path.basename(filename))
                 editor.load_request_signal.connect(self.on_load_request)
-                editor.document().modificationChanged.connect(self.on_editor_modificationChanged)
-                editor.cursorPositionChanged.connect(self.on_editor_positionChanged)
+                editor.document().modificationChanged.connect(
+                    self.on_editor_modificationChanged)
+                editor.cursorPositionChanged.connect(
+                    self.on_editor_positionChanged)
                 editor.setFocus(Qt.OtherFocusReason)
 #                editor.textChanged.connect(self.on_text_changed)
                 editor.undoAvailable.connect(self.on_text_changed)
@@ -422,12 +436,17 @@ class Editor(QMainWindow):
                 # TODO: put all text of all tabs into path_text
                 rospy.logdebug("serach for '%s'" % search_text)
                 self._search_node_count = 0
-                self._search_thread = TextSearchThread(search_text, filename, recursive=True, only_launch=only_launch, count_results=count_results)
-                self._search_thread.search_result_signal.connect(self.on_search_result_on_open)
-                self._search_thread.warning_signal.connect(self.on_search_result_warning)
-                self._last_search_request = (filename, search_text, insert_index, goto_line, only_launch)
+                self._search_thread = TextSearchThread(
+                    search_text, filename, recursive=True, only_launch=only_launch, count_results=count_results)
+                self._search_thread.search_result_signal.connect(
+                    self.on_search_result_on_open)
+                self._search_thread.warning_signal.connect(
+                    self.on_search_result_warning)
+                self._last_search_request = (
+                    filename, search_text, insert_index, goto_line, only_launch)
                 if not self.graph_view.is_loading():
-                    self.on_graph_info("search thread: start search for '%s'" % self._search_thread._search_text)
+                    self.on_graph_info(
+                        "search thread: start search for '%s'" % self._search_thread._search_text)
                     self._search_thread.start()
             if goto_line != -1:
                 self.tabWidget.currentWidget().goto(goto_line, True)
@@ -435,7 +454,8 @@ class Editor(QMainWindow):
         except Exception as err:
             self.tabWidget.setUpdatesEnabled(True)
             import traceback
-            msg = "Error while open %s: %s" % (filename, traceback.format_exc())
+            msg = "Error while open %s: %s" % (
+                filename, traceback.format_exc())
             rospy.logwarn(msg)
             MessageBox.critical(self, "Error", utf8(err), msg)
             if self.tabWidget.count() == 0:
@@ -462,7 +482,8 @@ class Editor(QMainWindow):
             try:
                 self._search_thread.find_args_not_set = True
                 self._search_thread.start()
-                self.on_graph_info("search thread: start search for '%s'" % self._search_thread._search_text)
+                self.on_graph_info(
+                    "search thread: start search for '%s'" % self._search_thread._search_text)
             except Exception:
                 pass
 
@@ -479,12 +500,14 @@ class Editor(QMainWindow):
 
     def on_text_changed(self, value=""):
         if self.tabWidget.currentWidget().hasFocus():
-            self.find_dialog.file_changed(self.tabWidget.currentWidget().filename)
+            self.find_dialog.file_changed(
+                self.tabWidget.currentWidget().filename)
             self._last_search_request = None
 
     def on_tab_changed(self, index):
         if index > -1:
-            self.graph_view.set_file(self.tabWidget.widget(index).filename, self.tabWidget.widget(0).filename)
+            self.graph_view.set_file(self.tabWidget.widget(
+                index).filename, self.tabWidget.widget(0).filename)
             self._last_search_request = None
 
     def on_close_tab(self, tab_index):
@@ -497,7 +520,8 @@ class Editor(QMainWindow):
             w = self.tabWidget.widget(tab_index)
             if w.document().isModified():
                 name = self.__getTabName(w.filename)
-                result = MessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", name]))
+                result = MessageBox.question(self, "Unsaved Changes", '\n\n'.join(
+                    ["Save the file before closing?", name]))
                 if result == MessageBox.Yes:
                     self.tabWidget.currentWidget().save()
                 elif result == MessageBox.No:
@@ -516,7 +540,8 @@ class Editor(QMainWindow):
             self._last_search_request = None
         except Exception:
             import traceback
-            rospy.logwarn("Error while close tab %s: %s", str(tab_index), traceback.format_exc(1))
+            rospy.logwarn("Error while close tab %s: %s",
+                          str(tab_index), traceback.format_exc(1))
         self.upperButton.setEnabled(self.tabWidget.count() > 1)
 
     def reject(self):
@@ -550,7 +575,8 @@ class Editor(QMainWindow):
                 buttons = MessageBox.Yes | MessageBox.No
             else:
                 buttons = MessageBox.Yes | MessageBox.No | MessageBox.Cancel
-            result = MessageBox.question(self, "Unsaved Changes", '\n\n'.join(["Save the file before closing?", '\n'.join(changed)]), buttons=buttons)
+            result = MessageBox.question(self, "Unsaved Changes", '\n\n'.join(
+                ["Save the file before closing?", '\n'.join(changed)]), buttons=buttons)
             if result == MessageBox.Yes:
                 for i in range(self.tabWidget.count()):
                     w = self.tabWidget.widget(i).save()
@@ -583,7 +609,8 @@ class Editor(QMainWindow):
         Shows the number of the line and column in a label.
         '''
         cursor = self.tabWidget.currentWidget().textCursor()
-        self.pos_label.setText(':%s:%s #%s' % (cursor.blockNumber() + 1, cursor.columnNumber(), cursor.position()))
+        self.pos_label.setText(':%s:%s #%s' % (
+            cursor.blockNumber() + 1, cursor.columnNumber(), cursor.position()))
 
     def __getTabName(self, lfile):
         base = os.path.basename(lfile).replace('.launch', '')
@@ -635,13 +662,18 @@ class Editor(QMainWindow):
         if errors:
             if msg:
                 rospy.logwarn(msg)
-                MessageBox.critical(self, "Error", "Error while save file: %s" % os.path.basename(self.tabWidget.currentWidget().filename), detailed_text=msg)
-            self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._error_icon)
+                MessageBox.critical(self, "Error", "Error while save file: %s" % os.path.basename(
+                    self.tabWidget.currentWidget().filename), detailed_text=msg)
+            self.tabWidget.setTabIcon(
+                self.tabWidget.currentIndex(), self._error_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), msg)
-            self.on_graph_info("saved failed %s: %s" % (self.tabWidget.currentWidget().filename, msg), True)
+            self.on_graph_info("saved failed %s: %s" % (
+                self.tabWidget.currentWidget().filename, msg), True)
         elif saved:
-            self.on_graph_info("saved %s" % self.tabWidget.currentWidget().filename)
-            self.tabWidget.setTabIcon(self.tabWidget.currentIndex(), self._empty_icon)
+            self.on_graph_info("saved %s" %
+                               self.tabWidget.currentWidget().filename)
+            self.tabWidget.setTabIcon(
+                self.tabWidget.currentIndex(), self._empty_icon)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), '')
             self.graph_view.clear_cache()
 
@@ -745,8 +777,10 @@ class Editor(QMainWindow):
             if self._search_node_count > 1:
                 self.on_toggled_find(True, only_results=True)
             self.find_dialog.current_search_text = search_text
-            self.find_dialog.on_search_result(search_text, found, path, startpos, endpos, linenr, line_text)
-            self.on_graph_info("search thread: found %s in '%s:%d'" % (search_text, path, linenr))
+            self.find_dialog.on_search_result(
+                search_text, found, path, startpos, endpos, linenr, line_text)
+            self.on_graph_info("search thread: found %s in '%s:%d'" %
+                               (search_text, path, linenr))
             if self.tabWidget.currentWidget().filename != path:
                 focus_widget = QApplication.focusWidget()
                 self.on_load_request(path)
@@ -812,88 +846,113 @@ class Editor(QMainWindow):
         # creates a tag menu
         tag_menu = QMenu("ROS Tags", parent)
         # group tag
-        add_group_tag_action = QAction("<group>", self, statusTip="", triggered=self._on_add_group_tag)
+        add_group_tag_action = QAction(
+            "<group>", self, statusTip="", triggered=self._on_add_group_tag)
         add_group_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+g"))
         tag_menu.addAction(add_group_tag_action)
         # node tag
-        add_node_tag_action = QAction("<node>", self, statusTip="", triggered=self._on_add_node_tag)
+        add_node_tag_action = QAction(
+            "<node>", self, statusTip="", triggered=self._on_add_node_tag)
         add_node_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+n"))
         tag_menu.addAction(add_node_tag_action)
         # node tag with all attributes
-        add_node_tag_all_action = QAction("<node all>", self, statusTip="", triggered=self._on_add_node_tag_all)
+        add_node_tag_all_action = QAction(
+            "<node all>", self, statusTip="", triggered=self._on_add_node_tag_all)
         tag_menu.addAction(add_node_tag_all_action)
         # include tag with all attributes
-        add_include_tag_all_action = QAction("<include>", self, statusTip="", triggered=self._on_add_include_tag_all)
+        add_include_tag_all_action = QAction(
+            "<include>", self, statusTip="", triggered=self._on_add_include_tag_all)
         add_include_tag_all_action.setShortcuts(QKeySequence("Ctrl+Shift+i"))
         tag_menu.addAction(add_include_tag_all_action)
         # remap
-        add_remap_tag_action = QAction("<remap>", self, statusTip="", triggered=self._on_add_remap_tag)
+        add_remap_tag_action = QAction(
+            "<remap>", self, statusTip="", triggered=self._on_add_remap_tag)
         add_remap_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+r"))
         tag_menu.addAction(add_remap_tag_action)
         # env tag
-        add_env_tag_action = QAction("<env>", self, statusTip="", triggered=self._on_add_env_tag)
+        add_env_tag_action = QAction(
+            "<env>", self, statusTip="", triggered=self._on_add_env_tag)
         tag_menu.addAction(add_env_tag_action)
         # param tag
-        add_param_clipboard_tag_action = QAction("<param value>", self, statusTip="add value from clipboard", triggered=self._on_add_param_clipboard_tag)
-        add_param_clipboard_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+p"))
+        add_param_clipboard_tag_action = QAction(
+            "<param value>", self, statusTip="add value from clipboard", triggered=self._on_add_param_clipboard_tag)
+        add_param_clipboard_tag_action.setShortcuts(
+            QKeySequence("Ctrl+Shift+p"))
         tag_menu.addAction(add_param_clipboard_tag_action)
-        add_param_tag_action = QAction("<param>", self, statusTip="", triggered=self._on_add_param_tag)
+        add_param_tag_action = QAction(
+            "<param>", self, statusTip="", triggered=self._on_add_param_tag)
         add_param_tag_action.setShortcuts(QKeySequence("Ctrl+Shift+Alt+p"))
         tag_menu.addAction(add_param_tag_action)
         # param tag with all attributes
-        add_param_tag_all_action = QAction("<param all>", self, statusTip="", triggered=self._on_add_param_tag_all)
+        add_param_tag_all_action = QAction(
+            "<param all>", self, statusTip="", triggered=self._on_add_param_tag_all)
         tag_menu.addAction(add_param_tag_all_action)
         # rosparam tag with all attributes
-        add_rosparam_tag_all_action = QAction("<rosparam>", self, statusTip="", triggered=self._on_add_rosparam_tag_all)
+        add_rosparam_tag_all_action = QAction(
+            "<rosparam>", self, statusTip="", triggered=self._on_add_rosparam_tag_all)
         tag_menu.addAction(add_rosparam_tag_all_action)
         # arg tag with default definition
-        add_arg_tag_default_action = QAction("<arg default>", self, statusTip="", triggered=self._on_add_arg_tag_default)
+        add_arg_tag_default_action = QAction(
+            "<arg default>", self, statusTip="", triggered=self._on_add_arg_tag_default)
         add_arg_tag_default_action.setShortcuts(QKeySequence("Ctrl+Shift+a"))
         tag_menu.addAction(add_arg_tag_default_action)
         # arg tag with value definition
-        add_arg_tag_value_action = QAction("<arg value>", self, statusTip="", triggered=self._on_add_arg_tag_value)
+        add_arg_tag_value_action = QAction(
+            "<arg value>", self, statusTip="", triggered=self._on_add_arg_tag_value)
         add_arg_tag_value_action.setShortcuts(QKeySequence("Ctrl+Alt+a"))
         tag_menu.addAction(add_arg_tag_value_action)
 
         # test tag
-        add_test_tag_action = QAction("<test>", self, statusTip="", triggered=self._on_add_test_tag)
+        add_test_tag_action = QAction(
+            "<test>", self, statusTip="", triggered=self._on_add_test_tag)
         add_test_tag_action.setShortcuts(QKeySequence("Ctrl+Alt+t"))
         tag_menu.addAction(add_test_tag_action)
         # test tag with all attributes
-        add_test_tag_all_action = QAction("<test all>", self, statusTip="", triggered=self._on_add_test_tag_all)
+        add_test_tag_all_action = QAction(
+            "<test all>", self, statusTip="", triggered=self._on_add_test_tag_all)
         tag_menu.addAction(add_test_tag_all_action)
         sub_cp_menu = QMenu("Custom parameters", parent)
 
-        show_cp_dialog_action = QAction("Show Dialog", self, statusTip="", triggered=self._show_custom_parameter_dialog)
+        show_cp_dialog_action = QAction(
+            "Show Dialog", self, statusTip="", triggered=self._show_custom_parameter_dialog)
         show_cp_dialog_action.setShortcuts(QKeySequence("Ctrl+Shift+d"))
         sub_cp_menu.addAction(show_cp_dialog_action)
 
-        add_cp_associations_action = QAction("nm/associations", self, statusTip="", triggered=self._on_add_cp_associations)
+        add_cp_associations_action = QAction(
+            "nm/associations", self, statusTip="", triggered=self._on_add_cp_associations)
         add_cp_associations_action.setShortcuts(QKeySequence("Ctrl+Alt+a"))
         sub_cp_menu.addAction(add_cp_associations_action)
 
         sub_cp_as_menu = QMenu("Autostart", parent)
-        add_cp_as_delay_action = QAction("delay", self, statusTip="", triggered=self._on_add_cp_as_delay)
+        add_cp_as_delay_action = QAction(
+            "delay", self, statusTip="", triggered=self._on_add_cp_as_delay)
         sub_cp_as_menu.addAction(add_cp_as_delay_action)
-        add_cp_as_exclude_action = QAction("exclude", self, statusTip="", triggered=self._on_add_cp_as_exclude)
+        add_cp_as_exclude_action = QAction(
+            "exclude", self, statusTip="", triggered=self._on_add_cp_as_exclude)
         sub_cp_as_menu.addAction(add_cp_as_exclude_action)
-        add_cp_as_req_publisher_action = QAction("required publisher", self, statusTip="", triggered=self._on_add_cp_as_req_publisher)
+        add_cp_as_req_publisher_action = QAction(
+            "required publisher", self, statusTip="", triggered=self._on_add_cp_as_req_publisher)
         sub_cp_as_menu.addAction(add_cp_as_req_publisher_action)
         sub_cp_menu.addMenu(sub_cp_as_menu)
 
         sub_cp_r_menu = QMenu("Respawn", parent)
-        add_cp_r_max_action = QAction("max", self, statusTip="", triggered=self._on_add_cp_r_max)
+        add_cp_r_max_action = QAction(
+            "max", self, statusTip="", triggered=self._on_add_cp_r_max)
         sub_cp_r_menu.addAction(add_cp_r_max_action)
-        add_cp_r_min_runtime_action = QAction("min_runtime", self, statusTip="", triggered=self._on_add_cp_r_min_runtime)
+        add_cp_r_min_runtime_action = QAction(
+            "min_runtime", self, statusTip="", triggered=self._on_add_cp_r_min_runtime)
         sub_cp_r_menu.addAction(add_cp_r_min_runtime_action)
-        add_cp_r_delay_action = QAction("delay", self, statusTip="", triggered=self._on_add_cp_r_delay)
+        add_cp_r_delay_action = QAction(
+            "delay", self, statusTip="", triggered=self._on_add_cp_r_delay)
         sub_cp_r_menu.addAction(add_cp_r_delay_action)
         sub_cp_menu.addMenu(sub_cp_r_menu)
 
-        add_cp_capability_group_action = QAction("capability_group", self, statusTip="", triggered=self._on_add_cp_capability_group)
+        add_cp_capability_group_action = QAction(
+            "capability_group", self, statusTip="", triggered=self._on_add_cp_capability_group)
         add_cp_capability_group_action.setShortcuts(QKeySequence("Ctrl+Alt+p"))
         sub_cp_menu.addAction(add_cp_capability_group_action)
-        add_cp_kill_on_stop_action = QAction("nm/kill_on_stop", self, statusTip="True or time to wait in ms", triggered=self._on_add_cp_kill_on_stop)
+        add_cp_kill_on_stop_action = QAction(
+            "nm/kill_on_stop", self, statusTip="True or time to wait in ms", triggered=self._on_add_cp_kill_on_stop)
         add_cp_kill_on_stop_action.setShortcuts(QKeySequence("Ctrl+Shift+k"))
         sub_cp_menu.addAction(add_cp_kill_on_stop_action)
         tag_menu.addMenu(sub_cp_menu)
@@ -910,9 +969,11 @@ class Editor(QMainWindow):
             curr_cursor_pos = cursor.position()
             cursor.insertText(text.replace('\n', '\n%s' % spaces))
             if cursor_pose is not None:
-                cursor.setPosition(curr_cursor_pos + cursor_pose, QTextCursor.MoveAnchor)
+                cursor.setPosition(curr_cursor_pos +
+                                   cursor_pose, QTextCursor.MoveAnchor)
                 if selection_len is not None:
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, selection_len)
+                    cursor.movePosition(
+                        QTextCursor.NextCharacter, QTextCursor.KeepAnchor, selection_len)
             cursor.endEditBlock()
             self.tabWidget.currentWidget().setTextCursor(cursor)
             self.tabWidget.currentWidget().setFocus(Qt.OtherFocusReason)
@@ -960,7 +1021,8 @@ class Editor(QMainWindow):
         name = ""
         if len(lines) == 1:
             name = lines[0]
-        self._insert_text('<param name="%s" value="value" />' % name, 22 + len(name), 5)
+        self._insert_text('<param name="%s" value="value" />' %
+                          name, 22 + len(name), 5)
 
     def _on_add_param_tag(self):
         self._insert_text('<param name="name" value="value" />', 13, 4)
@@ -1004,28 +1066,36 @@ class Editor(QMainWindow):
                               '</test>' % (dia.binary, dia.package, dia.binary, dia.binary))
 
     def _on_add_cp_capability_group(self):
-        self._insert_text('<param name="capability_group" value="demo" />', 38, 4)
+        self._insert_text(
+            '<param name="capability_group" value="demo" />', 38, 4)
 
     def _on_add_cp_kill_on_stop(self):
-        self._insert_text('<param name="nm/kill_on_stop" value="100" hint="[ms]" />', 34, 3)
+        self._insert_text(
+            '<param name="nm/kill_on_stop" value="100" hint="[ms]" />', 34, 3)
 
     def _on_add_cp_associations(self):
-        self._insert_text('<param name="nm/associations" value="node1,node2" hint="list of nodes" />', 34, 11)
+        self._insert_text(
+            '<param name="nm/associations" value="node1,node2" hint="list of nodes" />', 34, 11)
 
     def _on_add_cp_as_delay(self):
-        self._insert_text('<param name="autostart/delay" value="1" hint="[seconds]" />', 37, 1)
+        self._insert_text(
+            '<param name="autostart/delay" value="1" hint="[seconds]" />', 37, 1)
 
     def _on_add_cp_as_exclude(self):
-        self._insert_text('<param name="autostart/exclude" value="True" />', 39, 4)
+        self._insert_text(
+            '<param name="autostart/exclude" value="True" />', 39, 4)
 
     def _on_add_cp_as_req_publisher(self):
-        self._insert_text('<param name="autostart/required/publisher" value="topic" />', 50, 5)
+        self._insert_text(
+            '<param name="autostart/required/publisher" value="topic" />', 50, 5)
 
     def _on_add_cp_r_max(self):
         self._insert_text('<param name="respawn/max" value="10" />', 33, 2)
 
     def _on_add_cp_r_min_runtime(self):
-        self._insert_text('<param name="respawn/min_runtime" value="10" hint="[seconds]" />', 41, 2)
+        self._insert_text(
+            '<param name="respawn/min_runtime" value="10" hint="[seconds]" />', 41, 2)
 
     def _on_add_cp_r_delay(self):
-        self._insert_text('<param name="respawn/delay" value="5" hint="[seconds]" />', 31, 2)
+        self._insert_text(
+            '<param name="respawn/delay" value="5" hint="[seconds]" />', 31, 2)

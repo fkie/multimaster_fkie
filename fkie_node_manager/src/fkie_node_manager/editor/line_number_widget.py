@@ -21,7 +21,6 @@
 # THE SOFTWARE
 
 
-
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QPainter
 try:
@@ -66,7 +65,8 @@ class LineNumberWidget(QFrame):
                 line_count += 1
                 # the top left position of the block in the document
                 if posdiff == 0:
-                    position_y = self.edit.document().documentLayout().blockBoundingRect(block).topLeft().y()
+                    position_y = self.edit.document().documentLayout(
+                    ).blockBoundingRect(block).topLeft().y()
                     if first_pos == -1:
                         first_pos = position_y
                     else:
@@ -86,7 +86,8 @@ class LineNumberWidget(QFrame):
                     painter.setPen(Qt.black)
                 # Draw the line number right justified at the y position of the
                 # line. 3 is the magic padding number. drawText(x, y, text)
-                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3, position_y - contents_y + font_metrics.ascent(), str(line_count))
+                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3,
+                                 position_y - contents_y + font_metrics.ascent(), str(line_count))
                 if bold:
                     font = painter.font()
                     font.setBold(False)

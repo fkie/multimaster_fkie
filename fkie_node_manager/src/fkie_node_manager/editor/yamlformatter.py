@@ -32,7 +32,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import ruamel.yaml
 
 
@@ -43,9 +42,11 @@ class YamlFormatter(ruamel.yaml.YAML):
         ruamel.yaml.YAML.__init__(self)
 
     def format_string(self, data):
-        code = ruamel.yaml.load(data.encode('utf-8'), Loader=ruamel.yaml.RoundTripLoader)
+        code = ruamel.yaml.load(data.encode(
+            'utf-8'), Loader=ruamel.yaml.RoundTripLoader)
         buf = ruamel.yaml.compat.StringIO()
-        ruamel.yaml.dump(code, buf, Dumper=ruamel.yaml.RoundTripDumper, encoding='utf-8', default_style=None, indent='  ')
+        ruamel.yaml.dump(code, buf, Dumper=ruamel.yaml.RoundTripDumper,
+                         encoding='utf-8', default_style=None, indent='  ')
         result = buf.getvalue()
         if self.indent_data:
             lines = result.splitlines()

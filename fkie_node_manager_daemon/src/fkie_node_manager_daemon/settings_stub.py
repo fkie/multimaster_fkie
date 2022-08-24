@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2 as smsg
 from . import settings
@@ -49,7 +48,8 @@ class SettingsStub(object):
         '''
         request = smsg.Filter()
         request.nslist.extend(nslist)
-        response = self.ss_stub.GetConfig(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.ss_stub.GetConfig(
+            request, timeout=settings.GRPC_TIMEOUT)
         return response.data
 
     def set_config(self, data):

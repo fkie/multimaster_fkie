@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 import subprocess
 import threading
@@ -90,5 +89,6 @@ class SupervisedPopen():
         if self.stderr is not None:
             result_err = self.stderr.read()
         if result_err:
-            rospy.logwarn('%s - %s: %s' % (self._object_id, self._description, result_err))
+            rospy.logwarn('%s - %s: %s' %
+                          (self._object_id, self._description, result_err))
         rospy.logdebug("job [%s] finished" % self._object_id)

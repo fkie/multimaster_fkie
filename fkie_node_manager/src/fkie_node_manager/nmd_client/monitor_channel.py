@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 from diagnostic_msgs.msg import DiagnosticArray
 from python_qt_binding.QtCore import Signal
@@ -57,7 +56,6 @@ class MonitorChannel(ChannelInterface):
       :ivar str,str user_signal: signal emit current user for remote system {user name, grpc_url}.
     '''
 
-
     def clear_cache(self, grpc_url=''):
         pass
 
@@ -66,7 +64,8 @@ class MonitorChannel(ChannelInterface):
         return mstub.MonitorStub(channel), channel
 
     def get_system_diagnostics_threaded(self, grpc_url='grpc://localhost:12321'):
-        self._threads.start_thread("gmsdt_%s" % grpc_url, target=self.get_system_diagnostics, args=(grpc_url, True))
+        self._threads.start_thread(
+            "gmsdt_%s" % grpc_url, target=self.get_system_diagnostics, args=(grpc_url, True))
 
     def get_system_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get system diagnostics from %s" % (grpc_url))
@@ -84,7 +83,8 @@ class MonitorChannel(ChannelInterface):
             self.close_channel(channel, uri)
 
     def get_diagnostics_threaded(self, grpc_url='grpc://localhost:12321'):
-        self._threads.start_thread("gmdt_%s" % grpc_url, target=self.get_diagnostics, args=(grpc_url, True))
+        self._threads.start_thread(
+            "gmdt_%s" % grpc_url, target=self.get_diagnostics, args=(grpc_url, True))
 
     def get_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
         rospy.logdebug("get diagnostics from %s" % (grpc_url))
@@ -114,7 +114,8 @@ class MonitorChannel(ChannelInterface):
                 self.close_channel(channel, uri)
 
     def get_user_threaded(self, grpc_url='grpc://localhost:12321'):
-        self._threads.start_thread("gut_%s" % grpc_url, target=self.get_user, args=(grpc_url,))
+        self._threads.start_thread(
+            "gut_%s" % grpc_url, target=self.get_user, args=(grpc_url,))
 
     def get_user(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("get user from %s" % (grpc_url))

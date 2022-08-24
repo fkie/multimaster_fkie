@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtGui import QColor  # pylint: disable=no-name-in-module, import-error
 from python_qt_binding.QtGui import QIcon  # pylint: disable=no-name-in-module, import-error
 from python_qt_binding.QtGui import QImage  # pylint: disable=no-name-in-module, import-error
@@ -133,8 +132,10 @@ class Settings(object):
     TIMEOUT_CONTROL = 5
     TIMEOUT_UPDATES = 20
 
-    SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
-    LAUNCH_VIEW_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xacro']
+    SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
+                     '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
+    LAUNCH_VIEW_EXT = ['.launch', '.yaml', '.conf', '.cfg',
+                       '.iface', '.nmprofile', '.sync', '.test', '.xacro']
 
     DEAFULT_HOST_COLORS = [QColor(255, 255, 235).rgb()]
 
@@ -162,9 +163,11 @@ class Settings(object):
             import shutil
             old_cfg_path = os.path.join(get_ros_home(), 'node_manager')
             if os.path.exists(old_cfg_path):
-                print("move configuration to new destination: %s" % self.CFG_PATH)
+                print("move configuration to new destination: %s" %
+                      self.CFG_PATH)
                 for filename in os.listdir(old_cfg_path):
-                    shutil.move(os.path.join(old_cfg_path, filename), os.path.join(self.CFG_PATH, filename))
+                    shutil.move(os.path.join(old_cfg_path, filename),
+                                os.path.join(self.CFG_PATH, filename))
                 shutil.rmtree(old_cfg_path)
         except Exception:
             pass
@@ -181,14 +184,19 @@ class Settings(object):
         self._current_dialog_path = self.CURRENT_DIALOG_PATH
         self._log_viewer = self.LOG_VIEWER
         self._start_remote_script = self.STARTER_SCRIPT
-        self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(self.str2list(self.launch_view_file_ext)))
+        self.SEARCH_IN_EXT = list(set(self.SEARCH_IN_EXT) | set(
+            self.str2list(self.launch_view_file_ext)))
         # setup logging
         self._rosconsole_cfg_file = 'rosconsole.config'
         self.logging = LoggingConfig()
-        self.logging.loglevel = settings.value('logging/level', LoggingConfig.LOGLEVEL)
-        self.logging.loglevel_roscpp = settings.value('logging/level_roscpp', LoggingConfig.LOGLEVEL_ROSCPP)
-        self.logging.loglevel_superdebug = settings.value('logging/level_superdebug', LoggingConfig.LOGLEVEL_SUPERDEBUG)
-        self.logging.console_format = settings.value('logging/rosconsole_format', LoggingConfig.CONSOLE_FORMAT)
+        self.logging.loglevel = settings.value(
+            'logging/level', LoggingConfig.LOGLEVEL)
+        self.logging.loglevel_roscpp = settings.value(
+            'logging/level_roscpp', LoggingConfig.LOGLEVEL_ROSCPP)
+        self.logging.loglevel_superdebug = settings.value(
+            'logging/level_superdebug', LoggingConfig.LOGLEVEL_SUPERDEBUG)
+        self.logging.console_format = settings.value(
+            'logging/rosconsole_format', LoggingConfig.CONSOLE_FORMAT)
         nmd_settings.GRPC_TIMEOUT = self.timeout_grpc
         # setup colors
         settings.beginGroup('host_colors')
@@ -289,11 +297,11 @@ class Settings(object):
                                                  "dialog to True, if this option is set to true."
                                                  },
                   'Start daemon with discovery:': {':value': self.str2bool(settings.value('start_daemon_with_discovery', False)),
-                                                 ':var': 'start_daemon_with_discovery',
-                                                 ':default': False,
-                                                 ':hint': "Sets 'start daemons' in 'Start' master discovery"
-                                                 "dialog to True, if this option is set to true."
-                                                 },
+                                                   ':var': 'start_daemon_with_discovery',
+                                                   ':default': False,
+                                                   ':hint': "Sets 'start daemons' in 'Start' master discovery"
+                                                   "dialog to True, if this option is set to true."
+                                                   },
                   'Confirm exit when closing:': {':value': self.str2bool(settings.value('confirm_exit_when_closing', True)),
                                                  ':var': 'confirm_exit_when_closing',
                                                  ':default': True,
@@ -326,10 +334,10 @@ class Settings(object):
                                            ':hint': "Shows an error if requested screen for a node is not available.",
                                            },
                   'Autoreload changed launch files:': {':value': self.str2bool(settings.value('autoreload_launch', False)),
-                                             ':var': 'autoreload_launch',
-                                             ':default': False,
-                                             ':hint': "On change asks for reload launch file. On True reload without asking.",
-                                             },
+                                                       ':var': 'autoreload_launch',
+                                                       ':default': False,
+                                                       ':hint': "On change asks for reload launch file. On True reload without asking.",
+                                                       },
                   'Show domain suffix:': {':value': self.str2bool(settings.value('show_domain_suffix', False)),
                                           ':var': 'show_domain_suffix',
                                           ':default': False,
@@ -376,11 +384,11 @@ class Settings(object):
                                             ':need_restart': True,
                                             },
                   'Use internal log widget:': {':value': self.str2bool(settings.value('use_internal_log_widget', True)),
-                                                ':var': 'use_internal_log_widget',
-                                                ':default': False,
-                                                ':hint': 'Opens the log file in internal dock instead of new terminal. If deactivated still accessible with Ctrl modifier.',
-                                                ':need_restart': False,
-                                                },
+                                               ':var': 'use_internal_log_widget',
+                                               ':default': False,
+                                               ':hint': 'Opens the log file in internal dock instead of new terminal. If deactivated still accessible with Ctrl modifier.',
+                                               ':need_restart': False,
+                                               },
                   }
         return result
 
@@ -401,7 +409,8 @@ class Settings(object):
             if value[':var'] == 'reset_cache':
                 reset_cache = value[':value']
         if need_restart:
-            MessageBox.information(None, "restart Node Manager", "Some of modified parameter requires a restart of Node Manager!")
+            MessageBox.information(
+                None, "restart Node Manager", "Some of modified parameter requires a restart of Node Manager!")
         # handle reset
         if reset:
             try:
@@ -412,7 +421,8 @@ class Settings(object):
             self.reload()
         if reset_cache:
             try:
-                os.remove(os.path.join(self.CFG_PATH, self.LAUNCH_HISTORY_FILE))
+                os.remove(os.path.join(self.CFG_PATH,
+                                       self.LAUNCH_HISTORY_FILE))
                 os.remove(os.path.join(self.CFG_PATH, self.PARAM_HISTORY_FILE))
             except Exception:
                 pass
@@ -497,19 +507,24 @@ class Settings(object):
         self._start_remote_script = script
 
     def rosconsole_cfg_file(self, package):
-        result = os.path.join(self.LOG_PATH, '%s.%s' % (package, self._rosconsole_cfg_file))
+        result = os.path.join(self.LOG_PATH, '%s.%s' %
+                              (package, self._rosconsole_cfg_file))
         with open(result, 'w') as cfg_file:
             cfg_file.write('log4j.logger.ros=%s\n' % self.logging.loglevel)
-            cfg_file.write('log4j.logger.ros.roscpp=%s\n' % self.logging.loglevel_roscpp)
-            cfg_file.write('log4j.logger.ros.roscpp.superdebug=%s\n' % self.logging.loglevel_superdebug)
+            cfg_file.write('log4j.logger.ros.roscpp=%s\n' %
+                           self.logging.loglevel_roscpp)
+            cfg_file.write('log4j.logger.ros.roscpp.superdebug=%s\n' %
+                           self.logging.loglevel_superdebug)
         return result
 
     def store_logging(self):
         settings = self.qsettings(self.CFG_FILE)
         settings.setValue('logging/level', self.logging.loglevel)
         settings.setValue('logging/level_roscpp', self.logging.loglevel_roscpp)
-        settings.setValue('logging/level_superdebug', self.logging.loglevel_superdebug)
-        settings.setValue('logging/rosconsole_format', self.logging.console_format)
+        settings.setValue('logging/level_superdebug',
+                          self.logging.loglevel_superdebug)
+        settings.setValue('logging/rosconsole_format',
+                          self.logging.console_format)
 
     def host_color(self, host, default_color):
         if self.colorize_hosts:
@@ -648,15 +663,16 @@ class Settings(object):
                     noclose_str = '--profile hold'
                     if noclose:
                         rospy.loginfo("If your terminal close after the execution, you can change this behavior in "
-                                        "profiles. You can also create a profile with name 'hold'. This profile will "
-                                        "be then load by node_manager.")
+                                      "profiles. You can also create a profile with name 'hold'. This profile will "
+                                      "be then load by node_manager.")
                 elif os.path.basename(os.path.realpath(t)) in ['xfce4-terminal', 'xterm', 'lxterm', 'uxterm']:
                     noclose_str = ''
                     terminal_title = '-T'
                 terminal_emulator = t
                 break
         if terminal_emulator == '':
-            raise Exception("No Terminal found! Please install one of ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']")
+            raise Exception(
+                "No Terminal found! Please install one of ['/usr/bin/x-terminal-emulator', '/usr/bin/xterm', '/opt/x11/bin/xterm']")
         noclose_str = noclose_str if noclose else ''
         title_opt = ''
         if title:

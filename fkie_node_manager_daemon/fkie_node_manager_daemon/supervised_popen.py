@@ -42,15 +42,16 @@ class SupervisedPopen(object):
         self._object_id = object_id
         self._rosnode = rosnode
         if self._rosnode is not None:
-            self._rosnode.get_logger().debug("start job [%s]" % self._object_id)
+            self._rosnode.get_logger().debug(
+                "start job [%s]" % self._object_id)
         self._description = description
         if not cwd:
             # if cwd is an empty string we get an unspecific FileNotFound Exception with '': ''
             cwd = None
         # wait for process to avoid 'defunct' processes
         self.popen = subprocess.Popen(args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
-                                    stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env,
-                                    universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags)
+                                      stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env,
+                                      universal_newlines=universal_newlines, startupinfo=startupinfo, creationflags=creationflags)
         thread = threading.Thread(target=self._supervise)
         thread.setDaemon(True)
         thread.start()
@@ -80,5 +81,7 @@ class SupervisedPopen(object):
             result_err = self.stderr.read()
         if self._rosnode is not None:
             if result_err:
-                self._rosnode.get_logger().warn('%s - %s: %s' % (self._object_id, self._description, result_err))
-            self._rosnode.get_logger().debug("job [%s] finished" % self._object_id)
+                self._rosnode.get_logger().warn('%s - %s: %s' %
+                                                (self._object_id, self._description, result_err))
+            self._rosnode.get_logger().debug(
+                "job [%s] finished" % self._object_id)

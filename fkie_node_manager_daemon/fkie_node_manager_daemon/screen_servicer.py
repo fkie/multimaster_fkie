@@ -17,7 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os, signal
+import os
+import signal
 import fkie_node_manager_daemon.grpc_proto.screen_pb2_grpc as sgrpc
 import fkie_node_manager_daemon.grpc_proto.screen_pb2 as smsg
 import fkie_node_manager_daemon as nmd
@@ -63,7 +64,8 @@ class ScreenServicer(sgrpc.ScreenServiceServicer):
             if node_name not in node_names:
                 node_names.append(node_name)
             elif node_name not in added_node_names:
-                screen_objs.append(smsg.Screen(name=session_name, node=node_name))
+                screen_objs.append(smsg.Screen(
+                    name=session_name, node=node_name))
                 added_node_names.append(node_name)
         # TODO currently we add only one session name. Add all!
         reply.screens.extend(screen_objs)
@@ -99,7 +101,8 @@ class ScreenServicer(sgrpc.ScreenServiceServicer):
                 try:
                     ss = session_name.split('.')
                     os.kill(int(ss[0]), signal.SIGKILL)
-                    screen_objs.append(smsg.Screen(name=session_name, node=node_name))
+                    screen_objs.append(smsg.Screen(
+                        name=session_name, node=node_name))
                 except Exception:
                     import traceback
                     print(traceback.format_exc())

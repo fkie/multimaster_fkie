@@ -116,7 +116,8 @@ class NodeInfo(object):
         Sets the URI of the RPC API of the node.
         '''
         self.__uri = uri
-        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local = NodeInfo.local_(
+            self.__masteruri, self.__org_masteruri, self.__uri)
 
     @property
     def masteruri(self):
@@ -133,7 +134,8 @@ class NodeInfo(object):
         Sets the ROS master URI.
         '''
         self.__org_masteruri = uri
-        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local = NodeInfo.local_(
+            self.__masteruri, self.__org_masteruri, self.__uri)
         self.__local_master = (self.__masteruri == self.__org_masteruri)
 
     @property
@@ -463,7 +465,8 @@ class ServiceInfo(object):
         :type uri: str
         '''
         self.__uri = uri
-        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local = NodeInfo.local_(
+            self.__masteruri, self.__org_masteruri, self.__uri)
 
     @property
     def masteruri(self):
@@ -486,7 +489,8 @@ class ServiceInfo(object):
         '''
         self.__org_masteruri = uri
         self.__local_master = (self.__masteruri == self.__org_masteruri)
-        self.__local = NodeInfo.local_(self.__masteruri, self.__org_masteruri, self.__uri)
+        self.__local = NodeInfo.local_(
+            self.__masteruri, self.__org_masteruri, self.__uri)
 
     @property
     def isLocal(self):
@@ -569,7 +573,8 @@ class ServiceInfo(object):
                     header = {'probe': '1', 'md5sum': '*',
                               'callerid': rospy.get_name(), 'service': self.name}
                     roslib.network.write_ros_handshake_header(s, header)
-                    srv_type = roslib.network.read_ros_handshake_header(s, io.StringIO(), 2048)
+                    srv_type = roslib.network.read_ros_handshake_header(
+                        s, io.StringIO(), 2048)
                     srv_type = srv_type['type']
                 except socket.error:
                     pass
@@ -581,7 +586,8 @@ class ServiceInfo(object):
 
         import rosservice
         if not srv_type:
-            raise rosservice.ROSServiceException("Not valid type of service [%s]." % str(srv_type))
+            raise rosservice.ROSServiceException(
+                "Not valid type of service [%s]." % str(srv_type))
 
         # get the Service class so we can populate the request
         service_class = roslib.message.get_service_class(srv_type)
@@ -1192,12 +1198,14 @@ class MasterInfo(object):
                     nodes_last_check.add(sp)
             if srv_prov:
                 services.append((name, srv_prov))
-                serviceProvider.append((name, service.uri, str(service.masteruri), service.type if service.type is not None else '', 'local' if service.isLocal else 'remote'))
+                serviceProvider.append((name, service.uri, str(
+                    service.masteruri), service.type if service.type is not None else '', 'local' if service.isLocal else 'remote'))
 
         # creates the nodes list
         for name, node in self.nodes.items():
             if name in nodes_last_check:
-                nodes.append((name, node.uri, str(node.masteruri), node.pid, 'local' if node.isLocal else 'remote'))
+                nodes.append((name, node.uri, str(node.masteruri),
+                              node.pid, 'local' if node.isLocal else 'remote'))
 
         return (stamp, stamp_local, self.masteruri, self.mastername, publishers, subscribers, services, topicTypes, nodes, serviceProvider)
 
@@ -1308,7 +1316,8 @@ class MasterInfo(object):
                 for n in nodes2add:
                     if not (n in self.__nodelist):
                         nodes_added.add(n)
-                        self.__nodelist[n] = other_local_nodes[n].copy(self.masteruri)
+                        self.__nodelist[n] = other_local_nodes[n].copy(
+                            self.masteruri)
 
         # UPDATE SERVICES
         own_remote_srvs = dict()
@@ -1360,7 +1369,8 @@ class MasterInfo(object):
                 for s in srv2add:
                     if not (s in self.__servicelist):
                         srvs_added.add(s)
-                        self.__servicelist[s] = other_local_srvs[s].copy(self.masteruri)
+                        self.__servicelist[s] = other_local_srvs[s].copy(
+                            self.masteruri)
 
         return (nodes_added, nodes_changed, nodes2remove, topics_added, topics_changed, topics_removed, srvs_added, services_changed, srvs2remove)
 
@@ -1414,4 +1424,3 @@ class MasterInfo(object):
             import traceback
             print(traceback.format_exc())
         return result
-

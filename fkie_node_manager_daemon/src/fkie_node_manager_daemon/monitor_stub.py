@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from fkie_node_manager_daemon.monitor import ros_msg
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.monitor_pb2 as mmsg
@@ -49,7 +48,8 @@ class MonitorStub(object):
         :rtype: DiagnosticArray
         '''
         request = mmsg.Filter(timestamp=filter_timestamp, level=filter_level)
-        response = self.mm_stub.GetSystemDiagnostics(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetSystemDiagnostics(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
     def get_system_warnings(self):
@@ -58,7 +58,8 @@ class MonitorStub(object):
         :rtype: DiagnosticArray
         '''
         request = mmsg.Empty()
-        response = self.mm_stub.GetSystemWarnings(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetSystemWarnings(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
     def get_diagnostics(self, filter_level=0, filter_timestamp=0):
@@ -67,7 +68,8 @@ class MonitorStub(object):
         :rtype: DiagnosticArray
         '''
         request = mmsg.Filter(timestamp=filter_timestamp, level=filter_level)
-        response = self.mm_stub.GetDiagnostics(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetDiagnostics(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
     def get_warnings(self):
@@ -76,7 +78,8 @@ class MonitorStub(object):
         :rtype: DiagnosticArray
         '''
         request = mmsg.Empty()
-        response = self.mm_stub.GetWarnings(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetWarnings(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
     def kill_process(self, pid):

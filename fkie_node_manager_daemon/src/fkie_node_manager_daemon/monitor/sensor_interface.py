@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 import threading
 
@@ -82,11 +81,13 @@ class SensorInterface(threading.Thread):
         with self.mutex:
             if self._ts_last > 0:
                 if self._ts_last > filter_ts and self._stat_msg.level >= filter_level:
-                    self.update_value_last_ts(self._stat_msg, ts_now, self._ts_last)
+                    self.update_value_last_ts(
+                        self._stat_msg, ts_now, self._ts_last)
                     return self._stat_msg
         return None
 
     def update_value_last_ts(self, msg, nowts, ts):
         if msg.values and msg.values[-1].key == 'Timestamp':
             del msg.values[-1]
-        msg.values.append(KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))
+        msg.values.append(
+            KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))

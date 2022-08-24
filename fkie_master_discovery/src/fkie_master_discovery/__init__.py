@@ -94,7 +94,8 @@ def set_process_name(name):
 
 
 def is_port_in_use(port):
-    import socket, errno
+    import socket
+    import errno
     result = False
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -130,7 +131,8 @@ def main():
     wait_for_free_port()
     # setup the loglevel
     try:
-        log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
+        log_level = getattr(rospy, rospy.get_param(
+            '/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
         print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO
@@ -142,13 +144,15 @@ def main():
     rpc_port = rospy.get_param('~rpc_port', get_default_rtcp_port())
     rpc_addr = rospy.get_param('~rpc_addr', '')
     try:
-        discoverer = master_discovery.Discoverer(mcast_port, mcast_group, rpc_port, rpc_addr=rpc_addr)
+        discoverer = master_discovery.Discoverer(
+            mcast_port, mcast_group, rpc_port, rpc_addr=rpc_addr)
         discoverer.start()
         rospy.spin()
         discoverer.finish()
     except Exception as e:
         import traceback
-        rospy.logerr("%s\nError while start master_discovery: %s" % (traceback.format_exc(), str(e)))
+        rospy.logerr("%s\nError while start master_discovery: %s" %
+                     (traceback.format_exc(), str(e)))
         os.kill(os.getpid(), signal.SIGKILL)
         time.sleep(10)
 
@@ -162,7 +166,8 @@ def main_zeroconf():
     wait_for_free_port()
     # setup the loglevel
     try:
-        log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
+        log_level = getattr(rospy, rospy.get_param(
+            '/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
         print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO

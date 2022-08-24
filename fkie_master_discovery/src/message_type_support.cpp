@@ -24,183 +24,192 @@
 
 using ParticipantEntitiesInfo = rmw_dds_common::msg::ParticipantEntitiesInfo;
 
-
 // The code of register_type() is based on rmw_fastrtps/rmw_fastrtps_cpp/subscription.cpp#create_subscription()
 // We need it to register ParticipantEntitiesInfo to get messages from "ros_discovery_info"
-std::string register_type(eprosima::fastrtps::Participant* participant, const void** type_support_impl)
+std::string register_type(eprosima::fastrtps::Participant *participant, const void **type_support_impl)
 {
-    std::string empty;
-    const rosidl_message_type_support_t * type_supports = rosidl_typesupport_cpp::get_message_type_support_handle<ParticipantEntitiesInfo>();
-    const rosidl_message_type_support_t * type_support = get_message_typesupport_handle(type_supports, RMW_FASTRTPS_CPP_TYPESUPPORT_CPP);
-    if (!type_support) {
-        RMW_SET_ERROR_MSG("type support not from this implementation");
-        return empty;
-    }
-    *type_support_impl = type_support->data;
+  std::string empty;
+  const rosidl_message_type_support_t *type_supports = rosidl_typesupport_cpp::get_message_type_support_handle<ParticipantEntitiesInfo>();
+  const rosidl_message_type_support_t *type_support = get_message_typesupport_handle(type_supports, RMW_FASTRTPS_CPP_TYPESUPPORT_CPP);
+  if (!type_support)
+  {
+    RMW_SET_ERROR_MSG("type support not from this implementation");
+    return empty;
+  }
+  *type_support_impl = type_support->data;
 
-    auto callbacks = static_cast<const message_type_support_callbacks_t *>(type_support->data);
-    std::string type_name = _create_type_name(callbacks);
-    rmw_fastrtps_cpp::MessageTypeSupport * message_type = nullptr;
-    bool type_ok = eprosima::fastrtps::Domain::getRegisteredType(
-                    participant, type_name.c_str(),
-                    reinterpret_cast<eprosima::fastrtps::TopicDataType **>(&message_type));
-    if (!type_ok) {
-        message_type = new (std::nothrow) rmw_fastrtps_cpp::MessageTypeSupport(callbacks);
-        if (!message_type) {
-            RMW_SET_ERROR_MSG("Failed to allocate MessageTypeSupport");
-            return empty;
-        }
-        eprosima::fastrtps::Domain::registerType(participant, message_type);
+  auto callbacks = static_cast<const message_type_support_callbacks_t *>(type_support->data);
+  std::string type_name = _create_type_name(callbacks);
+  rmw_fastrtps_cpp::MessageTypeSupport *message_type = nullptr;
+  bool type_ok = eprosima::fastrtps::Domain::getRegisteredType(
+      participant, type_name.c_str(),
+      reinterpret_cast<eprosima::fastrtps::TopicDataType **>(&message_type));
+  if (!type_ok)
+  {
+    message_type = new (std::nothrow) rmw_fastrtps_cpp::MessageTypeSupport(callbacks);
+    if (!message_type)
+    {
+      RMW_SET_ERROR_MSG("Failed to allocate MessageTypeSupport");
+      return empty;
     }
-	return type_name;
+    eprosima::fastrtps::Domain::registerType(participant, message_type);
+  }
+  return type_name;
 }
-
 
 // TypeSupport implementation copied (1to1) from rmw_fastrtps_cpp/type_support_common.cpp
 // because the linker cannot find the reference to rmw_fastrtps_cpp::MessageTypeSupport::MessageTypeSupport
 namespace rmw_fastrtps_cpp
 {
 
-TypeSupport::TypeSupport()
-{
-  m_isGetKeyDefined = false;
-  max_size_bound_ = false;
-  // is_plain_ = false;
-}
+  TypeSupport::TypeSupport()
+  {
+    m_isGetKeyDefined = false;
+    max_size_bound_ = false;
+    // is_plain_ = false;
+  }
 
-void TypeSupport::set_members(const message_type_support_callbacks_t * members)
-{
-  members_ = members;
-  bool is_plain_ = false;
+  void TypeSupport::set_members(const message_type_support_callbacks_t *members)
+  {
+    members_ = members;
+    bool is_plain_ = false;
 
 #ifdef ROSIDL_TYPESUPPORT_FASTRTPS_HAS_PLAIN_TYPES
-  char bounds_info;
-  auto data_size = static_cast<uint32_t>(members->max_serialized_size(bounds_info));
-  max_size_bound_ = 0 != (bounds_info & ROSIDL_TYPESUPPORT_FASTRTPS_BOUNDED_TYPE);
-  is_plain_ = bounds_info == ROSIDL_TYPESUPPORT_FASTRTPS_PLAIN_TYPE;
+    char bounds_info;
+    auto data_size = static_cast<uint32_t>(members->max_serialized_size(bounds_info));
+    max_size_bound_ = 0 != (bounds_info & ROSIDL_TYPESUPPORT_FASTRTPS_BOUNDED_TYPE);
+    is_plain_ = bounds_info == ROSIDL_TYPESUPPORT_FASTRTPS_PLAIN_TYPE;
 #else
-  is_plain_ = true;
-  auto data_size = static_cast<uint32_t>(members->max_serialized_size(is_plain_));
-  max_size_bound_ = is_plain_;
+    is_plain_ = true;
+    auto data_size = static_cast<uint32_t>(members->max_serialized_size(is_plain_));
+    max_size_bound_ = is_plain_;
 #endif
 
-  // A plain message of size 0 is an empty message
-  if (is_plain_ && (data_size == 0) ) {
-    has_data_ = false;
-    ++data_size;  // Dummy byte
-  } else {
-    has_data_ = true;
-  }
-
-  // Total size is encapsulation size + data size
-  m_typeSize = 4 + data_size;
-  // Account for RTPS submessage alignment
-  m_typeSize = (m_typeSize + 3) & ~3;
-}
-
-size_t TypeSupport::getEstimatedSerializedSize(const void * ros_message, const void * impl) const
-{
-  // if (is_plain_) {
-  //   return m_typeSize;
-  // }
-
-  assert(ros_message);
-  assert(impl);
-
-  auto callbacks = static_cast<const message_type_support_callbacks_t *>(impl);
-
-  // Encapsulation size + message size
-  return 4 + callbacks->get_serialized_size(ros_message);
-}
-
-bool TypeSupport::serializeROSmessage(
-  const void * ros_message, eprosima::fastcdr::Cdr & ser, const void * impl) const
-{
-  assert(ros_message);
-  assert(impl);
-
-  // Serialize encapsulation
-  ser.serialize_encapsulation();
-
-  // If type is not empty, serialize message
-  if (has_data_) {
-    auto callbacks = static_cast<const message_type_support_callbacks_t *>(impl);
-    return callbacks->cdr_serialize(ros_message, ser);
-  }
-
-  // Otherwise, add a dummy byte
-  ser << (uint8_t)0;
-  return true;
-}
-
-bool TypeSupport::deserializeROSmessage(
-  eprosima::fastcdr::Cdr & deser, void * ros_message, const void * impl) const
-{
-  assert(ros_message);
-  assert(impl);
-
-  try {
-    // Deserialize encapsulation.
-    deser.read_encapsulation();
-
-    // If type is not empty, deserialize message
-    if (has_data_) {
-      auto callbacks = static_cast<const message_type_support_callbacks_t *>(impl);
-      return callbacks->cdr_deserialize(deser, ros_message);
+    // A plain message of size 0 is an empty message
+    if (is_plain_ && (data_size == 0))
+    {
+      has_data_ = false;
+      ++data_size; // Dummy byte
+    }
+    else
+    {
+      has_data_ = true;
     }
 
-    // Otherwise, consume dummy byte
-    uint8_t dump = 0;
-    deser >> dump;
-    (void)dump;
-  } catch (const eprosima::fastcdr::exception::Exception &) {
-    RMW_SET_ERROR_MSG_WITH_FORMAT_STRING(
-      "Fast CDR exception deserializing message of type %s.",
-      getName());
-    return false;
+    // Total size is encapsulation size + data size
+    m_typeSize = 4 + data_size;
+    // Account for RTPS submessage alignment
+    m_typeSize = (m_typeSize + 3) & ~3;
   }
 
-  return true;
-}
+  size_t TypeSupport::getEstimatedSerializedSize(const void *ros_message, const void *impl) const
+  {
+    // if (is_plain_) {
+    //   return m_typeSize;
+    // }
 
-MessageTypeSupport::MessageTypeSupport(const message_type_support_callbacks_t * members)
-{
-  assert(members);
+    assert(ros_message);
+    assert(impl);
 
-  std::string name = _create_type_name(members);
-  this->setName(name.c_str());
+    auto callbacks = static_cast<const message_type_support_callbacks_t *>(impl);
 
-  set_members(members);
-}
+    // Encapsulation size + message size
+    return 4 + callbacks->get_serialized_size(ros_message);
+  }
 
-ServiceTypeSupport::ServiceTypeSupport()
-{
-}
+  bool TypeSupport::serializeROSmessage(
+      const void *ros_message, eprosima::fastcdr::Cdr &ser, const void *impl) const
+  {
+    assert(ros_message);
+    assert(impl);
 
-RequestTypeSupport::RequestTypeSupport(const service_type_support_callbacks_t * members)
-{
-  assert(members);
+    // Serialize encapsulation
+    ser.serialize_encapsulation();
 
-  auto msg = static_cast<const message_type_support_callbacks_t *>(
-    members->request_members_->data);
-  std::string name = _create_type_name(msg);  // + "Request_";
-  this->setName(name.c_str());
+    // If type is not empty, serialize message
+    if (has_data_)
+    {
+      auto callbacks = static_cast<const message_type_support_callbacks_t *>(impl);
+      return callbacks->cdr_serialize(ros_message, ser);
+    }
 
-  set_members(msg);
-}
+    // Otherwise, add a dummy byte
+    ser << (uint8_t)0;
+    return true;
+  }
 
-ResponseTypeSupport::ResponseTypeSupport(const service_type_support_callbacks_t * members)
-{
-  assert(members);
+  bool TypeSupport::deserializeROSmessage(
+      eprosima::fastcdr::Cdr &deser, void *ros_message, const void *impl) const
+  {
+    assert(ros_message);
+    assert(impl);
 
-  auto msg = static_cast<const message_type_support_callbacks_t *>(
-    members->response_members_->data);
-  std::string name = _create_type_name(msg);  // + "Response_";
-  this->setName(name.c_str());
+    try
+    {
+      // Deserialize encapsulation.
+      deser.read_encapsulation();
 
-  set_members(msg);
-}
+      // If type is not empty, deserialize message
+      if (has_data_)
+      {
+        auto callbacks = static_cast<const message_type_support_callbacks_t *>(impl);
+        return callbacks->cdr_deserialize(deser, ros_message);
+      }
 
-}  // namespace rmw_fastrtps_cpp
+      // Otherwise, consume dummy byte
+      uint8_t dump = 0;
+      deser >> dump;
+      (void)dump;
+    }
+    catch (const eprosima::fastcdr::exception::Exception &)
+    {
+      RMW_SET_ERROR_MSG_WITH_FORMAT_STRING(
+          "Fast CDR exception deserializing message of type %s.",
+          getName());
+      return false;
+    }
 
-#endif  // rmw_dds_common_FOUND
+    return true;
+  }
+
+  MessageTypeSupport::MessageTypeSupport(const message_type_support_callbacks_t *members)
+  {
+    assert(members);
+
+    std::string name = _create_type_name(members);
+    this->setName(name.c_str());
+
+    set_members(members);
+  }
+
+  ServiceTypeSupport::ServiceTypeSupport()
+  {
+  }
+
+  RequestTypeSupport::RequestTypeSupport(const service_type_support_callbacks_t *members)
+  {
+    assert(members);
+
+    auto msg = static_cast<const message_type_support_callbacks_t *>(
+        members->request_members_->data);
+    std::string name = _create_type_name(msg); // + "Request_";
+    this->setName(name.c_str());
+
+    set_members(msg);
+  }
+
+  ResponseTypeSupport::ResponseTypeSupport(const service_type_support_callbacks_t *members)
+  {
+    assert(members);
+
+    auto msg = static_cast<const message_type_support_callbacks_t *>(
+        members->response_members_->data);
+    std::string name = _create_type_name(msg); // + "Response_";
+    this->setName(name.c_str());
+
+    set_members(msg);
+  }
+
+} // namespace rmw_fastrtps_cpp
+
+#endif // rmw_dds_common_FOUND

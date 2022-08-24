@@ -30,13 +30,14 @@ class MonitorStub(object):
     def __init__(self, channel):
         self.mm_stub = mgrpc.MonitorServiceStub(channel)
 
-    def get_system_diagnostics(self, *, filter_level:list=[], filter_timestamp:float=0):
+    def get_system_diagnostics(self, *, filter_level: list = [], filter_timestamp: float = 0):
         '''
         :return: DiagnosticArray
         :rtype: DiagnosticArray
         '''
         request = mmsg.Filter(timestamp=filter_timestamp, level=filter_level)
-        response = self.mm_stub.GetSystemDiagnostics(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetSystemDiagnostics(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
     def get_system_warnings(self):
@@ -45,16 +46,18 @@ class MonitorStub(object):
         :rtype: DiagnosticArray
         '''
         request = mmsg.Empty()
-        response = self.mm_stub.GetSystemWarnings(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetSystemWarnings(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
-    def get_diagnostics(self, *, filter_level:list=[], filter_timestamp:float=0):
+    def get_diagnostics(self, *, filter_level: list = [], filter_timestamp: float = 0):
         '''
         :return: DiagnosticArray
         :rtype: DiagnosticArray
         '''
         request = mmsg.Filter(timestamp=filter_timestamp, level=filter_level)
-        response = self.mm_stub.GetDiagnostics(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetDiagnostics(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
     def get_warnings(self):
@@ -63,7 +66,8 @@ class MonitorStub(object):
         :rtype: DiagnosticArray
         '''
         request = mmsg.Empty()
-        response = self.mm_stub.GetWarnings(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.mm_stub.GetWarnings(
+            request, timeout=settings.GRPC_TIMEOUT)
         return ros_msg(response)
 
     def kill_process(self, pid):
@@ -73,7 +77,7 @@ class MonitorStub(object):
         request.pid = pid
         self.mm_stub.KillProcess(request, timeout=settings.GRPC_TIMEOUT)
 
-    def set_time(self, timestamp:float):
+    def set_time(self, timestamp: float):
         '''
         '''
         request = mmsg.Timestamp()

@@ -115,7 +115,8 @@ def main(argv=sys.argv):
         if options['show_screen_log']:
             logfile = screen.get_logfile(node=options['show_screen_log'])
             if not os.path.isfile(logfile):
-                raise Exception('screen logfile not found for: %s' % options['show_screen_log'])
+                raise Exception('screen logfile not found for: %s' %
+                                options['show_screen_log'])
             cmd = ' '.join([Settings.LOG_VIEWER, str(logfile)])
             print(cmd)
             p = subprocess.Popen(shlex.split(cmd))
@@ -124,7 +125,8 @@ def main(argv=sys.argv):
         if options['tail_screen_log']:
             logfile = screen.get_logfile(node=options['tail_screen_log'])
             if not os.path.isfile(logfile):
-                raise Exception('screen logfile not found for: %s' % options['tail_screen_log'])
+                raise Exception('screen logfile not found for: %s' %
+                                options['tail_screen_log'])
             cmd = ' '.join(['tail', '-f', '-n', '25', str(logfile)])
             print(cmd)
             p = subprocess.Popen(shlex.split(cmd))
@@ -133,7 +135,8 @@ def main(argv=sys.argv):
         elif options['show_ros_log']:
             logfile = screen.get_ros_logfile(node=options['show_ros_log'])
             if not os.path.isfile(logfile):
-                raise Exception('ros logfile not found for: %s' % options['show_ros_log'])
+                raise Exception('ros logfile not found for: %s' %
+                                options['show_ros_log'])
             cmd = ' '.join([Settings.LOG_VIEWER, str(logfile)])
             print(cmd)
             p = subprocess.Popen(shlex.split(cmd))
@@ -219,11 +222,14 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     if isstring(cmd):
         cmd = [cmd]
     if cmd is None or len(cmd) == 0:
-        raise StartException(' '.join([executable, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
+        raise StartException(' '.join(
+            [executable, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
     # create string for node parameter. Set arguments with spaces into "'".
     cmd = remove_src_binary(cmd)
-    node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
-    cmd_args = [screen.get_cmd(name), RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
+    node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
+        ' ') > -1 else a for a in args[1:])
+    cmd_args = [screen.get_cmd(
+        name), RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
     print('run on remote host:', ' '.join(cmd_args))
     # determine the current working path
     arg_cwd = getCwdArg('__cwd', args)
@@ -243,9 +249,11 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
             new_env['ROS_HOSTNAME'] = ros_hostname
     if loglevel:
         new_env['ROSCONSOLE_CONFIG_FILE'] = rosconsole_cfg_file(package)
-    subprocess.Popen(shlex.split(str(' '.join(cmd_args))), cwd=cwd, env=new_env)
+    subprocess.Popen(shlex.split(str(' '.join(cmd_args))),
+                     cwd=cwd, env=new_env)
     if len(cmd) > 1:
-        rospy.logwarn('Multiple executables are found! The first one was started! Exceutables:\n%s', str(cmd))
+        rospy.logwarn(
+            'Multiple executables are found! The first one was started! Exceutables:\n%s', str(cmd))
 
 
 if __name__ == '__main__':

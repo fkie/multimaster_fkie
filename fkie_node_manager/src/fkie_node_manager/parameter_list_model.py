@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QSize, Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 try:
@@ -61,7 +60,8 @@ class ParameterValueItem(QStandardItem):
         @param value: the value of the parameter
         @type value: C{str}
         '''
-        value_str = utf8(value) if not isinstance(value, xmlrpcclient.Binary) else utf8(value)
+        value_str = utf8(value) if not isinstance(
+            value, xmlrpcclient.Binary) else utf8(value)
         self.read_only = False
         if len(value_str) > 32000:
             value_str = 'value size > 32000; use Ctrl+X to copy'
@@ -214,7 +214,8 @@ class ParameterTypeItem(QStandardItem):
         @param value: the value of the parameter
         @type value: C{str}
         '''
-        QStandardItem.__init__(self, utf8(type(value)).replace("<type '", '').replace("'>", ''))
+        QStandardItem.__init__(self, utf8(type(value)).replace(
+            "<type '", '').replace("'>", ''))
         self._name = name
         '''@ivar: the name of parameter '''
         self._value = value
@@ -282,7 +283,8 @@ class ParameterModel(QStandardItemModel):
         '''
         QStandardItemModel.__init__(self)
         self.setColumnCount(len(ParameterModel.header))
-        self.setHorizontalHeaderLabels([label for label, _ in ParameterModel.header])
+        self.setHorizontalHeaderLabels(
+            [label for label, _ in ParameterModel.header])
 
     def flags(self, index):
         '''

@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal, QFile, QIODevice, QRegExp
@@ -81,7 +80,8 @@ class ScreenTextBrowser(QTextEdit):
     def keyPressEvent(self, event):
         if self._reader is not None:
             if event.key() == Qt.Key_PageUp and self.verticalScrollBar().value() == 0:
-                self._reader.reverse_read(self.verticalScrollBar().pageStep() / 10)
+                self._reader.reverse_read(
+                    self.verticalScrollBar().pageStep() / 10)
             elif event.key() == Qt.Key_Home and event.modifiers() == Qt.ShiftModifier:
                 self._reader.reverse_read(-1)
         QTextEdit.keyPressEvent(self, event)
@@ -113,7 +113,8 @@ class ScreenWidget(QWidget):
         '''
         QWidget.__init__(self, parent)
         # load the UI file
-        screen_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'ui', 'logscreen', 'ScreenWidget.ui')
+        screen_dock_file = os.path.join(os.path.dirname(os.path.realpath(
+            __file__)), '..', 'ui', 'logscreen', 'ScreenWidget.ui')
         loadUi(screen_dock_file, self)
         self.setObjectName("ScreenWidget")
         self.setWindowIcon(nm.settings().icon('crystal_clear_show_io.png'))
@@ -149,18 +150,23 @@ class ScreenWidget(QWidget):
         # self.pauseButton.clicked.connect(self.stop)
         self.pauseButton.toggled.connect(self.pause)
         self.clear_signal.connect(self.clear)
-        self.loggerFilterInput.textChanged.connect(self.on_logger_filter_changed)
-        self.textBrowser.verticalScrollBar().valueChanged.connect(self.on_scrollbar_position_changed)
-        self.textBrowser.verticalScrollBar().rangeChanged.connect(self.on_scrollbar_range_changed)
+        self.loggerFilterInput.textChanged.connect(
+            self.on_logger_filter_changed)
+        self.textBrowser.verticalScrollBar().valueChanged.connect(
+            self.on_scrollbar_position_changed)
+        self.textBrowser.verticalScrollBar().rangeChanged.connect(
+            self.on_scrollbar_range_changed)
         self.textBrowser.set_reader(self)
         self.tf = TerminalFormats()
         self.hl = ScreenHighlighter(self.textBrowser.document())
         self.searchFrame.setVisible(False)
         self.grepFrame.setVisible(False)
         self.grepLineEdit.textChanged.connect(self.on_grep_changed)
-        self._shortcut_search = QShortcut(QKeySequence(self.tr("Ctrl+F", "Activate search")), self)
+        self._shortcut_search = QShortcut(QKeySequence(
+            self.tr("Ctrl+F", "Activate search")), self)
         self._shortcut_search.activated.connect(self.on_search)
-        self._shortcut_grep = QShortcut(QKeySequence(self.tr("Ctrl+G", "Activate grep")), self)
+        self._shortcut_grep = QShortcut(QKeySequence(
+            self.tr("Ctrl+G", "Activate grep")), self)
         self._shortcut_grep.activated.connect(self.on_grep)
         self.searchLineEdit.editingFinished.connect(self.on_search_prev)
         self.searchNextButton.clicked.connect(self.on_search_next)
@@ -224,7 +230,8 @@ class ScreenWidget(QWidget):
             if forward:
                 search_result = self.textBrowser.document().find(search_str, cursor)
             else:
-                search_result = self.textBrowser.document().find(search_str, cursor, QTextDocument.FindBackward)
+                search_result = self.textBrowser.document().find(
+                    search_str, cursor, QTextDocument.FindBackward)
             if search_result.position() > -1:
                 self.textBrowser.setTextCursor(search_result)
                 self.searchLabel.setText('')
@@ -296,7 +303,8 @@ class ScreenWidget(QWidget):
                 self.qfile.seek(self.qfile.size()-1)
                 # self.lread()
                 self._info = "END"
-                self.thread = threading.Thread(target=self._read_log, kwargs={"filename": screen_log})
+                self.thread = threading.Thread(target=self._read_log, kwargs={
+                                               "filename": screen_log})
                 self.thread.setDaemon(True)
                 self.thread.start()
             else:
@@ -304,7 +312,8 @@ class ScreenWidget(QWidget):
         else:
             self._connect_ssh(host, nodename, user)
         if self._valid:
-            self.logger_handler = LoggerHandler(nodename, masteruri=masteruri, layout=self.scrollAreaWidgetContents.layout())
+            self.logger_handler = LoggerHandler(
+                nodename, masteruri=masteruri, layout=self.scrollAreaWidgetContents.layout())
             self.logger_handler.update()
         return False
 
@@ -366,7 +375,7 @@ class ScreenWidget(QWidget):
                 count += 1
                 line_size = 0
             if ch == b'\n':
-                count += 1  
+                count += 1
                 line_size = 0
                 if count >= lines:
                     count_reached = True
@@ -392,7 +401,8 @@ class ScreenWidget(QWidget):
         if self.finished or self._on_pause:
             return
         if msg:
-            at_end = self.textBrowser.verticalScrollBar().value() > self.textBrowser.verticalScrollBar().maximum() - 20
+            at_end = self.textBrowser.verticalScrollBar().value(
+            ) > self.textBrowser.verticalScrollBar().maximum() - 20
             cursor_select = self.textBrowser.textCursor()
             # store selection and do not scroll to the appended text
             if not cursor_select.hasSelection():
@@ -404,9 +414,11 @@ class ScreenWidget(QWidget):
                 lines = msg.splitlines(True)
                 for line in lines:
                     if self.hl.contains_grep_text(line):
-                        self._char_format_end = self.tf.insert_formated(cursor, line, char_format=None)
+                        self._char_format_end = self.tf.insert_formated(
+                            cursor, line, char_format=None)
             else:
-                self._char_format_end = self.tf.insert_formated(cursor, msg, char_format=self._char_format_end)
+                self._char_format_end = self.tf.insert_formated(
+                    cursor, msg, char_format=self._char_format_end)
             if cursor_select is not None:
                 # restore selection
                 self.textBrowser.setTextCursor(cursor_select)
@@ -434,14 +446,17 @@ class ScreenWidget(QWidget):
                 if self._seek_start == 0:
                     info_text = 'START'
                 else:
-                    info_text += "%d %%" % (self._seek_start * 100 / self._seek_end)
+                    info_text += "%d %%" % (self._seek_start *
+                                            100 / self._seek_end)
             elif vbar_value == self.textBrowser.verticalScrollBar().maximum():
                 info_text = 'END'
             else:
-                info_text = "%d / %d" % (vbar_value / 20, self.textBrowser.verticalScrollBar().maximum() / 20)
+                info_text = "%d / %d" % (vbar_value / 20,
+                                         self.textBrowser.verticalScrollBar().maximum() / 20)
         seek_info = ''
         if self._seek_end > -1:
-            seek_info = '\t%s / %s' % (sizeof_fmt(self._seek_end - self._seek_start), sizeof_fmt(self._seek_end))
+            seek_info = '\t%s / %s' % (sizeof_fmt(self._seek_end -
+                                                  self._seek_start), sizeof_fmt(self._seek_end))
         elif self._ssh_output_file is not None:
             seek_info = '\ttail via SSH'
         self.infoLabel.setText(info_text + seek_info)
@@ -453,12 +468,15 @@ class ScreenWidget(QWidget):
             else:
                 self.infoLabel.setText('connecting to %s' % host)
             ok = False
-            self._ssh_input_file, self._ssh_output_file, self._ssh_error_file, ok = nm.ssh().ssh_exec(host, [nm.settings().start_remote_script, '--tail_screen_log', nodename], user, pw, auto_pw_request=False, get_pty=True)
+            self._ssh_input_file, self._ssh_output_file, self._ssh_error_file, ok = nm.ssh().ssh_exec(host, [nm.settings(
+            ).start_remote_script, '--tail_screen_log', nodename], user, pw, auto_pw_request=False, get_pty=True)
             if ok:
-                thread = threading.Thread(target=self._read_ssh_output, args=((self._ssh_output_file,)))
+                thread = threading.Thread(
+                    target=self._read_ssh_output, args=((self._ssh_output_file,)))
                 thread.setDaemon(True)
                 thread.start()
-                thread = threading.Thread(target=self._read_ssh_error, args=((self._ssh_error_file,)))
+                thread = threading.Thread(
+                    target=self._read_ssh_error, args=((self._ssh_error_file,)))
                 thread.setDaemon(True)
                 thread.start()
             elif self._ssh_output_file:

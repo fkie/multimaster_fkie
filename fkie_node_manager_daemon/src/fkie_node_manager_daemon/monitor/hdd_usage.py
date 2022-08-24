@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import psutil
 import time
 
@@ -46,10 +45,12 @@ class HddUsage(SensorInterface):
     def __init__(self, hostname='', interval=30.0, warn_level=0.95):
         self._hdd_usage_warn = warn_level
         self._path = LOG_PATH
-        SensorInterface.__init__(self, hostname, sensorname='HDD Usage', interval=interval)
+        SensorInterface.__init__(
+            self, hostname, sensorname='HDD Usage', interval=interval)
 
     def reload_parameter(self, settings):
-        self._hdd_usage_warn = settings.param('sysmon/Disk/usage_warn_level', self._hdd_usage_warn)
+        self._hdd_usage_warn = settings.param(
+            'sysmon/Disk/usage_warn_level', self._hdd_usage_warn)
         self._path = settings.param('sysmon/Disk/path', self._path)
 
     def check_sensor(self):
@@ -61,16 +62,19 @@ class HddUsage(SensorInterface):
             diag_level = 0
             diag_vals = []
             warn_on_space = hdd.total * (1.0 - self._hdd_usage_warn)
-            diag_msg = 'warn at >%s%% (<%s)' % (self._hdd_usage_warn * 100., sizeof_fmt(warn_on_space))
+            diag_msg = 'warn at >%s%% (<%s)' % (
+                self._hdd_usage_warn * 100., sizeof_fmt(warn_on_space))
             warn_level = warn_on_space
             if diag_level == DiagnosticStatus.WARN:
                 warn_level = warn_level * 1.1
             if hdd.free <= warn_on_space:
                 diag_level = DiagnosticStatus.WARN
-                diag_msg = 'Free disk space on log path only %s (warn on <%s)' % (sizeof_fmt(hdd.free), sizeof_fmt(warn_on_space))
+                diag_msg = 'Free disk space on log path only %s (warn on <%s)' % (
+                    sizeof_fmt(hdd.free), sizeof_fmt(warn_on_space))
             # print "Percent Disk %.2f" % (hdd.percent), diag_level
             diag_vals.append(KeyValue(key='Free', value=hdd.free))
-            diag_vals.append(KeyValue(key='Free [%]', value='%.2f' % (100.0 - hdd.percent)))
+            diag_vals.append(
+                KeyValue(key='Free [%]', value='%.2f' % (100.0 - hdd.percent)))
             diag_vals.append(KeyValue(key='Path', value=self._path))
         except Exception as err:
             warn_level = DiagnosticStatus.WARN

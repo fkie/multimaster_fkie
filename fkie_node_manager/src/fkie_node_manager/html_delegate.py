@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QPoint, QSize
 from python_qt_binding.QtGui import QAbstractTextDocumentLayout, QFontMetrics, QPalette, QTextDocument
 try:
@@ -48,6 +47,7 @@ class HTMLDelegate(QStyledItemDelegate):
     '''
     A class to display the HTML text in QTreeView.
     '''
+
     def __init__(self, parent=None, check_for_ros_names=True, dec_ascent=False, is_node=False, palette=None):
         QStyledItemDelegate.__init__(self, parent)
         self._check_for_ros_names = check_for_ros_names
@@ -68,7 +68,8 @@ class HTMLDelegate(QStyledItemDelegate):
         style = QApplication.style() if options.widget is None else options.widget.style()
 
         doc = QTextDocument()
-        doc.setHtml(self.toHTML(options.text, self._check_for_ros_names, self._is_node, self._palette))
+        doc.setHtml(self.toHTML(
+            options.text, self._check_for_ros_names, self._is_node, self._palette))
 
         options.text = ''
         style.drawControl(QStyle.CE_ItemViewItem, options, painter)
@@ -79,13 +80,15 @@ class HTMLDelegate(QStyledItemDelegate):
         # if (optionV4.state and QStyle::State_Selected):
         #  ctx.palette.setColor(QPalette::Text, optionV4.palette.color(QPalette::Active, QPalette::HighlightedText));
 
-        textRect = style.subElementRect(QStyle.SE_ItemViewItemText, options, options.widget)
+        textRect = style.subElementRect(
+            QStyle.SE_ItemViewItemText, options, options.widget)
         if textRect.width() < 10:
             textRect.setWidth(options.rect.width())
             textRect.setHeight(options.rect.height())
         painter.save()
         red = self._red_ascent if not self._dec_ascent else self._red_ascent / 2
-        painter.translate(QPoint(textRect.topLeft().x(), textRect.topLeft().y() - red))
+        painter.translate(QPoint(textRect.topLeft().x(),
+                                 textRect.topLeft().y() - red))
         painter.setClipRect(textRect.translated(-textRect.topLeft()))
         doc.documentLayout().draw(painter, ctx)
 
@@ -105,7 +108,8 @@ class HTMLDelegate(QStyledItemDelegate):
         doc.setTextWidth(options.rect.width())
         metric = QFontMetrics(doc.defaultFont())
         self._red_ascent = abs(metric.height() - metric.ascent()) + 1
-        self._cached_size = QSize(doc.idealWidth(), metric.height() + self._red_ascent)
+        self._cached_size = QSize(
+            doc.idealWidth(), metric.height() + self._red_ascent)
         return self._cached_size
 
     @classmethod
@@ -120,7 +124,8 @@ class HTMLDelegate(QStyledItemDelegate):
             name, sep, host = text.rpartition('@')
             result = ''
             if sep:
-                result = '%s<span style="color:%s;">%s%s</span>' % (name, cls.color_name(palette, QPalette.ButtonText), sep, host)
+                result = '%s<span style="color:%s;">%s%s</span>' % (
+                    name, cls.color_name(palette, QPalette.ButtonText), sep, host)
             else:
                 result = text
         elif text.find('{') > -1:  # handle group names
@@ -128,9 +133,11 @@ class HTMLDelegate(QStyledItemDelegate):
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '{<span style="color:%s;">%s%s</span>%s}' % (cls.color_name(palette, QPalette.ButtonText), ns, sep, name)
+                result = '{<span style="color:%s;">%s%s</span>%s}' % (
+                    cls.color_name(palette, QPalette.ButtonText), ns, sep, name)
             else:
-                result = '<span style="color:%s;">{%s}</span>' % (cls.color_name(palette, QPalette.ButtonText), name)
+                result = '<span style="color:%s;">{%s}</span>' % (
+                    cls.color_name(palette, QPalette.ButtonText), name)
 #                result = '<b>{</b><span style="color:gray;">%s</span><b>}</b>' % (name)
 #                result = '<b>{%s}</b>' % (name)
         elif text.find('[') > -1:
@@ -142,25 +149,31 @@ class HTMLDelegate(QStyledItemDelegate):
             if end_idx + 1 < len(text):
                 last_part = text[end_idx + 1:]
             if nr_idx > -1 and nr_idx < start_idx:
-                result = '%s<b>%s</b><span style="color:%s;">%s</span><b>%s</b>' % (text[0:nr_idx + 1], text[nr_idx + 1:start_idx], color, text[start_idx:end_idx + 1], last_part)
+                result = '%s<b>%s</b><span style="color:%s;">%s</span><b>%s</b>' % (
+                    text[0:nr_idx + 1], text[nr_idx + 1:start_idx], color, text[start_idx:end_idx + 1], last_part)
             else:
-                result = '<b>%s</b><span style="color:%s;">%s</span><b>%s</b>' % (text[0:start_idx], color, text[start_idx:end_idx + 1], last_part)
+                result = '<b>%s</b><span style="color:%s;">%s</span><b>%s</b>' % (
+                    text[0:start_idx], color, text[start_idx:end_idx + 1], last_part)
         elif text.startswith('<arg_not_set>'):
-            result = '<span style="color:#0000FF;">%s</span>' % (text.replace('<arg_not_set>', ''))
+            result = '<span style="color:#0000FF;">%s</span>' % (
+                text.replace('<arg_not_set>', ''))
         elif text.startswith('<arg>'):
             result = text.replace('<arg>', '')
-        elif check_for_ros_names and not is_legal_name(text):  # handle all invalid names (used space in the name)
+        # handle all invalid names (used space in the name)
+        elif check_for_ros_names and not is_legal_name(text):
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<span style="color:#FF6600;">%s%s<b>%s</b></span' % (ns, sep, name)
+                result = '<span style="color:#FF6600;">%s%s<b>%s</b></span' % (
+                    ns, sep, name)
             else:
                 result = '<span style="color:#FF6600;">%s</span>' % (name)
         else:  # handle all ROS names
             ns, sep, name = text.rpartition('/')
             result = ''
             if sep:
-                result = '<span style="color:%s;">%s%s</span><b>%s</b>' % (cls.color_name(palette, QPalette.ButtonText), ns, sep, name)
+                result = '<span style="color:%s;">%s%s</span><b>%s</b>' % (
+                    cls.color_name(palette, QPalette.ButtonText), ns, sep, name)
             elif is_node:
                 result = '<b>%s</b>' % name
             else:

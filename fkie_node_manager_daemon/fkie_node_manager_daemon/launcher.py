@@ -68,7 +68,8 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
     n = launchcfg.get_node(node)
     print("NODE:", n, type(n))
     if n is None:
-        raise exceptions.StartException("Node '%s' not found in launch file %s" % (node, launchcfg.filename))
+        raise exceptions.StartException(
+            "Node '%s' not found in launch file %s" % (node, launchcfg.filename))
     result = StartConfig(n.package, n.type)
     result.config_path = launchcfg.filename
     if executable:
@@ -90,7 +91,8 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
         result.respawn = n.respawn
         if n.respawn_delay > 0:
             result.respawn_delay = n.respawn_delay
-        respawn_params = _get_respawn_params(ns_join(n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
+        respawn_params = _get_respawn_params(
+            ns_join(n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
         result.respawn_max = respawn_params['max']
         result.respawn_min_runtime = respawn_params['min_runtime']
         result.respawn_delay = respawn_params['delay']
@@ -102,7 +104,8 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
         result.daemonuri = daemonuri
     # override host with machine tag
     if n.machine_name and n.machine_name in launchcfg.roscfg.machines:
-        result.daemonuri = url_nmduri(launchcfg.roscfg.machines[n.machine_name].address)
+        result.daemonuri = url_nmduri(
+            launchcfg.roscfg.machines[n.machine_name].address)
     # set args
     result.args = n.args.split()
     # set cwd unchanged, it will be resolved on host
@@ -115,12 +118,14 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
-    nm.rosnode.get_logger().debug("set delete parameter:\n  %s" % '\n  '.join(result.clear_params))
-    nm.rosnode.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
+    nm.rosnode.get_logger().debug("set delete parameter:\n  %s" %
+                                  '\n  '.join(result.clear_params))
+    nm.rosnode.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
+        val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
     return result
 
 
-def from_node(node:launch.actions.execute_process.ExecuteProcess, launchcfg:LaunchConfig, *, executable:Text='', loglevel:Text='', logformat:Text='', cmd_prefix:Text='') -> StartConfig:
+def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: LaunchConfig, *, executable: Text = '', loglevel: Text = '', logformat: Text = '', cmd_prefix: Text = '') -> StartConfig:
     lc = launchcfg.context
     pkg_exec = ('', '')
     if type(node) in [launch_ros.actions.node.Node, launch_ros.actions.composable_node_container.ComposableNodeContainer]:
@@ -161,23 +166,26 @@ def from_node(node:launch.actions.execute_process.ExecuteProcess, launchcfg:Laun
     # override host with machine tag, not supported by ROS2
 #    if n.machine_name and n.machine_name in launchcfg.roscfg.machines:
 #        result.host = launchcfg.roscfg.machines[n.machine_name].address
-    
+
     # set args
     # TODO: which args?
     # result.args = n.args.split()
     # add params
     if hasattr(node, '_Node__parameters'):
         if node._Node__parameters is not None:
-            evaluated_parameters = evaluate_parameters(lc, node._Node__parameters)
+            evaluated_parameters = evaluate_parameters(
+                lc, node._Node__parameters)
             for params in evaluated_parameters:
                 if isinstance(params, dict):
                     result.params.update(params)
                 elif isinstance(params, pathlib.Path):
                     result.param_files.append(str(params))
                 else:
-                    raise RuntimeError('invalid normalized parameters {}'.format(repr(params)))
-    nm.rosnode.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
-    
+                    raise RuntimeError(
+                        'invalid normalized parameters {}'.format(repr(params)))
+    nm.rosnode.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
+        val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
+
     # Prepare the ros_specific_arguments list and add it to the context so that the
     # LocalSubstitution placeholders added to the the cmd can be expanded using the contents.
     # ros_specific_arguments: Dict[str, Union[str, List[str]]] = {}
@@ -188,7 +196,7 @@ def from_node(node:launch.actions.execute_process.ExecuteProcess, launchcfg:Laun
     # if self.__expanded_parameter_files is not None:
     #     ros_specific_arguments['params'] = self.__expanded_parameter_files
 
-    # context.extend_locals({'ros_specific_arguments': ros_specific_arguments})    
+    # context.extend_locals({'ros_specific_arguments': ros_specific_arguments})
 
     # from ExecuteProcess
     # expand substitutions in arguments to async_execute_process()
@@ -201,9 +209,9 @@ def from_node(node:launch.actions.execute_process.ExecuteProcess, launchcfg:Laun
     #     node._ExecuteProcess__name = '{}-{}'.format(name, _global_process_counter)
     result.cwd = None
     if node._ExecuteProcess__cwd is not None:
-        result.cwd = ''.join([lc.perform_substitution(x) for x in node._ExecuteProcess__cwd])
+        result.cwd = ''.join([lc.perform_substitution(x)
+                              for x in node._ExecuteProcess__cwd])
 
-    
     env = {}
     if node._ExecuteProcess__env is not None:
         for key, value in node._ExecuteProcess__env:
@@ -223,15 +231,18 @@ def get_package_exec(node: launch_ros.actions.node.Node, context: LaunchContext)
     for cmds in node.cmd:
         for cmd in cmds:
             if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
-                executable = perform_substitutions(context, cmd.executable if cmd.executable else cmd.node_executable)
+                executable = perform_substitutions(
+                    context, cmd.executable if cmd.executable else cmd.node_executable)
                 package = perform_substitutions(context, cmd.package)
                 return (package, executable)
             else:
                 print('CMD', type(cmd), dir(cmd))
                 if hasattr(cmd, 'executable'):
                     print('  EXEC', type(cmd.executable))
-                    print('   rpl', perform_substitutions(context, cmd.executable))
+                    print('   rpl', perform_substitutions(
+                        context, cmd.executable))
     raise NameError('pkg or exec tag not found')
+
 
 def run_node(startcfg):
     '''
@@ -251,13 +262,13 @@ def run_node(startcfg):
         args = []
         for arg in startcfg.args:
             new_arg = arg
-            #TODO: check if we have to prepand --ros-args
+            # TODO: check if we have to prepand --ros-args
             if arg.startswith('$(find'):
                 new_arg = interpret_path(arg)
                 nm.rosnode.get_logger().debug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
         print("startcfg", startcfg)
-        if not startcfg.cmd: # it is a node
+        if not startcfg.cmd:  # it is a node
             # set name and namespace of the node
             if startcfg.name or startcfg.namespace or startcfg.remaps or startcfg.params or startcfg.param_files:
                 args.append('--ros-args')
@@ -287,10 +298,12 @@ def run_node(startcfg):
         # get binary path from package
         elif not cmd_type:
             try:
-                cmd_type = get_executable_path(package_name=startcfg.package, executable_name=startcfg.binary)
+                cmd_type = get_executable_path(
+                    package_name=startcfg.package, executable_name=startcfg.binary)
             except PackageNotFound as e:
                 nm.rosnode.get_logger().warn("resource not found: %s" % e)
-                raise exceptions.ResourceNotFound(startcfg.package, "resource not found: %s" % e)
+                raise exceptions.ResourceNotFound(
+                    startcfg.package, "resource not found: %s" % e)
             except MultipleExecutables as e:
                 err = 'Multiple executables with same name in package [%s]  found:' % startcfg.package
                 # for p in e.paths:
@@ -299,7 +312,8 @@ def run_node(startcfg):
             cwd = get_cwd(startcfg.cwd, cmd_type)
             try:
                 global STARTED_BINARIES
-                STARTED_BINARIES[nodename] = (cmd_type, os.path.getmtime(cmd_type))
+                STARTED_BINARIES[nodename] = (
+                    cmd_type, os.path.getmtime(cmd_type))
             except Exception:
                 pass
         # set environment
@@ -318,7 +332,8 @@ def run_node(startcfg):
         if startcfg.logformat:
             new_env['ROSCONSOLE_FORMAT'] = '%s' % startcfg.logformat
         if startcfg.loglevel:
-            new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(startcfg.package, startcfg.loglevel)
+            new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(
+                startcfg.package, startcfg.loglevel)
         # handle respawn
         if startcfg.respawn:
             if startcfg.respawn_delay > 0:
@@ -329,7 +344,8 @@ def run_node(startcfg):
             #     new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
             # if respawn_params['min_runtime'] > 0:
             #     new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
-            cmd_type = "%s %s %s" % (settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
+            cmd_type = "%s %s %s" % (
+                settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
         else:
             cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
         # TODO: check for HOSTNAME
@@ -349,10 +365,14 @@ def run_node(startcfg):
             #_load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
         # cmd_str = '%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args))
-        cmd_str = ' '.join([screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, *args])
-        nm.rosnode.get_logger().info("%s (launch_file: '%s', daemonuri: %s)" % (cmd_str, startcfg.config_path, startcfg.daemonuri))
-        nm.rosnode.get_logger().debug("environment while run node '%s': '%s'" % (cmd_str, new_env))
-        SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (startcfg.package, startcfg.binary), rosnode=nm.rosnode)
+        cmd_str = ' '.join([screen.get_cmd(
+            startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, *args])
+        nm.rosnode.get_logger().info("%s (launch_file: '%s', daemonuri: %s)" %
+                                     (cmd_str, startcfg.config_path, startcfg.daemonuri))
+        nm.rosnode.get_logger().debug(
+            "environment while run node '%s': '%s'" % (cmd_str, new_env))
+        SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
+                        startcfg.fullname, description="Run [%s]%s" % (startcfg.package, startcfg.binary), rosnode=nm.rosnode)
     else:
         nmduri = startcfg.nmduri
         nm.rosnode.get_logger().info("remote run node '%s' at '%s'" % (nodename, nmduri))
@@ -361,14 +381,16 @@ def run_node(startcfg):
         # run on a remote machine
         channel = remote.open_channel(nmduri, rosnode=nm.rosnode)
         if channel is None:
-            raise exceptions.StartException("Unknown launch manager url for host %s to start %s" % (nmduri, startcfg.fullname))
+            raise exceptions.StartException(
+                "Unknown launch manager url for host %s to start %s" % (nmduri, startcfg.fullname))
         lm = LaunchStub(channel)
         lm.start_standalone_node(startcfg)
 
 
-def run_composed_node(node:launch_ros.descriptions.ComposableNode, *, container_name:Text, context:LaunchContext):
+def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container_name: Text, context: LaunchContext):
     # Create a client to load nodes in the target container.
-    client_load_node = nm.rosnode.create_client(composition_interfaces.srv.LoadNode, '%s/_container/load_node' % container_name)
+    client_load_node = nm.rosnode.create_client(
+        composition_interfaces.srv.LoadNode, '%s/_container/load_node' % container_name)
     composable_node_description = node
     request = composition_interfaces.srv.LoadNode.Request()
     request.package_name = perform_substitutions(
@@ -410,7 +432,8 @@ def run_composed_node(node:launch_ros.descriptions.ComposableNode, *, container_
         ]
     print("wait for container")
     if not client_load_node.wait_for_service(timeout_sec=1.0):
-        error_msg = 'Timeout while wait for container %s to load %s' % (container_name, request.plugin_name)
+        error_msg = 'Timeout while wait for container %s to load %s' % (
+            container_name, request.plugin_name)
         nm.rosnode.get_logger().error(error_msg)
         nm.rosnode.destroy_client(client_load_node)
         raise exceptions.StartException(error_msg)
@@ -434,9 +457,9 @@ def run_composed_node(node:launch_ros.descriptions.ComposableNode, *, container_
         ))
     else:
         error_msg = "Failed to load node '{}' of type '{}' in container '{}': {}".format(
-                        node_name, request.plugin_name, container_name,
-                        response.error_message
-                    )
+            node_name, request.plugin_name, container_name,
+            response.error_message
+        )
         nm.rosnode.get_logger().error(error_msg)
         raise exceptions.StartException(error_msg)
     print("LOADED")

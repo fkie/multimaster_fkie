@@ -127,10 +127,12 @@ class ValueWidget(QWidget):
         self.warn_label.setWordWrap(True)
         vlayout.addWidget(self.warn_label)
         self.warn_label.setVisible(False)
-        self.warn_label.setStyleSheet("QLabel { color: %s;}" % QColor(255, 83, 13).name())
+        self.warn_label.setStyleSheet(
+            "QLabel { color: %s;}" % QColor(255, 83, 13).name())
         # help label
         self.help_label.setWordWrap(True)
-        self.help_label.setStyleSheet("QLabel { background: %s;}" % QColor(255, 255, 235).name())
+        self.help_label.setStyleSheet(
+            "QLabel { background: %s;}" % QColor(255, 255, 235).name())
         vlayout.addWidget(self.help_label)
         self.help_label.setVisible(False)
 
@@ -153,12 +155,14 @@ class ValueWidget(QWidget):
                 bval = str2bool(value[0] if isinstance(value, list) else value)
             self._value_widget.setChecked(bval)
         elif isinstance(self._value_widget, MyComboBox):
-            self._value_widget.setEditText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
+            self._value_widget.setEditText(', '.join(
+                [utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
         elif isinstance(self._value_widget, QLabel):
             self._value_widget.setText(value)
         elif isinstance(self._value_widget, QLineEdit):
             # avoid ' or " that escapes the string values
-            self._value_widget.setText(', '.join([utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
+            self._value_widget.setText(', '.join(
+                [utf8(v) for v in value]) if isinstance(value, list) else utf8(value))
 
     def add_cached_values(self):
         if isinstance(self._value_widget, MyComboBox):
@@ -183,10 +187,12 @@ class ValueWidget(QWidget):
             cb = QCheckBox(parent=self)
             cb.setObjectName(pd.name())
             if not isinstance(value, bool):
-                value = str2bool(value[0] if isinstance(value, list) else value)
+                value = str2bool(value[0] if isinstance(
+                    value, list) else value)
             pd._value_org = value
             cb.setChecked(value)
-            cb.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            cb.setSizePolicy(QSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Fixed))
             cb.setMinimumHeight(20)
             self._value_widget = cb
             return cb
@@ -194,7 +200,8 @@ class ValueWidget(QWidget):
             # read only value are added as label
             label = QLabel(value, parent=self)
             label.setMinimumHeight(20)
-            label.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            label.setSizePolicy(QSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Fixed))
             label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             self._value_widget = label
             return label
@@ -202,7 +209,8 @@ class ValueWidget(QWidget):
             # all other are added as combobox
             cb = MyComboBox(parent=self)
             cb.setObjectName(pd.name())
-            cb.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            cb.setSizePolicy(QSizePolicy(
+                QSizePolicy.Expanding, QSizePolicy.Fixed))
             cb.setEditable(True)
             cb.remove_item_signal.connect(pd.removeCachedValue)
             cb.editTextChanged.connect(self._check_text)
@@ -214,7 +222,8 @@ class ValueWidget(QWidget):
                     items[len(items):] = value
             else:
                 if value is not None and value:
-                    items.append(utf8(value) if not isinstance(value, xmlrpcclient.Binary) else '{binary data!!! updates will be ignored!!!}')
+                    items.append(utf8(value) if not isinstance(
+                        value, xmlrpcclient.Binary) else '{binary data!!! updates will be ignored!!!}')
                 elif pd.isTimeType():
                     items.append('now')
             if ':alt' in pd._tags:
@@ -224,7 +233,8 @@ class ValueWidget(QWidget):
                         if alt_value not in items:
                             items.append(alt_value)
                 except Exception as err:
-                    rospy.logwarn('Can not add alternative values to %s: %s' % (pd.name(), utf8(err)))
+                    rospy.logwarn('Can not add alternative values to %s: %s' % (
+                        pd.name(), utf8(err)))
             pd._value_org = items[0] if items else ''
             cb.addItems(items)
             self._value_widget = cb
@@ -260,7 +270,8 @@ class ValueWidget(QWidget):
     def _on_file_dialog_clicked(self):
         # Workaround for QFileDialog.getExistingDirectory because it do not
         # select the configuration folder in the dialog
-        self.dialog = QFileDialog(self, caption=self.parameter_description.hint)
+        self.dialog = QFileDialog(
+            self, caption=self.parameter_description.hint)
         self.dialog.setOption(QFileDialog.HideNameFilterDetails, True)
         if self.parameter_description.path_type == 'dir':
             self.dialog.setFileMode(QFileDialog.Directory)
@@ -292,7 +303,8 @@ class ParameterDescription(object):
         self._read_value(value)
         self._widget = widget
         try:
-            self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(self._type)
+            self._base_type, self._is_array_type, self._array_length = roslib.msgs.parse_type(
+                self._type)
         except Exception:
             pass
         if msg_type == 'binary':
@@ -326,7 +338,8 @@ class ParameterDescription(object):
     @classmethod
     def is_primitive_type(cls, value_type):
         result = value_type in roslib.msgs.PRIMITIVE_TYPES
-        result = result or value_type in ['string', 'int', 'float', 'time', 'duration', 'binary', 'unicode']
+        result = result or value_type in [
+            'string', 'int', 'float', 'time', 'duration', 'binary', 'unicode']
         return result
 
     def add_tag(self, key, value):
@@ -403,26 +416,32 @@ class ParameterDescription(object):
             elif value:
                 if self.isArrayType():
                     if 'int' in self.baseType() or 'byte' in self.baseType():
-                        rvalue = map(int, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = map(int, value.lstrip(
+                            '[').rstrip(']').split(','))
                     elif 'float' in self.baseType():
-                        rvalue = map(float, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = map(float, value.lstrip(
+                            '[').rstrip(']').split(','))
                     elif 'bool' in self.baseType():
-                        rvalue = map(str2bool, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = map(str2bool, value.lstrip(
+                            '[').rstrip(']').split(','))
                     elif self.isBinaryType():
                         rvalue = value
                     else:
                         try:
                             rvalue = value.lstrip('[').rstrip(']')
-                            rvalue = ruamel.yaml.load("[%s]" % rvalue, Loader=ruamel.yaml.Loader)
+                            rvalue = ruamel.yaml.load(
+                                "[%s]" % rvalue, Loader=ruamel.yaml.Loader)
                             # if there is no YAML, load() will return an
                             # empty string.  We want an empty dictionary instead
                             # for our representation of empty.
                             if rvalue is None:
                                 rvalue = []
                         except ruamel.yaml.MarkedYAMLError as e:
-                            raise Exception("Field [%s] yaml error: %s" % (self.fullName(), utf8(e)))
+                            raise Exception("Field [%s] yaml error: %s" % (
+                                self.fullName(), utf8(e)))
                     if self.arrayLength() is not None and self.arrayLength() != len(rvalue):
-                        raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(len(rvalue)), " != ", str(self.arrayLength())]))
+                        raise Exception(''.join(["Field [", self.fullName(), "] has incorrect number of elements: ", utf8(
+                            len(rvalue)), " != ", str(self.arrayLength())]))
                 else:
                     if 'int' in self.baseType() or 'byte' in self.baseType():
                         rvalue = int(value)
@@ -472,16 +491,19 @@ class ParameterDescription(object):
                     else:
                         rvalue = ''
         except Exception as e:
-            raise Exception("Error while set value '%s', for '%s': %s" % (utf8(value), self.fullName(), utf8(e)))
+            raise Exception("Error while set value '%s', for '%s': %s" % (
+                utf8(value), self.fullName(), utf8(e)))
         if self._min is not None:
             if rvalue < self._min:
                 if raise_on_min_max:
-                    raise Exception("%s is smaller than minimum: %s" % (utf8(rvalue), utf8(self._min)))
+                    raise Exception("%s is smaller than minimum: %s" %
+                                    (utf8(rvalue), utf8(self._min)))
                 rvalue = self._min
         if self._max is not None:
             if rvalue > self._max:
                 if raise_on_min_max:
-                    raise Exception("%s is greater than maximum: %s" % (utf8(rvalue), utf8(self._max)))
+                    raise Exception("%s is greater than maximum: %s" %
+                                    (utf8(rvalue), utf8(self._max)))
                 rvalue = self._max
         return rvalue
 
@@ -506,7 +528,8 @@ class ParameterDescription(object):
             result = ValueWidget(self, parent)
         else:
             if self.isArrayType():
-                result = ArrayBox(self.name(), self._type, dynamic=self.arrayLength() is None, parent=parent)
+                result = ArrayBox(
+                    self.name(), self._type, dynamic=self.arrayLength() is None, parent=parent)
             else:
                 result = GroupBox(self.name(), self._type, parent=parent)
         return result
@@ -577,7 +600,8 @@ class MainBox(QFrame):
         self.setUpdatesEnabled(False)
         try:
             if isinstance(value, (dict, list)):
-                self._createFieldFromDict(value, clear_origin_value=clear_origin_value)
+                self._createFieldFromDict(
+                    value, clear_origin_value=clear_origin_value)
         except Exception:
             print(traceback.format_exc())
         finally:
@@ -624,14 +648,17 @@ class MainBox(QFrame):
                 param_desc.setWidget(field)
                 self.params.append(param_desc)
                 if isinstance(field, (GroupBox, ArrayBox)):
-                    field.createFieldFromValue(val[':value'] if ':value' in val else val, clear_origin_value)
+                    field.createFieldFromValue(
+                        val[':value'] if ':value' in val else val, clear_origin_value)
                     layout.addRow(field)
                 else:
                     # we have e simple parameter, create label for it
-                    label_name = name if _type in ['string', 'str', 'unicode', 'bool'] else '%s (%s)' % (name, _type)
+                    label_name = name if _type in [
+                        'string', 'str', 'unicode', 'bool'] else '%s (%s)' % (name, _type)
                     label = QLabel(label_name, self)
                     label.setObjectName('%s_label' % name)
-                    label.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+                    label.setSizePolicy(QSizePolicy(
+                        QSizePolicy.Expanding, QSizePolicy.Expanding))
                     label.setTextInteractionFlags(Qt.TextSelectableByMouse)
                     hint = field.toolTip()
                     if hint:
@@ -643,9 +670,11 @@ class MainBox(QFrame):
             else:
                 # field exists already -> update groups or arrays
                 if isinstance(field, (GroupBox, ArrayBox)):
-                    field.createFieldFromValue(val[':value'] if ':value' in val else val, clear_origin_value)
+                    field.createFieldFromValue(
+                        val[':value'] if ':value' in val else val, clear_origin_value)
                 else:
-                    raise Exception("Parameter with name '%s' already exists!" % name)
+                    raise Exception(
+                        "Parameter with name '%s' already exists!" % name)
 
     def value(self, with_tags=False, only_changed=False):
         result = dict()
@@ -687,7 +716,8 @@ class MainBox(QFrame):
                     else:
                         field.set_value(value)
         elif isinstance(values, list):
-            raise Exception("Setting 'list' values in MainBox or GroupBox not supported!!!")
+            raise Exception(
+                "Setting 'list' values in MainBox or GroupBox not supported!!!")
 
     def getField(self, name, recursive=False):
         for child in self.children():
@@ -737,7 +767,8 @@ class MainBox(QFrame):
                 if label is not None:
                     show = force_show or not arg
                     if not show:
-                        show = child.current_text().lower().find(arg) != -1 or label.text().lower().find(arg) != -1
+                        show = child.current_text().lower().find(
+                            arg) != -1 or label.text().lower().find(arg) != -1
                     # set the parent group visible if it is not visible
                     if show and not child.parentWidget().isVisible():
                         child.parentWidget().setVisible(show)
@@ -1009,7 +1040,8 @@ class ParameterDialog(QDialog):
         self.info_field.setPalette(palette)
         self.info_field.setFrameShadow(QFrame.Plain)
         self.info_field.setReadOnly(True)
-        self.info_field.setTextInteractionFlags(Qt.LinksAccessibleByKeyboard | Qt.LinksAccessibleByMouse | Qt.TextBrowserInteraction | Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
+        self.info_field.setTextInteractionFlags(Qt.LinksAccessibleByKeyboard | Qt.LinksAccessibleByMouse |
+                                                Qt.TextBrowserInteraction | Qt.TextSelectableByKeyboard | Qt.TextSelectableByMouse)
         self.info_field.setObjectName("dialog_info_field")
         self.verticalLayout.addWidget(self.info_field)
         self.info_field.setVisible(False)
@@ -1029,7 +1061,8 @@ class ParameterDialog(QDialog):
         self.sidebar_frame = QFrame(self)
         self.sidebar_frame.setObjectName(sidebar_var)
         sidebarframe_verticalLayout = QVBoxLayout(self.sidebar_frame)
-        sidebarframe_verticalLayout.setObjectName("sidebarframe_verticalLayout")
+        sidebarframe_verticalLayout.setObjectName(
+            "sidebarframe_verticalLayout")
         sidebarframe_verticalLayout.setContentsMargins(3, 3, 3, 3)
         self._sidebar_selected = 0
         if len(values) > 0 and sidebar_var in params:
@@ -1050,7 +1083,8 @@ class ParameterDialog(QDialog):
                 checkbox.setObjectName(v)
                 checkbox.stateChanged.connect(self._on_sidebar_stateChanged)
                 self.sidebar_frame.layout().addWidget(checkbox)
-            self.sidebar_frame.layout().addItem(QSpacerItem(100, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
+            self.sidebar_frame.layout().addItem(QSpacerItem(
+                100, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
         # set the input fields
         if params:
             try:
@@ -1085,7 +1119,8 @@ class ParameterDialog(QDialog):
             try:
                 field = self.content.getField(self.sidebar_frame.objectName())
                 if field is not None and field.currentText() == self.sidebar_default_val:
-                    field.setEnabled(True if self._sidebar_selected == 0 else False)
+                    field.setEnabled(
+                        True if self._sidebar_selected == 0 else False)
             except Exception:
                 pass
 
@@ -1117,7 +1152,8 @@ class ParameterDialog(QDialog):
         label = QLabel(self)
         label.setWordWrap(True)
         label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        label.setText(''.join(["<font color='red'>Warning!\n", message, "</font>"]))
+        label.setText(
+            ''.join(["<font color='red'>Warning!\n", message, "</font>"]))
         self.verticalLayout.insertWidget(1, label)
 
     def setText(self, text):
@@ -1179,7 +1215,8 @@ class ParameterDialog(QDialog):
             if len(sidebar_list) == 0 or self.sidebar_default_val != sidebar_value:
                 sidebar_list.append(sidebar_value)
             if with_tags:
-                result_value[sidebar_name][':value'] = [v for v in set(sidebar_list)]
+                result_value[sidebar_name][':value'] = [
+                    v for v in set(sidebar_list)]
             else:
                 result_value[sidebar_name] = [v for v in set(sidebar_list)]
         return result_value
@@ -1227,7 +1264,8 @@ class ParameterDialog(QDialog):
                 nm.settings().current_dialog_path = os.path.dirname(fileName)
                 content = self.content.value(with_tags=True)
                 buf = ruamel.yaml.compat.StringIO()
-                ruamel.yaml.dump(content, buf, Dumper=ruamel.yaml.RoundTripDumper)
+                ruamel.yaml.dump(
+                    content, buf, Dumper=ruamel.yaml.RoundTripDumper)
                 with open(fileName, 'w+') as f:
                     f.write(buf.getvalue())
         except Exception as e:
@@ -1246,7 +1284,8 @@ class ParameterDialog(QDialog):
                 nm.settings().current_dialog_path = os.path.dirname(fileName)
                 with open(fileName, 'r') as f:
                     # print yaml.load(f.read())
-                    self.content.set_values(ruamel.yaml.load(f.read(), Loader=ruamel.yaml.Loader))
+                    self.content.set_values(ruamel.yaml.load(
+                        f.read(), Loader=ruamel.yaml.Loader))
         except Exception as e:
             print(traceback.format_exc())
             MessageBox.warning(self, "Load parameter Error",
@@ -1257,6 +1296,8 @@ class ParameterDialog(QDialog):
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%% close handling                        %%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
     def _store_geometry(self):
         if self._geometry_name:
             settings = nm.settings().qsettings(nm.settings().CFG_GUI_FILE)
@@ -1304,7 +1345,8 @@ class MasterParameterDialog(ParameterDialog):
         :param str masteruri: if the master uri is not None, the parameter are retrieved from ROS parameter server.
         :param str ns: namespace of the parameter retrieved from the ROS parameter server.
         '''
-        ParameterDialog.__init__(self, dict(), parent=parent, store_geometry=store_geometry)
+        ParameterDialog.__init__(
+            self, dict(), parent=parent, store_geometry=store_geometry)
         self.masteruri = masteruri
         self.ns = ns
         self.is_delivered = False
@@ -1313,21 +1355,27 @@ class MasterParameterDialog(ParameterDialog):
         self.setWindowIcon(self.mIcon)
         # self.resize(450, 300)
         self.add_new_button = QPushButton()
-        self.add_new_button.setIcon(nm.settings().icon('crystal_clear_add.png'))
+        self.add_new_button.setIcon(
+            nm.settings().icon('crystal_clear_add.png'))
         self.add_new_button.clicked.connect(self._on_add_parameter)
         self.add_new_button.setToolTip('Adds a new parameter to the list')
         self.add_new_button.setFlat(True)
-        self.buttonBox.addButton(self.add_new_button, QDialogButtonBox.ActionRole)
+        self.buttonBox.addButton(
+            self.add_new_button, QDialogButtonBox.ActionRole)
         self.showLoadSaveButtons()
 #    self.apply_button = QPushButton(self.tr("&Ok"))
 #    self.apply_button.clicked.connect(self._on_apply)
 #    self.buttonBox.addButton(self.apply_button, QDialogButtonBox.ApplyRole)
 #    self.buttonBox.accepted.connect(self._on_apply)
-        self.setText(' '.join(['Obtaining parameters from the parameter server', masteruri, '...']))
+        self.setText(
+            ' '.join(['Obtaining parameters from the parameter server', masteruri, '...']))
         self.parameterHandler = ParameterHandler()
-        self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
-        self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
-        self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
+        self.parameterHandler.parameter_list_signal.connect(
+            self._on_param_list)
+        self.parameterHandler.parameter_values_signal.connect(
+            self._on_param_values)
+        self.parameterHandler.delivery_result_signal.connect(
+            self._on_delivered_values)
         self.parameterHandler.requestParameterList(masteruri, ns)
 #    self.apply_button.setFocus(Qt.OtherFocusReason)
 
@@ -1338,19 +1386,22 @@ class MasterParameterDialog(ParameterDialog):
                 params = self.keywords2params(params)
                 ros_params = dict()
                 for p, v in params.items():
-                    rospy.logdebug("updated parameter: %s, %s, %s", p, utf8(v), type(v))
+                    rospy.logdebug(
+                        "updated parameter: %s, %s, %s", p, utf8(v), type(v))
                     ros_params[roslib.names.ns_join(self.ns, p)] = v
                 if ros_params:
                     self.is_send = True
                     self.setText('Sends parameters to the server...')
-                    self.parameterHandler.deliverParameter(self.masteruri, ros_params)
+                    self.parameterHandler.deliverParameter(
+                        self.masteruri, ros_params)
                 else:
                     self.close()
             except Exception as e:
                 print(traceback.format_exc(3))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
         elif self.masteruri is None:
-            MessageBox.warning(self, self.tr("Error"), 'Invalid ROS master URI')
+            MessageBox.warning(self, self.tr("Error"),
+                               'Invalid ROS master URI')
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %%%%%%%%%%%%%%%%%%          ROS parameter handling       %%%%%%%%%%%%%%%%%%%%%
@@ -1362,7 +1413,8 @@ class MasterParameterDialog(ParameterDialog):
                       'type': {':type': 'string', ':value': ['string', 'int', 'float', 'bool', 'list']},
                       'value': {':type': 'string', ':value': ''}
                       }
-        dia = ParameterDialog(params_arg, store_geometry='add_parameter_in_master_dialog')
+        dia = ParameterDialog(
+            params_arg, store_geometry='add_parameter_in_master_dialog')
         dia.setWindowTitle('Add new parameter')
         dia.setFilterVisible(False)
         if dia.exec_():
@@ -1377,19 +1429,23 @@ class MasterParameterDialog(ParameterDialog):
                         value = str2bool(params['value'])
                     elif params['type'] == 'list':
                         try:
-                            value = ruamel.yaml.load("[%s]" % params['value'], Loader=ruamel.yaml.Loader)
+                            value = ruamel.yaml.load(
+                                "[%s]" % params['value'], Loader=ruamel.yaml.Loader)
                             # if there is no YAML, load() will return an
                             # empty string.  We want an empty dictionary instead
                             # for our representation of empty.
                             if value is None:
                                 value = []
                         except ruamel.yaml.MarkedYAMLError as e:
-                            MessageBox.warning(self, self.tr("Warning"), "yaml error: %s" % utf8(e))
+                            MessageBox.warning(self, self.tr(
+                                "Warning"), "yaml error: %s" % utf8(e))
                     else:
                         value = params['value']
-                    self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(params['namespace'], params['name']): (1, '', value)}, new_param=True)
+                    self._on_param_values(self.masteruri, 1, '', {roslib.names.ns_join(
+                        params['namespace'], params['name']): (1, '', value)}, new_param=True)
                 else:
-                    MessageBox.warning(self, self.tr("Warning"), 'Empty name is not valid!')
+                    MessageBox.warning(self, self.tr(
+                        "Warning"), 'Empty name is not valid!')
             except ValueError as e:
                 print(traceback.format_exc(3))
                 MessageBox.warning(self, self.tr("Warning"), utf8(e))
@@ -1454,9 +1510,11 @@ class MasterParameterDialog(ParameterDialog):
                             group = tmp_dict
                     group[param_name] = {':type': type_str, ':value': value}
                 else:
-                    dia_params[param_name] = {':type': type_str, ':value': value}
+                    dia_params[param_name] = {
+                        ':type': type_str, ':value': value}
             try:
-                self.content.createFieldFromValue(dia_params, clear_origin_value=new_param)
+                self.content.createFieldFromValue(
+                    dia_params, clear_origin_value=new_param)
                 self.setInfoActive(False)
             except Exception as e:
                 print(traceback.format_exc(3))
@@ -1506,7 +1564,8 @@ class ServiceDialog(ParameterDialog):
         self.service = service
         slots = service.get_service_class(True)._request_class.__slots__
         types = service.get_service_class()._request_class._slot_types
-        ParameterDialog.__init__(self, self._params_from_slots(slots, types), buttons=QDialogButtonBox.Close, parent=parent, store_geometry='service_call_dialog')
+        ParameterDialog.__init__(self, self._params_from_slots(
+            slots, types), buttons=QDialogButtonBox.Close, parent=parent, store_geometry='service_call_dialog')
         self.setWindowTitle('Call %s' % service.name)
         self.service_resp_signal.connect(self._handle_resp)
         # self.resize(450, 300)
@@ -1518,10 +1577,12 @@ class ServiceDialog(ParameterDialog):
         else:
             self.call_service_button = QPushButton(self.tr("&Call"))
             self.call_service_button.clicked.connect(self._on_call_service)
-            self.buttonBox.addButton(self.call_service_button, QDialogButtonBox.ActionRole)
+            self.buttonBox.addButton(
+                self.call_service_button, QDialogButtonBox.ActionRole)
             self.hide_button = QPushButton(self.tr("&Hide/Show output"))
             self.hide_button.clicked.connect(self._on_hide_output)
-            self.buttonBox.addButton(self.hide_button, QDialogButtonBox.ActionRole)
+            self.buttonBox.addButton(
+                self.hide_button, QDialogButtonBox.ActionRole)
             self.hide_button.setVisible(False)
             self.showLoadSaveButtons()
 
@@ -1533,56 +1594,69 @@ class ServiceDialog(ParameterDialog):
             self.hide_button.setVisible(True)
             params = self.getKeywords()
             self.setText(''.join(['Wait for response ...']))
-            thread = threading.Thread(target=self._callService, args=((params,)))
+            thread = threading.Thread(
+                target=self._callService, args=((params,)))
             thread.setDaemon(True)
             thread.start()
         except Exception as e:
-            rospy.logwarn("Error while reading parameter for %s service: %s", utf8(self.service.name), utf8(e))
-            self.setText(''.join(['Error while reading parameter:\n', utf8(e)]))
+            rospy.logwarn("Error while reading parameter for %s service: %s", utf8(
+                self.service.name), utf8(e))
+            self.setText(
+                ''.join(['Error while reading parameter:\n', utf8(e)]))
 
     def _callService(self, params={}):
         req = utf8(params) if params else ''
         try:
-            req, resp = nm.starter().callService(self.service.uri, self.service.name, self.service.get_service_class(), [params])
+            req, resp = nm.starter().callService(self.service.uri, self.service.name,
+                                                 self.service.get_service_class(), [params])
             self.service_resp_signal.emit(utf8(repr(req)), utf8(repr(resp)))
         except Exception as e:
             print(traceback.format_exc(2))
-            rospy.logwarn("Error while call service '%s': %s", utf8(self.service.name), utf8(e))
+            rospy.logwarn("Error while call service '%s': %s",
+                          utf8(self.service.name), utf8(e))
             self.service_resp_signal.emit(utf8(repr(req)), utf8(e))
 
     @classmethod
     def _params_from_slots(cls, slots, types, values={}):
         result = dict()
         for slot, msg_type in zip(slots, types):
-            base_type, is_array, _array_length = roslib.msgs.parse_type(msg_type)
+            base_type, is_array, _array_length = roslib.msgs.parse_type(
+                msg_type)
             if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
-                default_value = 'now' if base_type in ['time', 'duration'] else ''
+                default_value = 'now' if base_type in [
+                    'time', 'duration'] else ''
                 if slot in values and values[slot]:
                     default_value = values[slot]
                 result[slot] = {':type': msg_type, ':value': default_value}
             else:
                 try:
-                    list_msg_class = roslib.message.get_message_class(base_type)
+                    list_msg_class = roslib.message.get_message_class(
+                        base_type)
                     if is_array and slot in values:
                         subresult = []
                         for slot_value in values[slot]:
-                            subvalue = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types, slot_value if slot in values and slot_value else {})
+                            subvalue = cls._params_from_slots(
+                                list_msg_class.__slots__, list_msg_class._slot_types, slot_value if slot in values and slot_value else {})
                             subresult.append(subvalue)
                         result[slot] = {':value': subresult, ':type': msg_type}
                     else:
-                        subresult = cls._params_from_slots(list_msg_class.__slots__, list_msg_class._slot_types, values[slot] if slot in values and values[slot] else {})
+                        subresult = cls._params_from_slots(
+                            list_msg_class.__slots__, list_msg_class._slot_types, values[slot] if slot in values and values[slot] else {})
                         if is_array:
-                            result[slot] = {':value': subresult, ':type': msg_type}
+                            result[slot] = {
+                                ':value': subresult, ':type': msg_type}
                         else:
                             subresult[':type'] = msg_type
                             result[slot] = subresult
                 except ValueError as e:
                     print(traceback.format_exc())
-                    rospy.logwarn("Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
+                    rospy.logwarn(
+                        "Error while parse message type '%s': %s", utf8(msg_type), utf8(e))
         return result
 
     def _handle_resp(self, req, resp):
-        self.setWindowTitle(''.join(['Request / Response of ', self.service.name]))
+        self.setWindowTitle(
+            ''.join(['Request / Response of ', self.service.name]))
         # replace some of Escape Characters
         resp_str = utf8(resp).replace('\\r\\n', '\n')
         resp_str = resp_str.replace('\\n', '\n')

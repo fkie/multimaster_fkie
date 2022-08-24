@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import subprocess
 import sys
@@ -66,7 +65,8 @@ def create_session_name(node=''):
     '''
     if node is None:
         return ''
-    result = rospy.names.ns_join('/', node).replace(SLASH_SEP, '%s%s' % (SLASH_SEP, SLASH_SEP))
+    result = rospy.names.ns_join(
+        '/', node).replace(SLASH_SEP, '%s%s' % (SLASH_SEP, SLASH_SEP))
     result = result.replace('/', SLASH_SEP)
     return result
 
@@ -122,11 +122,14 @@ def get_active_screens(nodename=''):
     '''
     result = {}
     starttime = time.time()
-    ps = SupervisedPopen([SCREEN, '-ls'], stdout=subprocess.PIPE, object_id='get_active_screens')
-    output = ps.stdout.read() if sys.version_info[0] <= 2 else str(ps.stdout.read(), 'utf-8')
+    ps = SupervisedPopen(
+        [SCREEN, '-ls'], stdout=subprocess.PIPE, object_id='get_active_screens')
+    output = ps.stdout.read() if sys.version_info[0] <= 2 else str(
+        ps.stdout.read(), 'utf-8')
     if output:
         if time.time() - starttime > 1.0:
-            rospy.logwarn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" % (SCREEN, time.time() - starttime))
+            rospy.logwarn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" %
+                          (SCREEN, time.time() - starttime))
         splits = output.splitlines()
         for item in splits:
             pid, nodepart = split_session_name(item)
@@ -209,7 +212,8 @@ def get_ros_logfile(node):
             for fn in files:
                 if p.match(fn):
                     return os.path.join(logpath, fn)
-            p = re.compile(r"%s-\d*-stdout.log" % (node.strip('/').replace('/', '-')))
+            p = re.compile(r"%s-\d*-stdout.log" %
+                           (node.strip('/').replace('/', '-')))
             for fn in files:
                 if p.match(fn):
                     return os.path.join(logpath, fn)
@@ -242,7 +246,7 @@ def get_cmd(node, env=[], keys=[]):
     '''
     # see https://www.gnu.org/software/screen/manual/html_node/
     # If the command begins with a '-' character, the shell will be started as a login-shell.
-    # Typical shells do only minimal initialization when not started as a login-shell. 
+    # Typical shells do only minimal initialization when not started as a login-shell.
     # E.g. Bash will not read your ~/.bashrc unless it is a login-shell.
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
@@ -262,7 +266,8 @@ def rosclean():
     '''
     d = rospkg.get_log_dir()
     if d and d != os.path.sep:
-        ps = SupervisedPopen(['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True, object_id='rosclean')
+        ps = SupervisedPopen(
+            ['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True, object_id='rosclean')
         output_err = ps.stderr.read()
         if output_err:
             raise Exception(output_err)

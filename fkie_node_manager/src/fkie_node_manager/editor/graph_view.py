@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QObject, Signal, Qt
 from python_qt_binding.QtGui import QIcon, QStandardItemModel, QStandardItem
@@ -83,10 +82,12 @@ class GraphViewWidget(QDockWidget):
 
     def __init__(self, tabwidget, parent=None):
         QDockWidget.__init__(self, "LaunchGraph", parent)
-        graph_ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'ui', 'editor', 'GraphDockWidget.ui')
+        graph_ui_file = os.path.join(os.path.dirname(os.path.realpath(
+            __file__)), '..', 'ui', 'editor', 'GraphDockWidget.ui')
         loadUi(graph_ui_file, self)
         self.setObjectName('LaunchGraph')
-        self.setFeatures(QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetFloatable)
+        self.setFeatures(QDockWidget.DockWidgetMovable |
+                         QDockWidget.DockWidgetFloatable)
         self._info_icon = nm.settings().icon('info.png')
         self._tabwidget = tabwidget
         self._current_path = None
@@ -129,7 +130,8 @@ class GraphViewWidget(QDockWidget):
             self._fill_graph_thread.start()
         elif self._current_path != current_path:
             self._current_path = current_path
-            items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
+            items = self.graphTreeView.model().match(self.graphTreeView.model().index(
+                0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
             first = True
             self.graphTreeView.selectionModel().clear()
             for item in items:
@@ -140,7 +142,8 @@ class GraphViewWidget(QDockWidget):
                     self.graphTreeView.selectionModel().select(item, QItemSelectionModel.Select)
 
     def _on_load_error(self, msg):
-        self.setWindowTitle("Include Graph - %s" % os.path.basename(self._root_path))
+        self.setWindowTitle("Include Graph - %s" %
+                            os.path.basename(self._root_path))
         if not self._created_tree:
             inc_item = QStandardItem('%s' % msg)
             self.graphTreeView.model().appendRow(inc_item)
@@ -161,25 +164,33 @@ class GraphViewWidget(QDockWidget):
         for index in selected:
             item = self.graphTreeView.model().itemFromIndex(index.parent())
             if item is not None:
-                rospy.logdebug("graph_view: send request to load parent file %s" % item.data(self.DATA_INC_FILE))
-                self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
+                rospy.logdebug("graph_view: send request to load parent file %s" % item.data(
+                    self.DATA_INC_FILE))
+                self.load_signal.emit(
+                    item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
 
     def on_activated(self, index):
         item = self.graphTreeView.model().itemFromIndex(index)
         if item is not None:
             if item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_FILE:
-                rospy.logdebug("graph_view: send request to load %s" % item.data(self.DATA_INC_FILE))
-                self.load_signal.emit(item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
+                rospy.logdebug("graph_view: send request to load %s" %
+                               item.data(self.DATA_INC_FILE))
+                self.load_signal.emit(
+                    item.data(self.DATA_INC_FILE), self._current_deep < item.data(self.DATA_LEVEL))
             elif item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_ARG:
-                rospy.logdebug("graph_view: send request to search for '<arg name=\"%s\"' in %s" % (item.data(self.DATA_ARG_NAME), item.data(self.DATA_INC_FILE)))
-                self.search_signal.emit(item.data(self.DATA_INC_FILE), "<arg name=\"%s\"" % item.data(self.DATA_ARG_NAME), -1, -1, False, 1)
+                rospy.logdebug("graph_view: send request to search for '<arg name=\"%s\"' in %s" % (
+                    item.data(self.DATA_ARG_NAME), item.data(self.DATA_INC_FILE)))
+                self.search_signal.emit(item.data(self.DATA_INC_FILE), "<arg name=\"%s\"" % item.data(
+                    self.DATA_ARG_NAME), -1, -1, False, 1)
             else:
-                self.graphTreeView.setExpanded(index, not self.graphTreeView.isExpanded(index))
+                self.graphTreeView.setExpanded(
+                    index, not self.graphTreeView.isExpanded(index))
 
     def on_clicked(self, index):
         item = self.graphTreeView.model().itemFromIndex(index)
         if item is not None and item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_FILE:
-            self.goto_signal.emit(item.data(self.DATA_FILE), item.data(self.DATA_LINE))
+            self.goto_signal.emit(item.data(self.DATA_FILE),
+                                  item.data(self.DATA_LINE))
 
     def enable(self):
         self.setVisible(True)
@@ -199,7 +210,8 @@ class GraphViewWidget(QDockWidget):
             item = self.graphTreeView.model().itemFromIndex(index)
             if from_file == item.data(self.DATA_INC_FILE):
                 from_file_selected = True
-                items = self.graphTreeView.model().match(index, self.DATA_RAW, inc_string, 10, Qt.MatchRecursive)
+                items = self.graphTreeView.model().match(
+                    index, self.DATA_RAW, inc_string, 10, Qt.MatchRecursive)
                 for item in items:
                     for arg in arglist:
                         # add only requested args and if value is not already in
@@ -208,7 +220,8 @@ class GraphViewWidget(QDockWidget):
                             result[arg].append(incargs[arg])
         # global search if from_file was not in selected
         if not from_file_selected:
-            items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_RAW, inc_string, 10, Qt.MatchRecursive)
+            items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0),
+                                                     self.DATA_RAW, inc_string, 10, Qt.MatchRecursive)
             for item in items:
                 for arg in arglist:
                     incargs = item.data(self.DATA_ARGS)
@@ -246,7 +259,8 @@ class GraphViewWidget(QDockWidget):
                 arg_item = QStandardItem('arguments')
                 arg_item.setData(self.ITEM_TYPE_INC_GROUP_ARG, self.ITEM_TYPE)
                 for da_name, da_value in launch_args.items():
-                    da_item = QStandardItem('<arg>%s: %s' % (da_name, da_value))
+                    da_item = QStandardItem(
+                        '<arg>%s: %s' % (da_name, da_value))
                     da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
                     da_item.setData(self._root_path, self.DATA_FILE)
                     da_item.setData(da_name, self.DATA_ARG_NAME)
@@ -257,7 +271,8 @@ class GraphViewWidget(QDockWidget):
             # self.graphTreeView.expand(self.graphTreeView.model().indexFromItem(inc_item))
             self._created_tree = True
             self.has_none_packages = has_none_packages
-        items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
+        items = self.graphTreeView.model().match(self.graphTreeView.model().index(
+            0, 0), self.DATA_INC_FILE, self._current_path, 10, Qt.MatchRecursive)
         first = True
         self.graphTreeView.selectionModel().clear()
         for item in items:
@@ -293,8 +308,10 @@ class GraphViewWidget(QDockWidget):
                     size_color = 'gray'
                     if inc_file.size == 0 or inc_file.size > 1000000:
                         size_color = 'orange'
-                    itemstr = '%s   <span style="color:%s;"><em>%s</em></span>   [%s]' % (os.path.basename(inc_file.inc_path), size_color, sizeof_fmt(inc_file.size), pkg)
-                    inc_item = QStandardItem('%d: %s' % (inc_file.line_number, itemstr))
+                    itemstr = '%s   <span style="color:%s;"><em>%s</em></span>   [%s]' % (
+                        os.path.basename(inc_file.inc_path), size_color, sizeof_fmt(inc_file.size), pkg)
+                    inc_item = QStandardItem(
+                        '%d: %s' % (inc_file.line_number, itemstr))
                     inc_item.setData(self.ITEM_TYPE_INC_FILE, self.ITEM_TYPE)
                     inc_item.setData(inc_file.path_or_str, self.DATA_FILE)
                     inc_item.setData(inc_file.line_number, self.DATA_LINE)
@@ -303,28 +320,39 @@ class GraphViewWidget(QDockWidget):
                     inc_item.setData(inc_file.size, self.DATA_SIZE)
                     inc_item.setData(inc_file.raw_inc_path, self.DATA_RAW)
                     inc_item.setData(inc_file.args, self.DATA_ARGS)
-                    inc_item.setData(inc_file.unset_default_args, self.DATA_DEF_ARGS_NOT_SET)
+                    inc_item.setData(inc_file.unset_default_args,
+                                     self.DATA_DEF_ARGS_NOT_SET)
                     # add included arguments
                     if inc_file.unset_default_args or inc_file.args:
                         arg_item = QStandardItem('arguments')
-                        arg_item.setData(self.ITEM_TYPE_INC_GROUP_ARG, self.ITEM_TYPE)
+                        arg_item.setData(
+                            self.ITEM_TYPE_INC_GROUP_ARG, self.ITEM_TYPE)
                         if inc_file.unset_default_args:
                             self.has_warnings = True
                             arg_item.setIcon(self._info_icon)
                             for da_name, da_value in inc_file.unset_default_args.items():
-                                da_item = QStandardItem('<arg_not_set>%s: %s' % (da_name, da_value))
-                                da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
-                                da_item.setData(inc_file.path_or_str, self.DATA_FILE)
-                                da_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
+                                da_item = QStandardItem(
+                                    '<arg_not_set>%s: %s' % (da_name, da_value))
+                                da_item.setData(
+                                    self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
+                                da_item.setData(
+                                    inc_file.path_or_str, self.DATA_FILE)
+                                da_item.setData(
+                                    inc_file.inc_path, self.DATA_INC_FILE)
                                 da_item.setData(da_name, self.DATA_ARG_NAME)
-                                da_item.setToolTip("This argument is definded as default, but no set while include.")
+                                da_item.setToolTip(
+                                    "This argument is definded as default, but no set while include.")
                                 arg_item.appendRow(da_item)
                         if inc_file.args:
                             for da_name, da_value in inc_file.args.items():
-                                da_item = QStandardItem('<arg>%s: %s' % (da_name, da_value))
-                                da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
-                                da_item.setData(inc_file.path_or_str, self.DATA_FILE)
-                                da_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
+                                da_item = QStandardItem(
+                                    '<arg>%s: %s' % (da_name, da_value))
+                                da_item.setData(
+                                    self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
+                                da_item.setData(
+                                    inc_file.path_or_str, self.DATA_FILE)
+                                da_item.setData(
+                                    inc_file.inc_path, self.DATA_INC_FILE)
                                 da_item.setData(da_name, self.DATA_ARG_NAME)
                                 arg_item.appendRow(da_item)
                         inc_item.appendRow(arg_item)
@@ -343,7 +371,8 @@ class GraphViewWidget(QDockWidget):
             if item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_FILE:
                 self._collapse_args(item)
             elif item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_GROUP_ARG:
-                self.graphTreeView.setExpanded(self.graphTreeView.model().indexFromItem(item), False)
+                self.graphTreeView.setExpanded(
+                    self.graphTreeView.model().indexFromItem(item), False)
 
 
 class GraphThread(QObject, threading.Thread):
@@ -375,15 +404,20 @@ class GraphThread(QObject, threading.Thread):
         '''
         '''
         try:
-            self.info_signal.emit("build tree: start for %s" % self.root_path, False)
+            self.info_signal.emit("build tree: start for %s" %
+                                  self.root_path, False)
             result = []
-            filelist = nm.nmd().launch.get_included_files(self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
+            filelist = nm.nmd().launch.get_included_files(
+                self.root_path, recursive=True, search_in_ext=nm.settings().SEARCH_IN_EXT)
             for inc_file in filelist:
-                rospy.logdebug("build tree: append file: %s" % inc_file.inc_path)
-                inc_file.unset_default_args = self.find_default_args(inc_file.inc_path, inc_file.args)
+                rospy.logdebug("build tree: append file: %s" %
+                               inc_file.inc_path)
+                inc_file.unset_default_args = self.find_default_args(
+                    inc_file.inc_path, inc_file.args)
                 result.append(inc_file)
                 if not inc_file.exists:
-                    self.info_signal.emit("build tree: skip parse %s, not exist" % inc_file.inc_path, True)
+                    self.info_signal.emit(
+                        "build tree: skip parse %s, not exist" % inc_file.inc_path, True)
             self.graph.emit(result)
         except exceptions.GrpcTimeout as tout:
             rospy.logwarn("Build launch tree failed! Daemon not responded within %.2f seconds while"
@@ -395,7 +429,8 @@ class GraphThread(QObject, threading.Thread):
             # print("Error while parse launch file for includes:\n\t%s" % traceback.format_exc())
             formatted_lines = traceback.format_exc(1).splitlines()
             try:
-                rospy.logwarn("Error while parse launch file for includes:\n\t%s", formatted_lines[-5])
+                rospy.logwarn(
+                    "Error while parse launch file for includes:\n\t%s", formatted_lines[-5])
             except Exception:
                 pass
             self.error.emit('failed: %s' % formatted_lines[-1])
@@ -418,7 +453,8 @@ class GraphThread(QObject, threading.Thread):
             _, _, data = nm.nmd().file.get_file_content(path)
             launch_node = None
             # create xml node
-            xml_nodes = minidom.parseString(data.encode('utf-8')).getElementsByTagName('launch')
+            xml_nodes = minidom.parseString(data.encode(
+                'utf-8')).getElementsByTagName('launch')
             if xml_nodes:
                 launch_node = xml_nodes[-1]
             if launch_node is not None:

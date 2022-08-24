@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import paramiko
 import shlex
@@ -117,7 +116,8 @@ class SSHhandler(object):
         '''
         with self.mutex:
             try:
-                ssh = self._getSSH(host, nm.settings().host_user(host) if user is None else user, pw, True, auto_pw_request)
+                ssh = self._getSSH(host, nm.settings().host_user(
+                    host) if user is None else user, pw, True, auto_pw_request)
                 if ssh is not None:
                     sftp = ssh.open_sftp()
                     try:
@@ -125,7 +125,8 @@ class SSHhandler(object):
                     except Exception:
                         pass
                     sftp.put(local_file, remote_file)
-                    rospy.loginfo("SSH COPY %s -> %s@%s:%s", local_file, ssh._transport.get_username(), host, remote_file)
+                    rospy.loginfo("SSH COPY %s -> %s@%s:%s", local_file,
+                                  ssh._transport.get_username(), host, remote_file)
             except AuthenticationRequest as _aerr:
                 raise
             except Exception as _err:
@@ -148,13 +149,16 @@ class SSHhandler(object):
         '''
         with self.mutex:
             try:
-                ssh = self._getSSH(host, nm.settings().host_user(host) if user is None else user, pw, True, auto_pw_request)
+                ssh = self._getSSH(host, nm.settings().host_user(
+                    host) if user is None else user, pw, True, auto_pw_request)
                 if ssh is not None:
                     cmd_str = utf8(' '.join(cmd))
-                    rospy.loginfo("REMOTE execute on %s@%s: %s", ssh._transport.get_username(), host, cmd_str)
+                    rospy.loginfo("REMOTE execute on %s@%s: %s",
+                                  ssh._transport.get_username(), host, cmd_str)
                     (stdin, stdout, stderr) = (None, None, None)
                     if get_pty:
-                        (stdin, stdout, stderr) = ssh.exec_command(cmd_str, get_pty=get_pty)
+                        (stdin, stdout, stderr) = ssh.exec_command(
+                            cmd_str, get_pty=get_pty)
                     else:
                         (stdin, stdout, stderr) = ssh.exec_command(cmd_str)
                     if close_stdin:
@@ -200,7 +204,8 @@ class SSHhandler(object):
                                     '-oCheckHostIP=no',
                                     ''.join([user, '@', host])])
                 if title is not None:
-                    cmd_str = nm.settings().terminal_cmd([ssh_str, ' '.join(cmd)], title)
+                    cmd_str = nm.settings().terminal_cmd(
+                        [ssh_str, ' '.join(cmd)], title)
                 else:
                     cmd_str = utf8(' '.join([ssh_str, ' '.join(cmd)]))
                 rospy.loginfo("REMOTE x11 execute on %s: %s", host, cmd_str)
@@ -228,7 +233,8 @@ class SSHhandler(object):
             session.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             while (session.get_transport() is None or not session.get_transport().authenticated) and do_connect:
                 try:
-                    session.connect(host, username=user, password=pw, timeout=3, compress=True)
+                    session.connect(host, username=user,
+                                    password=pw, timeout=3, compress=True)
                     self.SSH_AUTH[host] = user
                 except Exception as e:
                     if utf8(e) in ['Authentication failed.', 'No authentication methods available', 'Private key file is encrypted', 'No existing session']:
@@ -240,8 +246,10 @@ class SSHhandler(object):
                         else:
                             raise AuthenticationRequest(user, host, utf8(e))
                     else:
-                        rospy.logwarn("ssh connection to %s failed: %s", host, utf8(e))
-                        raise Exception(' '.join(["ssh connection to", host, "failed:", utf8(e)]))
+                        rospy.logwarn(
+                            "ssh connection to %s failed: %s", host, utf8(e))
+                        raise Exception(
+                            ' '.join(["ssh connection to", host, "failed:", utf8(e)]))
                 else:
                     SSHhandler.SSH_SESSIONS[host] = session
             if not session.get_transport() is None:
@@ -261,7 +269,8 @@ class SSHhandler(object):
         result = False
         pw = None
         pwInput = QDialog()
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'PasswordInput.ui')
+        ui_file = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), 'ui', 'PasswordInput.ui')
         loadUi(ui_file, pwInput)
         pwInput.setWindowTitle(''.join(['Access for ', host]))
         pwInput.userLine.setText(utf8(user))

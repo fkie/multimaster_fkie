@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QTimer
 try:
@@ -66,7 +65,8 @@ class ProfileWidget(QDockWidget):
         '''
         QDockWidget.__init__(self, parent)
         # load the UI file
-        profile_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'ProfileWidget.ui')
+        profile_dock_file = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), 'ui', 'ProfileWidget.ui')
         loadUi(profile_dock_file, self)
         self._main_window = main_window
         self.setVisible(False)
@@ -91,7 +91,8 @@ class ProfileWidget(QDockWidget):
             try:
                 # we need a grpc url for local node manager daemon
                 nmd_url = nmdurl.nmduri()
-                (pkg, _) = package_name(nmdurl.join(nmd_url, os.path.dirname(path)))  # _:=pkg_path
+                (pkg, _) = package_name(nmdurl.join(
+                    nmd_url, os.path.dirname(path)))  # _:=pkg_path
                 if pkg is None:
                     ret = MessageBox.warning(self, "New File Error",
                                              'The new file is not in a ROS package', buttons=MessageBox.Ok | MessageBox.Cancel)
@@ -155,7 +156,8 @@ class ProfileWidget(QDockWidget):
                             zc_param = get_rosparam('zeroconf', muri)
                             content[smuri]['zeroconf'] = zc_param
                         elif node_name.endswith('node_manager_daemon'):
-                            nmd_param = get_rosparam('node_manager_daemon', muri)
+                            nmd_param = get_rosparam(
+                                'node_manager_daemon', muri)
                             content[smuri]['node_manager_daemon'] = nmd_param
                 # store arguments for launchfiles
                 for a, b in master.launchfiles.items():
@@ -187,16 +189,20 @@ class ProfileWidget(QDockWidget):
         rospy.loginfo("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
-        self.setWindowTitle("%s profile started" % os.path.basename(path).rstrip('.nmprofile'))
+        self.setWindowTitle("%s profile started" %
+                            os.path.basename(path).rstrip('.nmprofile'))
         hasstart = False
         if path:
             try:
                 with open(path, 'r') as f:
-                    content = ruamel.yaml.load(f.read(), Loader=ruamel.yaml.Loader)
+                    content = ruamel.yaml.load(
+                        f.read(), Loader=ruamel.yaml.Loader)
                     if not isinstance(content, dict):
-                        raise Exception("Mailformed profile: %s" % os.path.basename(path))
+                        raise Exception("Mailformed profile: %s" %
+                                        os.path.basename(path))
                     for muri, master_dict in content.items():
-                        local_hostname = get_hostname(self._main_window.getMasteruri())
+                        local_hostname = get_hostname(
+                            self._main_window.getMasteruri())
                         rmuri = muri.replace('$LOCAL$', local_hostname)
                         master = self._main_window.getMaster(rmuri)
                         running_nodes = master.get_nodes_runningIfLocal()
@@ -205,29 +211,40 @@ class ProfileWidget(QDockWidget):
                         if 'user' in master_dict:
                             usr = master_dict['user']
                         if master_dict['mastername'] and master_dict['mastername']:
-                            nm.nameres().add_master_entry(master.masteruri, master_dict['mastername'], master_dict['address'])
-                        hostname = master_dict['address'].replace('$LOCAL$', local_hostname)
+                            nm.nameres().add_master_entry(master.masteruri,
+                                                          master_dict['mastername'], master_dict['address'])
+                        hostname = master_dict['address'].replace(
+                            '$LOCAL$', local_hostname)
                         if 'master_discovery' in master_dict:
-                            self._start_node_from_profile(master, hostname, 'fkie_master_discovery', 'master_discovery', usr, cfg=master_dict['master_discovery'])
-                            self._current_profile[rmuri].add('/master_discovery')
+                            self._start_node_from_profile(
+                                master, hostname, 'fkie_master_discovery', 'master_discovery', usr, cfg=master_dict['master_discovery'])
+                            self._current_profile[rmuri].add(
+                                '/master_discovery')
                         if 'master_sync' in master_dict:
-                            self._start_node_from_profile(master, hostname, 'fkie_master_sync', 'master_sync', usr, cfg=master_dict['master_sync'])
+                            self._start_node_from_profile(
+                                master, hostname, 'fkie_master_sync', 'master_sync', usr, cfg=master_dict['master_sync'])
                             self._current_profile[rmuri].add('/master_sync')
                         if 'zeroconf' in master_dict:
-                            self._start_node_from_profile(master, hostname, 'fkie_master_discovery', 'zeroconf', usr, cfg=master_dict['zeroconf'])
+                            self._start_node_from_profile(
+                                master, hostname, 'fkie_master_discovery', 'zeroconf', usr, cfg=master_dict['zeroconf'])
                             self._current_profile[rmuri].add('/zeroconf')
                         if 'node_manager_daemon' in master_dict and not nm.is_local(master.mastername):
-                            self._start_node_from_profile(master, hostname, 'fkie_node_manager_daemon', 'node_manager_daemon', usr, cfg=master_dict['node_manager_daemon'])
-                            self._current_profile[rmuri].add('/node_manager_daemon')
+                            self._start_node_from_profile(
+                                master, hostname, 'fkie_node_manager_daemon', 'node_manager_daemon', usr, cfg=master_dict['node_manager_daemon'])
+                            self._current_profile[rmuri].add(
+                                '/node_manager_daemon')
                         try:
                             do_start = []
-                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery', '/master_sync', '*default_cfg', '/zeroconf', '/node_manager_daemon'}
+                            do_not_stop = {'/rosout', rospy.get_name(), '/node_manager', '/master_discovery',
+                                           '/master_sync', '*default_cfg', '/zeroconf', '/node_manager_daemon'}
                             configs = master_dict['configs']
                             conf_set = set()
                             for cfg_name, cmdict in configs.items():
-                                cfg_name = cfg_name.replace('$LOCAL$', local_hostname)
+                                cfg_name = cfg_name.replace(
+                                    '$LOCAL$', local_hostname)
                                 if cfg_name.startswith("pkg://"):
-                                    cfg_name = resolve_pkg(cfg_name, nmdurl.nmduri(rmuri))
+                                    cfg_name = resolve_pkg(
+                                        cfg_name, nmdurl.nmduri(rmuri))
                                 conf_set.add(cfg_name)
                                 reload_launch = True
                                 args = {}
@@ -235,35 +252,44 @@ class ProfileWidget(QDockWidget):
                                     if 'args' in cmdict:
                                         args = cmdict['args']
                                     # do we need to load to load/reload launch file
-                                    #if cfg_name in master.launchfiles:
+                                    # if cfg_name in master.launchfiles:
                                     #    reload_launch = set(master.launchfiles[cfg_name].args.values()) != set(args.values())
                                 if reload_launch:
-                                    self._main_window.launch_dock.load_file(cfg_name, args, master.masteruri)
+                                    self._main_window.launch_dock.load_file(
+                                        cfg_name, args, master.masteruri)
                                 if 'nodes' in cmdict:
-                                    self._current_profile[rmuri].update(cmdict['nodes'])
+                                    self._current_profile[rmuri].update(
+                                        cmdict['nodes'])
                                     force_start = True
                                     cfg = cfg_name
                                     if not reload_launch:
                                         force_start = False
-                                        do_not_stop.update(set(cmdict['nodes']))
-                                        do_start.append((reload_launch, cfg, cmdict['nodes'], force_start))
+                                        do_not_stop.update(
+                                            set(cmdict['nodes']))
+                                        do_start.append(
+                                            (reload_launch, cfg, cmdict['nodes'], force_start))
                                     else:
-                                        do_start.append((reload_launch, cfg, cmdict['nodes'], force_start))
+                                        do_start.append(
+                                            (reload_launch, cfg, cmdict['nodes'], force_start))
                             # close unused configurations
                             for lfile in set(master.launchfiles.keys()) - conf_set:
                                 master._close_cfg(lfile)
-                            master.stop_nodes_by_name(list(running_nodes.keys()), True, do_not_stop)
+                            master.stop_nodes_by_name(
+                                list(running_nodes.keys()), True, do_not_stop)
                             for reload_launch, cfg, nodes, force_start in do_start:
                                 if nodes:
                                     hasstart = True
                                 if reload_launch:
-                                    master.start_nodes_after_load_cfg(cfg, list(nodes), force_start)
+                                    master.start_nodes_after_load_cfg(
+                                        cfg, list(nodes), force_start)
                                 else:
-                                    master.start_nodes_by_name(list(nodes), cfg, force_start)
+                                    master.start_nodes_by_name(
+                                        list(nodes), cfg, force_start)
                         except Exception as ml:
                             import traceback
                             print(utf8(traceback.format_exc(1)))
-                            rospy.logwarn("Can not load launch file for %s: %s" % (muri, utf8(ml)))
+                            rospy.logwarn(
+                                "Can not load launch file for %s: %s" % (muri, utf8(ml)))
             except Exception as e:
                 import traceback
                 print(traceback.format_exc(1))
@@ -330,7 +356,8 @@ class ProfileWidget(QDockWidget):
                 for pname, pval in cfg.items():
                     args.append('_%s:=%s' % (pname, pval))
                 self._main_window._progress_queue.add2queue(utf8(uuid.uuid4()),
-                                                            'start %s on %s' % (binary, hostname),
+                                                            'start %s on %s' % (
+                                                                binary, hostname),
                                                             nm.starter().runNodeWithoutConfig,
                                                             {'host': utf8(hostname),
                                                              'package': pkg,
@@ -341,7 +368,8 @@ class ProfileWidget(QDockWidget):
                                                              'use_nmd': False,
                                                              'auto_pw_request': False,
                                                              'user': usr
-                                                            })
+                                                             })
                 self._main_window._progress_queue.start()
         except Exception as me:
-            rospy.logwarn("Can not start %s for %s: %s" % (binary, master.masteruri, utf8(me)))
+            rospy.logwarn("Can not start %s for %s: %s" %
+                          (binary, master.masteruri, utf8(me)))

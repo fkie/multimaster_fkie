@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from . import file_item
 from . import settings
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fgrpc
@@ -80,11 +79,14 @@ class FileStub(object):
                 item = file_item.FileItem(p.path, p.type, p.size, p.mtime)
                 result.append(item)
         elif response.status.code == OS_ERROR:
-            raise OSError(response.status.error_code, response.status.error_msg, response.status.error_file)
+            raise OSError(response.status.error_code,
+                          response.status.error_msg, response.status.error_file)
         elif response.status.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:
-            raise IOError(response.status.error_code, response.status.error_msg, response.status.error_file)
+            raise IOError(response.status.error_code,
+                          response.status.error_msg, response.status.error_file)
         elif response.status.code == ERROR:
-            raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
+            raise Exception("%s %s" % (
+                response.status.error_msg, response.status.error_file))
         return result
 
     def list_packages(self, clear_ros_cache=False):
@@ -97,7 +99,8 @@ class FileStub(object):
         :raise Exception:
         '''
         result = {}
-        response = self.fm_stub.ListPackages(fmsg.ListPackagesRequest(clear_ros_cache=clear_ros_cache))
+        response = self.fm_stub.ListPackages(
+            fmsg.ListPackagesRequest(clear_ros_cache=clear_ros_cache))
         if response.status.code == OK:
             for p in response.items:
                 result[p.path] = p.name
@@ -116,7 +119,8 @@ class FileStub(object):
         :raise IOError:
         :raise Exception:
         '''
-        response_stream = self.fm_stub.GetFileContent(fmsg.ListPathRequest(path=path))
+        response_stream = self.fm_stub.GetFileContent(
+            fmsg.ListPathRequest(path=path))
         file_size = None
         file_mtime = None
         file_content = b''
@@ -128,13 +132,17 @@ class FileStub(object):
                         file_mtime = response.file.mtime
                     file_content += response.file.data
                 elif response.status.code == OS_ERROR:
-                    raise OSError(response.status.error_code, response.status.error_msg, response.status.error_file)
+                    raise OSError(response.status.error_code,
+                                  response.status.error_msg, response.status.error_file)
                 elif response.status.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:
-                    raise IOError(response.status.error_code, response.status.error_msg, response.status.error_file)
+                    raise IOError(response.status.error_code,
+                                  response.status.error_msg, response.status.error_file)
                 elif response.status.code == ERROR:
-                    raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
+                    raise Exception("%s %s" % (
+                        response.status.error_msg, response.status.error_file))
             else:
-                raise Exception("receiving for '%s' aborted! %d of %d transmitted." % (response.file.path, response.file.offset, response.file.size))
+                raise Exception("receiving for '%s' aborted! %d of %d transmitted." % (
+                    response.file.path, response.file.offset, response.file.size))
         return (file_size, file_mtime, file_content)
 
     def _gen_save_content_list(self, path, content, mtime, package=''):
@@ -176,16 +184,20 @@ class FileStub(object):
         :raise Exception:
         '''
         result = []
-        response_stream = self.fm_stub.SaveFileContent(self._gen_save_content_list(path, content, mtime, package), timeout=settings.GRPC_TIMEOUT)
+        response_stream = self.fm_stub.SaveFileContent(self._gen_save_content_list(
+            path, content, mtime, package), timeout=settings.GRPC_TIMEOUT)
         for response in response_stream:
             if response.status.code == OK:
                 result.append(response.ack)
             elif response.status.code == OS_ERROR:
-                raise OSError(response.status.error_code, response.status.error_msg, response.status.error_file)
+                raise OSError(response.status.error_code,
+                              response.status.error_msg, response.status.error_file)
             elif response.status.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:
-                raise IOError(response.status.error_code, response.status.error_msg, response.status.error_file)
+                raise IOError(response.status.error_code,
+                              response.status.error_msg, response.status.error_file)
             elif response.status.code == ERROR:
-                raise Exception("%s %s" % (response.status.error_msg, response.status.error_file))
+                raise Exception("%s %s" % (
+                    response.status.error_msg, response.status.error_file))
         return result
 
     def copy(self, path, dest_uri, overwrite=True):
@@ -199,15 +211,19 @@ class FileStub(object):
         :raise IOError:
         :raise Exception:
         '''
-        result = self.fm_stub.CopyFileTo(fmsg.CopyToRequest(path=path, uri=dest_uri, overwrite=overwrite), timeout=settings.GRPC_TIMEOUT)
+        result = self.fm_stub.CopyFileTo(fmsg.CopyToRequest(
+            path=path, uri=dest_uri, overwrite=overwrite), timeout=settings.GRPC_TIMEOUT)
         if result.code == OK:
             pass
         elif result.code == OS_ERROR:
-            raise OSError(result.error_code, result.error_msg, result.error_file)
+            raise OSError(result.error_code,
+                          result.error_msg, result.error_file)
         elif result.code in [IO_ERROR, CHANGED_FILE, REMOVED_FILE]:
-            raise IOError(result.error_code, result.error_msg, result.error_file)
+            raise IOError(result.error_code,
+                          result.error_msg, result.error_file)
         elif result.code == ERROR:
-            raise Exception("%s file: %s" % (result.error_msg, result.error_file))
+            raise Exception("%s file: %s" %
+                            (result.error_msg, result.error_file))
 
     def rename(self, old, new):
         '''
@@ -219,15 +235,19 @@ class FileStub(object):
         :raise IOError:
         :raise Exception:
         '''
-        response = self.fm_stub.Rename(fmsg.RenameRequest(old=old, new=new), timeout=settings.GRPC_TIMEOUT)
+        response = self.fm_stub.Rename(fmsg.RenameRequest(
+            old=old, new=new), timeout=settings.GRPC_TIMEOUT)
         if response.code == OK:
             pass
         elif response.code == OS_ERROR:
-            raise OSError(response.error_code, response.error_msg, response.error_file)
+            raise OSError(response.error_code,
+                          response.error_msg, response.error_file)
         elif response.code in [IO_ERROR]:
-            raise IOError(response.error_code, response.error_msg, response.error_file)
+            raise IOError(response.error_code,
+                          response.error_msg, response.error_file)
         elif response.code == ERROR:
-            raise Exception("%s, path: %s" % (response.error_msg, response.error_file))
+            raise Exception("%s, path: %s" %
+                            (response.error_msg, response.error_file))
 
     def changed_files(self, files):
         '''
@@ -243,7 +263,8 @@ class FileStub(object):
         for path, mtime in files.items():
             pathlist.append(fmsg.PathObj(path=path, mtime=mtime))
         request.items.extend(pathlist)
-        response = self.fm_stub.ChangedFiles(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.fm_stub.ChangedFiles(
+            request, timeout=settings.GRPC_TIMEOUT)
         return response.items
 
     def get_package_binaries(self, pkgname):
@@ -255,7 +276,8 @@ class FileStub(object):
         :rtype: :class:`file_pb2.PathObj`
         '''
         request = fmsg.PackageObj(name=pkgname)
-        response = self.fm_stub.GetPackageBinaries(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.fm_stub.GetPackageBinaries(
+            request, timeout=settings.GRPC_TIMEOUT)
         return response.items
 
     def delete(self, path):
@@ -267,15 +289,19 @@ class FileStub(object):
         :raise IOError:
         :raise Exception:
         '''
-        response = self.fm_stub.Delete(fmsg.PathObj(path=path), timeout=settings.GRPC_TIMEOUT)
+        response = self.fm_stub.Delete(fmsg.PathObj(
+            path=path), timeout=settings.GRPC_TIMEOUT)
         if response.code == OK:
             pass
         elif response.code == OS_ERROR:
-            raise OSError(response.error_code, response.error_msg, response.error_file)
+            raise OSError(response.error_code,
+                          response.error_msg, response.error_file)
         elif response.code in [IO_ERROR]:
-            raise IOError(response.error_code, response.error_msg, response.error_file)
+            raise IOError(response.error_code,
+                          response.error_msg, response.error_file)
         elif response.code == ERROR:
-            raise Exception("%s, path: %s" % (response.error_msg, response.error_file))
+            raise Exception("%s, path: %s" %
+                            (response.error_msg, response.error_file))
 
     def new(self, path, path_type):
         '''
@@ -287,12 +313,16 @@ class FileStub(object):
         :raise IOError:
         :raise Exception:
         '''
-        response = self.fm_stub.New(fmsg.PathObj(path=path, type=path_type), timeout=settings.GRPC_TIMEOUT)
+        response = self.fm_stub.New(fmsg.PathObj(
+            path=path, type=path_type), timeout=settings.GRPC_TIMEOUT)
         if response.code == OK:
             pass
         elif response.code == OS_ERROR:
-            raise OSError(response.error_code, response.error_msg, response.error_file)
+            raise OSError(response.error_code,
+                          response.error_msg, response.error_file)
         elif response.code in [IO_ERROR]:
-            raise IOError(response.error_code, response.error_msg, response.error_file)
+            raise IOError(response.error_code,
+                          response.error_msg, response.error_file)
         elif response.code == ERROR:
-            raise Exception("%s, path: %s" % (response.error_msg, response.error_file))
+            raise Exception("%s, path: %s" %
+                            (response.error_msg, response.error_file))

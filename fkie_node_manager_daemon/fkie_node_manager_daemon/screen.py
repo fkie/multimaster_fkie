@@ -29,6 +29,7 @@ from fkie_node_manager_daemon.common import ns_join
 from fkie_node_manager_daemon.common import SEP as ROS_SEP
 import fkie_node_manager_daemon as nmd
 
+
 class ScreenException(Exception):
     pass
 
@@ -104,11 +105,13 @@ def get_active_screens(nodename=''):
     '''
     result = {}
     starttime = time.time()
-    ps = SupervisedPopen([SCREEN, '-ls'], stdout=subprocess.PIPE, object_id='get_active_screens')
+    ps = SupervisedPopen(
+        [SCREEN, '-ls'], stdout=subprocess.PIPE, object_id='get_active_screens')
     output = str(ps.stdout.read(), 'utf-8')
     if output:
         if time.time() - starttime > 1.0:
-            nmd.rosnode.get_logger().warn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" % (SCREEN, time.time() - starttime))
+            nmd.rosnode.get_logger().warn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" %
+                                          (SCREEN, time.time() - starttime))
         splits = output.splitlines()
         for item in splits:
             pid, nodepart = split_session_name(item)
@@ -199,7 +202,7 @@ def get_cmd(node, env=[], keys=[]):
     '''
     # see https://www.gnu.org/software/screen/manual/html_node/
     # If the command begins with a '-' character, the shell will be started as a login-shell.
-    # Typical shells do only minimal initialization when not started as a login-shell. 
+    # Typical shells do only minimal initialization when not started as a login-shell.
     # E.g. Bash will not read your ~/.bashrc unless it is a login-shell.
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
@@ -218,7 +221,8 @@ def rosclean():
     #d = rospkg.get_log_dir()
     d = ''
     if d and d != os.path.sep:
-        ps = SupervisedPopen(['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True, object_id='rosclean')
+        ps = SupervisedPopen(
+            ['rm -fr %s/*' % d], stdout=subprocess.PIPE, shell=True, object_id='rosclean')
         output_err = ps.stderr.read()
         if output_err:
             raise Exception(output_err)
@@ -234,7 +238,7 @@ def log_dir_size():
     #from rosclean import get_disk_usage
     #d = rospkg.get_log_dir()
     #disk_usage = get_disk_usage(d)
-    #return disk_usage
+    # return disk_usage
 
 
 def delete_log(nodename):

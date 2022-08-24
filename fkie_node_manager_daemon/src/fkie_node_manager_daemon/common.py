@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from datetime import datetime
 import os
 import re
@@ -51,7 +50,8 @@ INCLUDE_PATTERN = [r"\s*(\$\(find.*?\)[^\"]*)",
                    r"binfile=\"(.*?)\"",
                    r"\"\s*(pkg:\/\/.*?)\"",
                    r"\"\s*(package:\/\/.*?)\""]
-SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
+SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
+                 '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
 
 try:
     from catkin_pkg.package import parse_package
@@ -239,6 +239,7 @@ def get_pkg_path(package_name):
             _get_pkg_path_var = roslib.packages.get_pkg_dir
     return _get_pkg_path_var(package_name)
 
+
 def reset_package_cache():
     global _get_pkg_path_var
     _get_pkg_path_var = None
@@ -260,7 +261,8 @@ def interpret_path(path, pwd='.'):
     '''
     result = path.strip()
     # try replace package name by package path
-    pkg_pattern = re.compile(r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
+    pkg_pattern = re.compile(
+        r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
     #pkg_pattern = re.compile(r"%s" % '|'.join(INCLUDE_PATTERN))
     for groups in pkg_pattern.finditer(path):
         for index in range(groups.lastindex):
@@ -268,11 +270,14 @@ def interpret_path(path, pwd='.'):
             print("PKGNAME", pkg_name)
             if pkg_name:
                 pkg = get_pkg_path(pkg_name)
-                rospy.logdebug("rospkg.RosPack.get_path for '%s': %s" % (pkg_name, pkg))
+                rospy.logdebug(
+                    "rospkg.RosPack.get_path for '%s': %s" % (pkg_name, pkg))
                 path_suffix = path[groups.end():].rstrip("'")
                 if path_suffix.startswith('/'):
-                    paths = roslib.packages._find_resource(pkg, path_suffix.strip(os.path.sep))
-                    rospy.logdebug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (path_suffix.strip(os.path.sep), paths))
+                    paths = roslib.packages._find_resource(
+                        pkg, path_suffix.strip(os.path.sep))
+                    rospy.logdebug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (
+                        path_suffix.strip(os.path.sep), paths))
                     if len(paths) > 0:
                         # if more then one launch file is found, take the first one
                         return paths[0]
@@ -291,7 +296,8 @@ def interpret_path(path, pwd='.'):
                                 return paths[0]
                         except Exception:
                             import traceback
-                            rospy.logwarn("search in install/devel space failed: %s" % traceback.format_exc())
+                            rospy.logwarn(
+                                "search in install/devel space failed: %s" % traceback.format_exc())
                     return full_path
                 else:
                     return "%s%s" % (os.path.normpath(pkg), os.path.sep)
@@ -305,7 +311,8 @@ def replace_paths(text, pwd='.'):
     Like meth:interpret_path(), but replaces all matches in the text and retain other text.
     '''
     result = text
-    path_pattern = re.compile(r"(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
+    path_pattern = re.compile(
+        r"(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
     for groups in path_pattern.finditer(text):
         for index in range(groups.lastindex):
             path = groups.groups()[index]
@@ -324,7 +331,8 @@ def get_internal_args(content, path=None, only_default=False):
     new_content = content
     try:
         resolve_args_intern = {}
-        xml_nodes = minidom.parseString(new_content.encode('utf-8')).getElementsByTagName('launch')
+        xml_nodes = minidom.parseString(new_content.encode(
+            'utf-8')).getElementsByTagName('launch')
         for node in xml_nodes:
             for child in node.childNodes:
                 if child.localName == 'arg' and child.hasAttributes():
@@ -399,7 +407,8 @@ def replace_arg(value, resolve_args):
 def __get_include_args(content, resolve_args):
     included_files = []
     try:
-        xml_nodes = minidom.parseString(content).getElementsByTagName('include')
+        xml_nodes = minidom.parseString(
+            content).getElementsByTagName('include')
         for node in xml_nodes:
             if node.nodeType == node.ELEMENT_NODE and node.hasAttributes():
                 filename = ''
@@ -478,15 +487,18 @@ def find_included_files(string,
             match = comment_pattern.search(content)
             while match is not None:
                 count_nl = content[match.start():match.end()].count('\n')
-                content = content[:match.start()] + '\n' * count_nl + content[match.end():]
+                content = content[:match.start()] + '\n' * \
+                    count_nl + content[match.end():]
                 match = comment_pattern.search(content, match.start())
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     resolve_args_intern = {}
     if (string.endswith('.launch') or string.find('.launch.') > 0):
-        _replaced, content_resolved, resolve_args_intern = replace_internal_args(content, resolve_args=resolve_args, path=string)
+        _replaced, content_resolved, resolve_args_intern = replace_internal_args(
+            content, resolve_args=resolve_args, path=string)
         # intern args use only internal
-        inc_files_forward_args = __get_include_args(content_resolved, resolve_args)
+        inc_files_forward_args = __get_include_args(
+            content_resolved, resolve_args)
     my_unique_files = unique_files
     if not unique_files:
         my_unique_files = list()
@@ -516,14 +528,16 @@ def find_included_files(string,
                         filename = ''
                     exists = os.path.isfile(filename)
                     if filename:
-                        publish = not unique or (unique and filename not in my_unique_files)
+                        publish = not unique or (
+                            unique and filename not in my_unique_files)
                         if publish:
                             my_unique_files.append(filename)
                             # transform found position to line number
                             content_tmp = content
                             if sys.version_info < (3, 0):
                                 content_tmp = content.decode('utf-8')
-                            position = content_tmp.count("\n", 0, groups.start()) + 1
+                            position = content_tmp.count(
+                                "\n", 0, groups.start()) + 1
                             yield IncludedFile(string, position, filename, exists, rawname, rec_depth, forward_args)
                     # for recursive search
                     if exists:
@@ -532,14 +546,18 @@ def find_included_files(string,
                                 ext = os.path.splitext(filename)
                                 if ext[1] in search_in_ext:
                                     for res_item in find_included_files(filename, recursive, False, include_pattern, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
-                                        publish = not unique or (unique and res_item.inc_path not in my_unique_files)
+                                        publish = not unique or (
+                                            unique and res_item.inc_path not in my_unique_files)
                                         if publish:
-                                            my_unique_files.append(res_item.inc_path)
+                                            my_unique_files.append(
+                                                res_item.inc_path)
                                             yield res_item
                             except Exception as e:
-                                rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (filename, utf8(e)))
+                                rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (
+                                    filename, utf8(e)))
                 except Exception as e:
-                    rospy.logwarn("Error while parse %s for include pattern: %s" % (content_info, utf8(e)))
+                    rospy.logwarn("Error while parse %s for include pattern: %s" % (
+                        content_info, utf8(e)))
 
 
 def remove_after_space(filename):

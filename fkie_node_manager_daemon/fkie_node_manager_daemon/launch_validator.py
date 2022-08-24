@@ -16,7 +16,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
- 
+
 from lxml import etree
 from io import StringIO
 
@@ -24,9 +24,10 @@ from .common import get_share_files_path_from_package
 
 
 class LaunchValidator(object):
-    
+
     def __init__(self):
-        self.launch_xsd = get_share_files_path_from_package('fkie_node_manager_daemon', 'launch.xsd')
+        self.launch_xsd = get_share_files_path_from_package(
+            'fkie_node_manager_daemon', 'launch.xsd')
         print('self.launch_xsd', self.launch_xsd)
         self.xmlschema = None
         # open and read schema file
@@ -37,7 +38,7 @@ class LaunchValidator(object):
         #     xmlschema_doc = etree.parse(StringIO(schema_to_check))
         #     self.xmlschema = etree.XMLSchema(xmlschema_doc)
 
-    def validate(self, path:str) -> None:
+    def validate(self, path: str) -> None:
         if self.xmlschema is None:
             return
         # open and read xml file

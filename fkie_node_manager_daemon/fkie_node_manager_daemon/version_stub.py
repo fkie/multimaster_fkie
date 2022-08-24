@@ -33,5 +33,6 @@ class VersionStub(object):
         :rtype: (str, str)
         '''
         request = vmsg.Empty()
-        response = self.vm_stub.GetVersion(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.vm_stub.GetVersion(
+            request, timeout=settings.GRPC_TIMEOUT)
         return (response.version, response.date)

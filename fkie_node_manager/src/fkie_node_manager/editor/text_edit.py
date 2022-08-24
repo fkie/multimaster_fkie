@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QRegExp, Qt, Signal, QEvent
 from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor, QTextDocument
 import os
@@ -89,7 +88,8 @@ class TextEdit(QTextEdit):
         self.setStyleSheet("%s" % (bg_style))
         self.setTextColor(QColor(0, 0, 0))
         self.regexp_list = [QRegExp("\\binclude\\b"), QRegExp("\\btextfile\\b"),
-                            QRegExp("\\bfile\\b"), QRegExp("\\bvalue=.*pkg:\/\/\\b"),
+                            QRegExp("\\bfile\\b"), QRegExp(
+                                "\\bvalue=.*pkg:\/\/\\b"),
                             QRegExp("\\bvalue=.*package:\/\/\\b"),
                             QRegExp("\\bvalue=.*\$\(find\\b"),
                             QRegExp("\\bargs=.*\$\(find\\b"),
@@ -130,7 +130,8 @@ class TextEdit(QTextEdit):
                 if self._ext in self.CONTEXT_FILE_EXT:
                     self._is_launchfile = True
                 self.hl = XmlHighlighter(self.document(), is_launch=False)
-                self.cursorPositionChanged.connect(self._document_position_changed)
+                self.cursorPositionChanged.connect(
+                    self._document_position_changed)
             else:
                 self.hl = YamlHighlighter(self.document())
             self.setReadOnly(False)
@@ -162,7 +163,8 @@ class TextEdit(QTextEdit):
             cursor = self.textCursor()
             cursor.beginEditBlock()
             cursor.setPosition(startpos, QTextCursor.MoveAnchor)
-            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, endpos - startpos)
+            cursor.movePosition(QTextCursor.NextCharacter,
+                                QTextCursor.KeepAnchor, endpos - startpos)
             cursor.endEditBlock()
             self.setTextCursor(cursor)
             cursor_y = self.cursorRect(cursor).top()
@@ -174,7 +176,8 @@ class TextEdit(QTextEdit):
         if isinstance(self.hl, XmlHighlighter) and nm.settings().highlight_xml_blocks:
             #            import time
             #            start_time = time.time()
-            self.hl.mark_block(self.textCursor().block(), self.textCursor().positionInBlock())
+            self.hl.mark_block(self.textCursor().block(),
+                               self.textCursor().positionInBlock())
             #            print("--- mark_tag_block %.6f seconds ---" % (time.time() - start_time))
 
     def save(self, force=False):
@@ -188,10 +191,12 @@ class TextEdit(QTextEdit):
             return False, True, "Cannot save, the content was not loaded properly!"
         if force or self.document().isModified():
             try:
-                mtime = nm.nmd().file.save_file(self.filename, self.toPlainText().encode('utf-8'), 0 if force else self.file_mtime)
+                mtime = nm.nmd().file.save_file(self.filename, self.toPlainText().encode(
+                    'utf-8'), 0 if force else self.file_mtime)
                 self.file_mtime = mtime
                 if mtime == 0:
-                    MessageBox.warning(self, "Warning", "File not saved and not error reported: %s" % os.path.basename(self.filename))
+                    MessageBox.warning(
+                        self, "Warning", "File not saved and not error reported: %s" % os.path.basename(self.filename))
                 self.document().setModified(mtime == 0)
                 ext = os.path.splitext(self.filename)
                 # validate the xml structure of the launch files
@@ -201,7 +206,8 @@ class TextEdit(QTextEdit):
                         from lxml import etree
                         imported = True
                         parser = etree.XMLParser()
-                        etree.fromstring(self.toPlainText().encode('utf-8'), parser)
+                        etree.fromstring(
+                            self.toPlainText().encode('utf-8'), parser)
                     except Exception as e:
                         if imported:
                             self.markLine(e.position[0])
@@ -210,13 +216,15 @@ class TextEdit(QTextEdit):
                 elif ext[1] in self.YAML_VALIDATION_FILES:
                     try:
                         import ruamel.yaml
-                        ruamel.yaml.load(self.toPlainText().encode('utf-8'), Loader=ruamel.yaml.Loader)
+                        ruamel.yaml.load(self.toPlainText().encode(
+                            'utf-8'), Loader=ruamel.yaml.Loader)
                     except ruamel.yaml.MarkedYAMLError as e:
                         return True, True, "YAML validation error: %s" % e
                 return True, False, ''
             except IOError as ioe:
                 if ioe.errno in [file_item.EFILE_CHANGED, file_item.EFILE_REMOVED]:
-                    result = MessageBox.question(self, "Changed file", "%s\n%s" % (utf8(ioe), "Save anyway?"), buttons=MessageBox.Yes | MessageBox.No)
+                    result = MessageBox.question(self, "Changed file", "%s\n%s" % (
+                        utf8(ioe), "Save anyway?"), buttons=MessageBox.Yes | MessageBox.No)
                     if result == MessageBox.Yes:
                         return self.save(force=True)
                 else:
@@ -229,10 +237,12 @@ class TextEdit(QTextEdit):
     def toprettyxml(self):
         try:
             from . import xmlformatter
-            formatter = xmlformatter.Formatter(indent="2", indent_char=" ", encoding_output='utf-8', preserve=["literal"])
+            formatter = xmlformatter.Formatter(
+                indent="2", indent_char=" ", encoding_output='utf-8', preserve=["literal"])
             if self._is_launchfile:
                 formatter.attr_order = ['if', 'unless', 'name', 'pkg', 'type']
-            xml_pretty_str = formatter.format_string(self.toPlainText().encode('utf-8'))
+            xml_pretty_str = formatter.format_string(
+                self.toPlainText().encode('utf-8'))
             cursor = self.textCursor()
             if not cursor.isNull():
                 cursor.beginEditBlock()
@@ -249,7 +259,8 @@ class TextEdit(QTextEdit):
         try:
             from . import yamlformatter
             formatter = yamlformatter.YamlFormatter()
-            pretty_str = formatter.format_string(self.toPlainText().encode('utf-8'))
+            pretty_str = formatter.format_string(
+                self.toPlainText().encode('utf-8'))
             cursor = self.textCursor()
             if not cursor.isNull():
                 cursor.beginEditBlock()
@@ -267,7 +278,8 @@ class TextEdit(QTextEdit):
             cursor = self.textCursor()
             cursor.setPosition(0, QTextCursor.MoveAnchor)
             while (cursor.block().blockNumber() + 1 < no):
-                cursor.movePosition(QTextCursor.NextBlock, QTextCursor.MoveAnchor)
+                cursor.movePosition(QTextCursor.NextBlock,
+                                    QTextCursor.MoveAnchor)
             cursor.movePosition(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
             self.setTextCursor(cursor)
         except Exception:
@@ -300,21 +312,25 @@ class TextEdit(QTextEdit):
     def focusInEvent(self, event):
         # check for file changes
         if self.filename and self.file_mtime:
-            nm.nmd().file.check_for_changed_files_threaded({self.filename: self.file_mtime})
+            nm.nmd().file.check_for_changed_files_threaded(
+                {self.filename: self.file_mtime})
         QTextEdit.focusInEvent(self, event)
 
     def file_changed(self, mtime):
         if self.file_mtime != mtime:
             self.file_mtime = mtime
-            result = MessageBox.question(self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
+            result = MessageBox.question(
+                self, "File changed", "File was changed, reload?", buttons=MessageBox.Yes | MessageBox.No)
             if result == MessageBox.Yes:
                 try:
-                    _, self.file_mtime, file_content = nm.nmd().file.get_file_content(self.filename, force=True)
+                    _, self.file_mtime, file_content = nm.nmd(
+                    ).file.get_file_content(self.filename, force=True)
                     self.document().setPlainText(file_content)
                     self.document().setModified(False)
                     self.textChanged.emit()
                 except Exception as err:
-                    MessageBox.critical(self, "Error", "Cannot open launch file %s" % self.filename, utf8(err))
+                    MessageBox.critical(
+                        self, "Error", "Cannot open launch file %s" % self.filename, utf8(err))
 
     def _strip_bad_parts(self, textblock, current_position):
         result = textblock
@@ -351,7 +367,8 @@ class TextEdit(QTextEdit):
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
             try:
-                textblock = self._strip_bad_parts(cursor.block().text(), cursor.positionInBlock())
+                textblock = self._strip_bad_parts(
+                    cursor.block().text(), cursor.positionInBlock())
                 for inc_file in find_included_files(textblock, False, False, search_in_ext=[]):
                     aval = inc_file.raw_inc_path
                     aitems = aval.split("'")
@@ -364,8 +381,10 @@ class TextEdit(QTextEdit):
                             resolved_args = {}
                             # if found arg in the name, try to detect values
                             if args_in_name:
-                                rospy.logdebug("  args %s in filename found, try to resolve..." % args_in_name)
-                                resolved_args = self.parent.graph_view.get_include_args(args_in_name, search_for, self.filename)
+                                rospy.logdebug(
+                                    "  args %s in filename found, try to resolve..." % args_in_name)
+                                resolved_args = self.parent.graph_view.get_include_args(
+                                    args_in_name, search_for, self.filename)
                             if resolved_args:
                                 params = {}
                                 self._internal_args
@@ -375,43 +394,56 @@ class TextEdit(QTextEdit):
                                     # add args defined in current file
                                     if key in self._internal_args and self._internal_args[key] not in values:
                                         values.append(self._internal_args[key])
-                                    params[key] = {':type': 'string', ':value': values}
-                                dia = ParameterDialog(params, store_geometry="open_launch_on_click")
+                                    params[key] = {
+                                        ':type': 'string', ':value': values}
+                                dia = ParameterDialog(
+                                    params, store_geometry="open_launch_on_click")
                                 dia.setFilterVisible(False)
                                 dia.setWindowTitle('Select Parameter')
                                 if dia.exec_():
                                     params = dia.getKeywords()
-                                    search_for = replace_arg(search_for, params)
+                                    search_for = replace_arg(
+                                        search_for, params)
                                 else:
                                     # canceled -> cancel interpretation
                                     QTextEdit.mouseReleaseEvent(self, event)
                                     return
                             # now resolve find-statements
-                            rospy.logdebug("  send interpret request to daemon: %s" % search_for)
-                            inc_files = nm.nmd().launch.get_interpreted_path(self.filename, text=[search_for])
+                            rospy.logdebug(
+                                "  send interpret request to daemon: %s" % search_for)
+                            inc_files = nm.nmd().launch.get_interpreted_path(
+                                self.filename, text=[search_for])
                             for path, exists in inc_files:
                                 try:
-                                    rospy.logdebug("  received interpret request from daemon: %s, exists: %d" % (path, exists))
+                                    rospy.logdebug(
+                                        "  received interpret request from daemon: %s, exists: %d" % (path, exists))
                                     if exists:
                                         event.setAccepted(True)
                                         self.load_request_signal.emit(path)
                                     else:
-                                        _filename, file_extension = os.path.splitext(path)
+                                        _filename, file_extension = os.path.splitext(
+                                            path)
                                         if file_extension in nm.settings().launch_view_file_ext:
                                             # create a new file, if it does not exists
-                                            result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
+                                            result = MessageBox.question(self, "File not exists", '\n\n'.join(
+                                                ["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
                                             if result == MessageBox.Yes:
-                                                content = '<launch>\n\n</launch>' if path.endswith('.launch') else ''
+                                                content = '<launch>\n\n</launch>' if path.endswith(
+                                                    '.launch') else ''
                                                 nm.nmd().file.save_file(path, content.encode(), 0)
                                                 event.setAccepted(True)
-                                                self.load_request_signal.emit(path)
+                                                self.load_request_signal.emit(
+                                                    path)
                                 except Exception as e:
-                                    MessageBox.critical(self, "Error", "File not found %s" % path, detailed_text=utf8(e))
+                                    MessageBox.critical(
+                                        self, "Error", "File not found %s" % path, detailed_text=utf8(e))
                         except exceptions.ResourceNotFound as not_found:
-                            MessageBox.critical(self, "Error", "Resource not found %s" % search_for, detailed_text=utf8(not_found.error))
+                            MessageBox.critical(
+                                self, "Error", "Resource not found %s" % search_for, detailed_text=utf8(not_found.error))
             except Exception as err:
                 print(traceback.format_exc())
-                MessageBox.critical(self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
+                MessageBox.critical(
+                    self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
         QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):
@@ -458,7 +490,8 @@ class TextEdit(QTextEdit):
                 if menu is None:
                     menu = self._create_context_menu_for_tag()
                 if menu:
-                    menu.exec_(self.mapToGlobal(self.cursorRect().bottomRight()))
+                    menu.exec_(self.mapToGlobal(
+                        self.cursorRect().bottomRight()))
         elif event.key() != Qt.Key_Escape:
             # handle the shifting of the block
             if event.modifiers() == Qt.NoModifier and event.key() == Qt.Key_Tab:
@@ -487,15 +520,15 @@ class TextEdit(QTextEdit):
             QTextEdit.keyReleaseEvent(self, event)
 
     def goto(self, linenr, select_line=True):
-            if linenr > self.document().blockCount():
-                linenr = self.document().blockCount()
+        if linenr > self.document().blockCount():
+            linenr = self.document().blockCount()
+        curpos = self.textCursor().blockNumber() + 1
+        while curpos != linenr:
+            mov = QTextCursor.NextBlock if curpos < linenr else QTextCursor.PreviousBlock
+            self.moveCursor(mov)
             curpos = self.textCursor().blockNumber() + 1
-            while curpos != linenr:
-                mov = QTextCursor.NextBlock if curpos < linenr else QTextCursor.PreviousBlock
-                self.moveCursor(mov)
-                curpos = self.textCursor().blockNumber() + 1
-            self.moveCursor(QTextCursor.EndOfBlock)
-            self.moveCursor(QTextCursor.StartOfBlock, QTextCursor.KeepAnchor)
+        self.moveCursor(QTextCursor.EndOfBlock)
+        self.moveCursor(QTextCursor.StartOfBlock, QTextCursor.KeepAnchor)
 
     def _has_uncommented(self):
         cursor = QTextCursor(self.textCursor())
@@ -519,7 +552,8 @@ class TextEdit(QTextEdit):
             xml_file = ext[1] in self.CONTEXT_FILE_EXT
             while (cursor.block().blockNumber() < block_end + 1):
                 cursor.movePosition(QTextCursor.StartOfLine)
-                cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.EndOfLine,
+                                    QTextCursor.KeepAnchor)
                 if xml_file:
                     if not xmlre.match(cursor.selectedText()):
                         return True
@@ -555,9 +589,11 @@ class TextEdit(QTextEdit):
                 if xml_file:
                     xmlre_start = re.compile(r"<!-- ?")
                     xmlre_end = re.compile(r" ?-->")
-                    cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                    cursor.movePosition(
+                        QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
                     if do_comment:
-                        cursor.insertText("<!-- %s -->" % cursor.selectedText().replace("--", "- - "))
+                        cursor.insertText(
+                            "<!-- %s -->" % cursor.selectedText().replace("--", "- - "))
                     else:
                         res = cursor.selectedText()
                         mstart = xmlre_start.search(res)
@@ -576,7 +612,8 @@ class TextEdit(QTextEdit):
                     if do_comment:
                         cursor.insertText('# ')
                     else:
-                        cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                        cursor.movePosition(
+                            QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
                         res = cursor.selectedText()
                         hres = hash_re.search(res)
                         if hres:
@@ -590,9 +627,11 @@ class TextEdit(QTextEdit):
             # Set our cursor's selection to span all of the involved lines.
             cursor.endEditBlock()
             cursor.setPosition(start, QTextCursor.MoveAnchor)
-            cursor.movePosition(QTextCursor.StartOfBlock, QTextCursor.MoveAnchor)
+            cursor.movePosition(QTextCursor.StartOfBlock,
+                                QTextCursor.MoveAnchor)
             while (cursor.block().blockNumber() < block_end):
-                cursor.movePosition(QTextCursor.NextBlock, QTextCursor.KeepAnchor)
+                cursor.movePosition(QTextCursor.NextBlock,
+                                    QTextCursor.KeepAnchor)
             cursor.movePosition(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
             # set the cursor
             self.setTextCursor(cursor)
@@ -616,7 +655,8 @@ class TextEdit(QTextEdit):
                 if back:
                     for _ in range(2):
                         cursor.movePosition(QTextCursor.StartOfLine)
-                        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
+                        cursor.movePosition(
+                            QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                         if cursor.selectedText() == ' ':
                             cursor.insertText('')
                         elif cursor.selectedText() == "\t":
@@ -627,15 +667,19 @@ class TextEdit(QTextEdit):
                     # shift one line two spaces to the right
                     indent_prev = self.getIndentOfPreviewsBlock()
                     if self.textCursor().positionInBlock() >= indent_prev:
-                        cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start)
+                        cursor.movePosition(
+                            QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start)
                         cursor.insertText('  ')
                     else:
                         # move to the position of previous indent
                         cursor.movePosition(QTextCursor.StartOfLine)
                         pose_of_line = cursor.position()
-                        cursor.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
-                        cursor.insertText("%s%s" % (' ' * indent_prev, cursor.selectedText().lstrip()))
-                        cursor.setPosition(pose_of_line + indent_prev, QTextCursor.MoveAnchor)
+                        cursor.movePosition(
+                            QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+                        cursor.insertText(
+                            "%s%s" % (' ' * indent_prev, cursor.selectedText().lstrip()))
+                        cursor.setPosition(
+                            pose_of_line + indent_prev, QTextCursor.MoveAnchor)
             else:
                 # shift the selected block two spaces to the left
                 if back:
@@ -643,13 +687,15 @@ class TextEdit(QTextEdit):
                     for i in reversed(range(start, end)):
                         cursor.setPosition(i)
                         if cursor.atBlockStart():
-                            cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 2)
+                            cursor.movePosition(
+                                QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 2)
                             if cursor.selectedText() == '  ':
                                 cursor.insertText('')
                                 removed += 2
                             else:
                                 cursor.movePosition(QTextCursor.StartOfLine)
-                                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
+                                cursor.movePosition(
+                                    QTextCursor.NextCharacter, QTextCursor.KeepAnchor, 1)
                                 if cursor.selectedText() == ' ':
                                     cursor.insertText('')
                                     removed += 1
@@ -657,7 +703,8 @@ class TextEdit(QTextEdit):
                                     cursor.insertText('')
                                     removed += 1
                     cursor.setPosition(start)
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start - removed)
+                    cursor.movePosition(
+                        QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start - removed)
                 else:
                     # shift selected block two spaces to the right
                     inserted = 0
@@ -667,7 +714,8 @@ class TextEdit(QTextEdit):
                             cursor.insertText('  ')
                             inserted += 2
                     cursor.setPosition(start)
-                    cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start + inserted)
+                    cursor.movePosition(
+                        QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start + inserted)
             self.setTextCursor(cursor)
             cursor.endEditBlock()
 
@@ -690,7 +738,8 @@ class TextEdit(QTextEdit):
                 ident += ' '
             if block_end - block_start == 0:
                 # shift one line of count spaces to the right
-                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start)
+                cursor.movePosition(QTextCursor.NextCharacter,
+                                    QTextCursor.KeepAnchor, end - start)
                 cursor.insertText(ident)
             else:
                 # shift selected block two spaces to the right
@@ -701,7 +750,8 @@ class TextEdit(QTextEdit):
                         cursor.insertText(ident)
                         inserted += count
                 cursor.setPosition(start)
-                cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor, end - start + inserted)
+                cursor.movePosition(QTextCursor.NextCharacter,
+                                    QTextCursor.KeepAnchor, end - start + inserted)
             self.setTextCursor(cursor)
             cursor.endEditBlock()
 
@@ -748,14 +798,17 @@ class TextEdit(QTextEdit):
                 (package, path) = package_name(os.path.dirname(text))
                 if text.endswith('.launch'):
                     if package:
-                        cursor.insertText('<include file="$(find %s)%s" />' % (package, text.replace(path, '')))
+                        cursor.insertText(
+                            '<include file="$(find %s)%s" />' % (package, text.replace(path, '')))
                     else:
                         cursor.insertText('<include file="%s" />' % text)
                 else:
                     if package:
-                        cursor.insertText('<rosparam file="$(find %s)%s" command="load" />' % (package, text.replace(path, '')))
+                        cursor.insertText(
+                            '<rosparam file="$(find %s)%s" command="load" />' % (package, text.replace(path, '')))
                     else:
-                        cursor.insertText('<rosparam file="%s" command="load" />' % text)
+                        cursor.insertText(
+                            '<rosparam file="%s" command="load" />' % text)
             else:
                 cursor.insertText(e.mimeData().text())
         e.accept()
@@ -768,14 +821,17 @@ class TextEdit(QTextEdit):
         if self.isReadOnly():
             return
         menu = QTextEdit.createStandardContextMenu(self)
-        comment_action = QAction("Switch comment", self, statusTip="", triggered=self.commentText)
+        comment_action = QAction(
+            "Switch comment", self, statusTip="", triggered=self.commentText)
         comment_action.setShortcuts(QKeySequence("Ctrl+7"))
         menu.addAction(comment_action)
         formattext_action = None
         if isinstance(self.hl, XmlHighlighter):
-            formattext_action = QAction("Format XML", self, statusTip="", triggered=self.toprettyxml)
+            formattext_action = QAction(
+                "Format XML", self, statusTip="", triggered=self.toprettyxml)
         else:
-            formattext_action = QAction("Format as YAML", self, statusTip="", triggered=self.toprettyyaml)
+            formattext_action = QAction(
+                "Format as YAML", self, statusTip="", triggered=self.toprettyyaml)
         formattext_action.setShortcuts(QKeySequence("Ctrl+Shift+F"))
         menu.addAction(formattext_action)
 #    if not self.textCursor().selectedText():
@@ -793,7 +849,8 @@ class TextEdit(QTextEdit):
 
     def _create_context_menu_for_tag(self):
         if isinstance(self.hl, XmlHighlighter):
-            tag = self.hl.get_tag_of_current_block(self.textCursor().block(), self.textCursor().positionInBlock())
+            tag = self.hl.get_tag_of_current_block(
+                self.textCursor().block(), self.textCursor().positionInBlock())
             if tag:
                 try:
                     menu = QMenu("ROS <%s>" % tag, self)
@@ -801,7 +858,8 @@ class TextEdit(QTextEdit):
                     # create a menu with attributes
                     if tag in XmlHighlighter.LAUNCH_ATTR:
                         menu_attr = QMenu("attributes", menu)
-                        attributes = sorted(list(set(XmlHighlighter.LAUNCH_ATTR[tag])))
+                        attributes = sorted(
+                            list(set(XmlHighlighter.LAUNCH_ATTR[tag])))
                         for attr in attributes:
                             action = menu_attr.addAction(attr.rstrip('='))
                             action.setData('%s""' % attr)
@@ -812,7 +870,8 @@ class TextEdit(QTextEdit):
                         if tags:
                             menu_tags = QMenu("tags", menu)
                             for tag in tags:
-                                data = '<%s></%s>' % (tag, tag) if XmlHighlighter.LAUNCH_CHILDS[tag] else '<%s/>' % tag
+                                data = '<%s></%s>' % (
+                                    tag, tag) if XmlHighlighter.LAUNCH_CHILDS[tag] else '<%s/>' % tag
                                 action = menu_tags.addAction(tag)
                                 action.setData(data)
                             menu.addMenu(menu_tags)
@@ -835,7 +894,8 @@ class TextEdit(QTextEdit):
                         if force_all:
                             action.setData("$(%s )" % arg)
                         else:
-                            action.setData("(%s" % arg if text[pos] == '$' else "%s" % arg)
+                            action.setData(
+                                "(%s" % arg if text[pos] == '$' else "%s" % arg)
                     return menu
             except Exception:
                 pass
@@ -857,7 +917,8 @@ class TextEdit(QTextEdit):
             if cursor.selectedText():
                 for dp, np in XmlHighlighter.DEPRECATED_PARAMETER.items():
                     if 'name="%s"' % dp in cursor.selectedText():
-                        QToolTip.showText(event.globalPos(), ' %s is deprecated, use %s' % (dp, np))
+                        QToolTip.showText(
+                            event.globalPos(), ' %s is deprecated, use %s' % (dp, np))
             else:
                 QToolTip.hideText()
             return True

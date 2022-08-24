@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Signal
 import re
 import rospy
@@ -82,7 +81,8 @@ class TextSearchThread(QObject, threading.Thread):
         '''
         try:
             if self._search_text.startswith('name="'):
-                self.search_for_node(self._search_text, self._path, self._recursive)
+                self.search_for_node(
+                    self._search_text, self._path, self._recursive)
             else:
                 self.search(self._search_text, self._path, self._recursive)
         except exceptions.GrpcTimeout as tout:
@@ -92,12 +92,14 @@ class TextSearchThread(QObject, threading.Thread):
         except Exception:
             import traceback
             # formatted_lines = traceback.format_exc(1).splitlines()
-            msg = "Error while search for '%s' in '%s': %s" % (self._search_text, self._path, traceback.print_exc())
+            msg = "Error while search for '%s' in '%s': %s" % (
+                self._search_text, self._path, traceback.print_exc())
             rospy.logwarn(msg)
             self.warning_signal.emit(msg)
         finally:
             if self._isrunning:
-                self.search_result_signal.emit(self._search_text, False, '', -1, -1, -1, '')
+                self.search_result_signal.emit(
+                    self._search_text, False, '', -1, -1, -1, '')
 
     def search(self, search_text, path, recursive=False, args={}, count=1):
         '''
@@ -116,10 +118,12 @@ class TextSearchThread(QObject, threading.Thread):
                 doemit = True
                 line = self._strip_text(data, pos)
                 if self._only_launch:
-                    doemit = path.endswith('.launch') or path.find('.launch.') > 0
+                    doemit = path.endswith(
+                        '.launch') or path.find('.launch.') > 0
                 if doemit:
                     self._found += 1
-                    self.search_result_signal.emit(search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, line)
+                    self.search_result_signal.emit(
+                        search_text, True, path, pos, pos + len(search_text), data.count('\n', 0, pos) + 1, line)
             if self._count_results > 0 and self._count_results < self._found:
                 # break search if found the requested count of occurrences
                 return
@@ -134,16 +138,19 @@ class TextSearchThread(QObject, threading.Thread):
                     if not self._isrunning:
                         return
                     if inc_file.exists:
-                        queue.append((search_text, inc_file.inc_path, recursive, inc_file.args))
+                        queue.append(
+                            (search_text, inc_file.inc_path, recursive, inc_file.args))
                 # search in all files
                 for search_text, inc_path, recursive, include_args in queue:
                     new_dict = dict(args)
                     new_dict.update(include_args)
                     # test search string for 'name=' and skip search in not launch files
                     if not self._only_launch or inc_path.endswith('.launch') or path.find('.launch.') > 0:
-                        self.search(search_text, inc_path, recursive, new_dict, count + 1)
+                        self.search(search_text, inc_path,
+                                    recursive, new_dict, count + 1)
         if self._path == path and self._found == 0:
-            self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
+            self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (
+                search_text, path, '' if recursive else 'not '))
 
     def search_for_node(self, search_text, path, recursive=False, args={}, count=1):
         '''
@@ -164,47 +171,58 @@ class TextSearchThread(QObject, threading.Thread):
             self.search(search_text, path, recursive, args, count)
         else:
             # read XML content and update the arguments
-            rospy.logdebug("search for node '%s' in %s with args: %s, recursive: %s" % (search_text, path, args, recursive))
+            rospy.logdebug("search for node '%s' in %s with args: %s, recursive: %s" % (
+                search_text, path, args, recursive))
             resolve_args = dict(args)
             if not resolve_args:
                 resolve_args.update(nm.nmd().launch.launch_args(path))
-            my_resolved_args = self._resolve_args(launch_node, resolve_args, path)
+            my_resolved_args = self._resolve_args(
+                launch_node, resolve_args, path)
             # replace arguments and search for node in data
-            search_for_name = search_text.replace('name="', '').replace('"', '')
+            search_for_name = search_text.replace(
+                'name="', '').replace('"', '')
             occur_idx = 0
             for aname, _rname, span in self._next_node_name(data, search_for_name, my_resolved_args, path):
                 # found, now test in XML for if and unless statements
                 if self._check_node_conditions(launch_node, search_for_name, occur_idx, my_resolved_args, path):
                     self._found += 1
-                    self.search_result_signal.emit(search_text, True, path, span[0], span[1], data.count('\n', 0, span[0]) + 1, aname)
+                    self.search_result_signal.emit(
+                        search_text, True, path, span[0], span[1], data.count('\n', 0, span[0]) + 1, aname)
                 else:
-                    self.warning_signal.emit("%s in %s ignored because of conditions." % (search_text, path))
+                    self.warning_signal.emit(
+                        "%s in %s ignored because of conditions." % (search_text, path))
                 occur_idx += 1
             if self._isrunning and recursive:
                 queue = []
-                inc_files = nm.nmd().launch.get_included_files(path, False, include_args=args, search_in_ext=['.launch', '.xml'])
+                inc_files = nm.nmd().launch.get_included_files(
+                    path, False, include_args=args, search_in_ext=['.launch', '.xml'])
                 # read first all included files in current file
                 for inc_file in inc_files:
                     if not self._isrunning:
                         return
                     if inc_file.exists:
-                        queue.append((search_text, inc_file.inc_path, recursive, inc_file.args))
+                        queue.append(
+                            (search_text, inc_file.inc_path, recursive, inc_file.args))
                     elif inc_file.inc_path.endswith('.launch') or inc_file.inc_path.find('.launch.') > 0:
-                        rospy.logwarn("skip parsing of not existing included file: %s" % inc_file.inc_path)
+                        rospy.logwarn(
+                            "skip parsing of not existing included file: %s" % inc_file.inc_path)
                 # search in all files
                 for search_text, inc_path, recursive, include_args in queue:
                     new_dict = dict(my_resolved_args)
                     new_dict.update(include_args)
                     # skip search in not launch files
                     if inc_path.endswith('.launch') or inc_path.find('.launch.') > 0:
-                        self.search_for_node(search_text, inc_path, recursive, new_dict, count + 1)
+                        self.search_for_node(
+                            search_text, inc_path, recursive, new_dict, count + 1)
         if self._path == path and self._found == 0:
-            self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (search_text, path, '' if recursive else 'not '))
+            self.warning_signal.emit("not found '%s' in %s (%srecursive)" % (
+                search_text, path, '' if recursive else 'not '))
 
     def _get_launch_element(self, content, path):
         result = None
         try:
-            xml_nodes = minidom.parseString(content.encode('utf-8')).getElementsByTagName('launch')
+            xml_nodes = minidom.parseString(content.encode(
+                'utf-8')).getElementsByTagName('launch')
             if xml_nodes:
                 result = xml_nodes[-1]
         except Exception as err:
@@ -233,7 +251,8 @@ class TextSearchThread(QObject, threading.Thread):
                             aval = arg_attr.value
                     if aname and aname not in resolve_args_intern:
                         for arg_key, args_val in resolve_args_intern.items():
-                            aval = aval.replace('$(arg %s)' % arg_key, args_val)
+                            aval = aval.replace('$(arg %s)' %
+                                                arg_key, args_val)
                         resolve_args_intern[aname] = aval
         except Exception as err:
             rospy.logwarn("%s in %s" % (utf8(err), path))
@@ -250,7 +269,8 @@ class TextSearchThread(QObject, threading.Thread):
         re_nodes = re.compile(r"<node[\w\W\S\s]*?name=\"(?P<name>.*?)\"")
         for groups in re_nodes.finditer(content):
             aname = groups.group("name")
-            rospy.logdebug("  check node name '%s' for '%s' in group %s" % (aname, node_name, groups.span("name")))
+            rospy.logdebug("  check node name '%s' for '%s' in group %s" % (
+                aname, node_name, groups.span("name")))
             if aname == node_name:
                 yield node_name, aname, groups.span("name")
             else:

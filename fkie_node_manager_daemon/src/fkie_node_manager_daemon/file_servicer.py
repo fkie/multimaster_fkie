@@ -139,7 +139,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 if chunk.file.package:
                     pkg_path = get_pkg_path(chunk.file.package)
                     if pkg_path:
-                        path = os.path.join(pkg_path, chunk.file.path.lstrip(os.path.sep))
+                        path = os.path.join(
+                            pkg_path, chunk.file.path.lstrip(os.path.sep))
                 else:
                     path = chunk.file.path
                 result = fms.SaveFileContentReply()
@@ -152,7 +153,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                         else:
                             result.status.code = CHANGED_FILE
                             result.status.error_code = file_item.EFILE_CHANGED
-                            result.status.error_msg = utf8("file was changed in meantime")
+                            result.status.error_msg = utf8(
+                                "file was changed in meantime")
                             result.status.error_file = utf8(path)
                     elif chunk.overwrite or chunk.file.mtime == 0:
                         # mtime == 0 stands for create a new file
@@ -165,7 +167,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     else:
                         result.status.code = REMOVED_FILE
                         result.status.error_code = file_item.EFILE_REMOVED
-                        result.status.error_msg = utf8("file was removed in meantime")
+                        result.status.error_msg = utf8(
+                            "file was removed in meantime")
                         result.status.error_file = utf8(path)
                     first = False
                 if result.status.code == 0:
@@ -176,7 +179,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                             written = len(chunk.file.data)
                     if written != len(chunk.file.data):
                         result.status.code = ERROR
-                        result.status.error_msg = utf8("error while write to tmp file")
+                        result.status.error_msg = utf8(
+                            "error while write to tmp file")
                         result.status.error_file = utf8(path)
                         yield result
                     curr_size += written
@@ -259,7 +263,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 # we need relative package path without leading slash
                 prest = dest_path.replace(ppath, '').lstrip(os.path.sep)
                 with FileIO(path, 'r') as outfile:
-                    mtime = 0.0 if request.overwrite else os.path.getmtime(path)
+                    mtime = 0.0 if request.overwrite else os.path.getmtime(
+                        path)
                     content = outfile.read()
                     # get channel to the remote grpc server
                     # TODO: get secure channel, if available
@@ -267,7 +272,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     if channel is not None:
                         # save file on remote server
                         fs = fms_grpc.FileServiceStub(channel)
-                        response_stream = fs.SaveFileContent(self._gen_save_content_list(prest, content, mtime, pname), timeout=settings.GRPC_TIMEOUT)
+                        response_stream = fs.SaveFileContent(self._gen_save_content_list(
+                            prest, content, mtime, pname), timeout=settings.GRPC_TIMEOUT)
                         for response in response_stream:
                             if response.status.code == OK:
                                 result.code = OK
@@ -279,11 +285,13 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                                 return result
                     else:
                         result.code = ERROR
-                        result.error_msg = utf8("can not establish insecure channel to '%s'" % dest_uri)
+                        result.error_msg = utf8(
+                            "can not establish insecure channel to '%s'" % dest_uri)
                         result.error_file = utf8(request.path)
             else:
                 result.code = ERROR
-                result.error_msg = utf8("no package found! Only launch files from packages can be copied!")
+                result.error_msg = utf8(
+                    "no package found! Only launch files from packages can be copied!")
                 result.error_file = utf8(request.path)
         except OSError as ose:
             result.code = OS_ERROR
@@ -319,7 +327,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     else:
                         file_type = PATH_DIR
                     self.DIR_CACHE[path] = file_type
-                    path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                    path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                        path), size=os.path.getsize(path), type=file_type))
                 except Exception as _:
                     pass
         else:
@@ -327,11 +336,14 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 # list the path
                 dirlist = os.listdir(request.path)
                 for cfile in dirlist:
-                    path = os.path.normpath('%s%s%s' % (request.path, os.path.sep, cfile))
+                    path = os.path.normpath('%s%s%s' % (
+                        request.path, os.path.sep, cfile))
                     if os.path.isfile(path):
-                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=PATH_FILE))
+                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                            path), size=os.path.getsize(path), type=PATH_FILE))
                     elif path in self.DIR_CACHE:
-                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=self.DIR_CACHE[path]))
+                        path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                            path), size=os.path.getsize(path), type=self.DIR_CACHE[path]))
                     elif os.path.isdir(path):
                         try:
                             fileList = os.listdir(path)
@@ -341,7 +353,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                             else:
                                 file_type = PATH_DIR
                             self.DIR_CACHE[path] = file_type
-                            path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), type=file_type))
+                            path_list.append(fms.PathObj(path=path, mtime=os.path.getmtime(
+                                path), size=os.path.getsize(path), type=file_type))
                         except Exception as _:
                             pass
             except OSError as ose:
@@ -364,9 +377,11 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         for cfile in dirlist:
             path = os.path.normpath('%s%s%s' % (inputPath, os.path.sep, cfile))
             if os.path.isfile(path):
-                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), path_type='file'))                
+                path_list.append(PathItem(path=path, mtime=os.path.getmtime(
+                    path), size=os.path.getsize(path), path_type='file'))
             elif path in self.CB_DIR_CACHE:
-                path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), path_type=self.CB_DIR_CACHE[path]))
+                path_list.append(PathItem(path=path, mtime=os.path.getmtime(
+                    path), size=os.path.getsize(path), path_type=self.CB_DIR_CACHE[path]))
             elif os.path.isdir(path):
                 try:
                     fileList = os.listdir(path)
@@ -376,24 +391,27 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     else:
                         file_type = 'dir'
                     self.CB_DIR_CACHE[path] = file_type
-                    path_list.append(PathItem(path=path, mtime=os.path.getmtime(path), size=os.path.getsize(path), path_type=file_type))
+                    path_list.append(PathItem(path=path, mtime=os.path.getmtime(
+                        path), size=os.path.getsize(path), path_type=file_type))
                 except Exception as _:
                     pass
         return json.dumps(path_list, cls=SelfEncoder)
 
     @wamp.register('ros.path.get_list_recursive')
     def getPathListRecursive(self, inputPath: str) -> List[PathItem]:
-        rospy.loginfo('Request to [ros.path.get_list_recursive] for %s' % inputPath)
+        rospy.loginfo(
+            'Request to [ros.path.get_list_recursive] for %s' % inputPath)
         path_list: List[PathItem] = []
 
         for filename in glob.iglob(inputPath + '**/**', recursive=True):
-            if filename == inputPath: continue
+            if filename == inputPath:
+                continue
 
             if os.path.isfile(filename):
-                path_list.append(PathItem(path=filename, mtime=os.path.getmtime(filename), size=os.path.getsize(filename), path_type='file'))
-            
-        return json.dumps(path_list, cls=SelfEncoder)
+                path_list.append(PathItem(path=filename, mtime=os.path.getmtime(
+                    filename), size=os.path.getsize(filename), path_type='file'))
 
+        return json.dumps(path_list, cls=SelfEncoder)
 
     def _get_packages(self, path):
         result = {}
@@ -424,7 +442,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         result = fms.ListPackagesReply()
         try:
             # fill the input fields
-            root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+            root_paths = [os.path.normpath(p) for p in os.getenv(
+                "ROS_PACKAGE_PATH").split(':')]
             for p in root_paths:
                 ret = self._get_packages(p)
                 for name, path in ret.items():
@@ -439,7 +458,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
     @wamp.register('ros.packages.get_list')
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         rospy.loginfo('Request to [ros.packages.get_list]')
-        clear_cache=False
+        clear_cache = False
         if clear_cache:
             try:
                 from roslaunch import substitution_args
@@ -449,7 +468,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 rospy.logwarn("Cannot reset package cache: %s" % utf8(err))
         package_list: List[RosPackage] = []
         # fill the input fields
-        root_paths = [os.path.normpath(p) for p in os.getenv("ROS_PACKAGE_PATH").split(':')]
+        root_paths = [os.path.normpath(p) for p in os.getenv(
+            "ROS_PACKAGE_PATH").split(':')]
         for p in root_paths:
             ret = self._get_packages(p)
             for name, path in ret.items():
@@ -466,7 +486,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             ros_log = get_ros_logfile(node)
             log_path_item = LogPathItem(node,
                                         screen_log=screen_log,
-                                        screen_log_exists=os.path.exists(screen_log),
+                                        screen_log_exists=os.path.exists(
+                                            screen_log),
                                         ros_log=ros_log,
                                         ros_log_exists=os.path.exists(ros_log))
             result.append(log_path_item)
@@ -491,7 +512,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 if f and f[0] != '.' and f not in ['build'] and not f.endswith('.cfg') and not f.endswith('.so'):
                     self._get_binaries(os.path.join(path, f), binaries)
         elif os.path.isfile(path) and os.access(path, os.X_OK):
-            binaries.append(fms.PathObj(path=path, mtime=os.path.getmtime(path)))
+            binaries.append(fms.PathObj(
+                path=path, mtime=os.path.getmtime(path)))
 
     def GetPackageBinaries(self, request, context):
         result = fms.PathList()
@@ -501,7 +523,8 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             self._get_binaries(path, binaries)
             # find binaries in catkin workspace
             from catkin.find_in_workspaces import find_in_workspaces as catkin_find
-            search_paths = catkin_find(search_dirs=['libexec', 'share'], project=request.name, first_matching_workspace_only=True)
+            search_paths = catkin_find(search_dirs=[
+                                       'libexec', 'share'], project=request.name, first_matching_workspace_only=True)
             for p in search_paths:
                 self._get_binaries(p, binaries)
         except Exception:
@@ -573,7 +596,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 return True
             elif 'rospack_nosubdirs' in files:
                 del dirs[:]
-                continue #leaf
+                continue  # leaf
             # small optimization
             elif '.svn' in dirs:
                 dirs.remove('.svn')

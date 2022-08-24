@@ -45,6 +45,7 @@ from . import screen
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 
+
 class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
@@ -85,7 +86,8 @@ class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
             if node_name not in node_names:
                 node_names.append(node_name)
             elif node_name not in added_node_names:
-                screen_objs.append(smsg.Screen(name=session_name, node=node_name))
+                screen_objs.append(smsg.Screen(
+                    name=session_name, node=node_name))
                 added_node_names.append(node_name)
         # TODO currently we add only one session name. Add all!
         reply.screens.extend(screen_objs)
@@ -119,7 +121,7 @@ class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
         screens = screen.get_active_screens(name)
         if len(screens.items()) == 0:
             return json.dumps({'result': success, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
-            
+
         for session_name, node_name in screens.items():
             pid, session_name = screen.split_session_name(session_name)
             os.kill(pid, signal.SIGKILL)

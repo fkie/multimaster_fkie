@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import fkie_multimaster_msgs.grpc.screen_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.screen_pb2 as smsg
 from . import settings
@@ -48,7 +47,8 @@ class ScreenStub(object):
         :rtype: {str: str}
         '''
         request = smsg.Screen(name='', node=nodename)
-        response = self.sm_stub.GetScreens(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.sm_stub.GetScreens(
+            request, timeout=settings.GRPC_TIMEOUT)
         return {screen.name: screen.node for screen in response.screens}
 
     def all_screens(self):
@@ -57,7 +57,8 @@ class ScreenStub(object):
         :rtype: {str: str}
         '''
         request = smsg.Empty()
-        response = self.sm_stub.GetAllScreens(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.sm_stub.GetAllScreens(
+            request, timeout=settings.GRPC_TIMEOUT)
         return {screen.name: screen.node for screen in response.screens}
 
     def multiple_screens(self):
@@ -66,7 +67,8 @@ class ScreenStub(object):
         :rtype: {str: [str]}
         '''
         request = smsg.Empty()
-        response = self.sm_stub.GetMultipleScreens(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.sm_stub.GetMultipleScreens(
+            request, timeout=settings.GRPC_TIMEOUT)
         result = {}
         for screen in response.screens:
             if screen.node not in result:
@@ -79,7 +81,8 @@ class ScreenStub(object):
         Removes the content of the log directory.
         '''
         request = smsg.Empty()
-        _empty_response = self.sm_stub.RosClean(request, timeout=settings.GRPC_TIMEOUT)
+        _empty_response = self.sm_stub.RosClean(
+            request, timeout=settings.GRPC_TIMEOUT)
 
     def delete_log(self, nodes):
         '''
@@ -89,16 +92,19 @@ class ScreenStub(object):
         request = smsg.Nodes()
         for node in nodes:
             request.nodes.append(node)
-        _empty_response = self.sm_stub.DeleteLog(request, timeout=settings.GRPC_TIMEOUT)
+        _empty_response = self.sm_stub.DeleteLog(
+            request, timeout=settings.GRPC_TIMEOUT)
 
     def log_dir_size(self):
         '''
         Determine the size of the ROS log directory.
         '''
         request = smsg.Empty()
-        response = self.sm_stub.GetLogDiskSize(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.sm_stub.GetLogDiskSize(
+            request, timeout=settings.GRPC_TIMEOUT)
         return response.size
 
     def wipe_screens(self):
         request = smsg.Empty()
-        _response = self.sm_stub.WipeScreens(request, timeout=settings.GRPC_TIMEOUT)
+        _response = self.sm_stub.WipeScreens(
+            request, timeout=settings.GRPC_TIMEOUT)

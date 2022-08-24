@@ -166,7 +166,8 @@ def resolve_url(interface_url, pwd='.'):
             length = 6 if interface_url.startswith('pkg://') else 10
             pkg_name, _, pkg_path = interface_url[length:].partition('/')
             if pkg_path.startswith('//'):
-                paths = roslib.packages.find_resource(pkg_name, pkg_path.strip('/'))
+                paths = roslib.packages.find_resource(
+                    pkg_name, pkg_path.strip('/'))
                 if len(paths) > 0:
                     # if more then one launch file is found, take the first one
                     filename = paths[0]
@@ -180,7 +181,8 @@ def resolve_url(interface_url, pwd='.'):
         if filename:
             filename = os.path.join(pwd, filename)
             if not os.path.exists(filename):
-                raise ValueError('unsupported interface URL or interface file not found: ' + interface_url)
+                raise ValueError(
+                    'unsupported interface URL or interface file not found: ' + interface_url)
     return filename
 
 
@@ -205,14 +207,18 @@ def read_interface(interface_file):
                 data = {}
         except yaml.MarkedYAMLError as e:
             if not interface_file:
-                raise ValueError("Error within YAML block:\n\t%s\n\nYAML is:\n%s" % (str(e), iface))
+                raise ValueError(
+                    "Error within YAML block:\n\t%s\n\nYAML is:\n%s" % (str(e), iface))
             else:
-                raise ValueError("file %s contains invalid YAML:\n%s" % (interface_file, str(e)))
+                raise ValueError("file %s contains invalid YAML:\n%s" %
+                                 (interface_file, str(e)))
         except Exception as e:
             if not interface_file:
-                raise ValueError("invalid YAML: %s\n\nYAML is:\n%s" % (str(e), iface))
+                raise ValueError(
+                    "invalid YAML: %s\n\nYAML is:\n%s" % (str(e), iface))
             else:
-                raise ValueError("file %s contains invalid YAML:\n%s" % (interface_file, str(e)))
+                raise ValueError("file %s contains invalid YAML:\n%s" %
+                                 (interface_file, str(e)))
     return data
 
 
@@ -243,7 +249,8 @@ def create_pattern(param, data, has_interface, default=[], mastername=''):
         _parse_value(rp, mastername, def_list)
         # reads the mastername specific parameters
         if mastername:
-            rph = get_ros_param('~%s' % roslib.names.ns_join(mastername, param), [])
+            rph = get_ros_param(
+                '~%s' % roslib.names.ns_join(mastername, param), [])
             if isinstance(rp, list):
                 def_list[len(def_list):] = rph
             else:
@@ -289,7 +296,8 @@ def gen_pattern(filter_list, name, print_info=True, mastername=None):
             rospy.loginfo("[%s] %s: %s", mastername, name, str(filter_list))
         else:
             rospy.loginfo("%s: %s", name, str(filter_list))
-    def_list = [''.join(['\A', n.strip().replace('*', '.*'), '\Z']) for n in filter_list]
+    def_list = [''.join(['\A', n.strip().replace('*', '.*'), '\Z'])
+                for n in filter_list]
     if def_list:
         return re.compile('|'.join(def_list), re.I)
     return EMPTY_PATTERN

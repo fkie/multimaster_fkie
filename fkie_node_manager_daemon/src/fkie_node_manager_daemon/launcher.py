@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import roslib
 import rospkg
@@ -73,7 +72,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
     '''
     n = launchcfg.get_node(node)
     if n is None:
-        raise exceptions.StartException("Node '%s' not found in launch file %s" % (node, launchcfg.filename))
+        raise exceptions.StartException(
+            "Node '%s' not found in launch file %s" % (node, launchcfg.filename))
     result = StartConfig(n.package, n.type)
     result.config_path = launchcfg.filename
     if executable:
@@ -95,7 +95,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         result.respawn = n.respawn
         if n.respawn_delay > 0:
             result.respawn_delay = n.respawn_delay
-        respawn_params = _get_respawn_params(rospy.names.ns_join(n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
+        respawn_params = _get_respawn_params(rospy.names.ns_join(
+            n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
         result.respawn_max = respawn_params['max']
         result.respawn_min_runtime = respawn_params['min_runtime']
         result.respawn_delay = respawn_params['delay']
@@ -127,7 +128,8 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
         global_params = get_global_params(launchcfg.roscfg)
         result.params.update(global_params)
         rospy.loginfo("add global parameter for '%s'" % launchcfg.filename)
-        rospy.logdebug("add global parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[:80], '...' if len(utf8(val)) > 80 else'') for key, val in global_params.items()))
+        rospy.logdebug("add global parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(
+            val)[:80], '...' if len(utf8(val)) > 80 else'') for key, val in global_params.items()))
         launchcfg.global_param_done.append(result.masteruri)
     # add params and clear_params
     nodens = "%s%s%s" % (n.namespace, n.name, rospy.names.SEP)
@@ -139,8 +141,10 @@ def create_start_config(node, launchcfg, executable='', masteruri=None, loglevel
             result.clear_params.append(cparam)
     if reload_global_param:
         result.clear_params.extend(get_global_clear_params(launchcfg.roscfg))
-    rospy.logdebug("set delete parameter:\n  %s", '\n  '.join(result.clear_params))
-    rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[:80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
+    rospy.logdebug("set delete parameter:\n  %s",
+                   '\n  '.join(result.clear_params))
+    rospy.logdebug("add parameter:\n  %s", '\n  '.join("%s: %s%s" % (key, utf8(val)[
+                   :80], '...' if len(utf8(val)) > 80 else '') for key, val in result.params.items()))
     return result
 
 
@@ -208,15 +212,18 @@ def run_node(startcfg):
         # get binary path from package
         if not cmd_type:
             try:
-                cmd = roslib.packages.find_node(startcfg.package, startcfg.binary)
+                cmd = roslib.packages.find_node(
+                    startcfg.package, startcfg.binary)
             except (roslib.packages.ROSPkgException, rospkg.ResourceNotFound) as e:
                 # multiple nodes, invalid package
                 rospy.logwarn("resource not found: %s" % utf8(e))
-                raise exceptions.ResourceNotFound(startcfg.package, "resource not found: %s" % utf8(e))
+                raise exceptions.ResourceNotFound(
+                    startcfg.package, "resource not found: %s" % utf8(e))
             if isstring(cmd):
                 cmd = [cmd]
             if cmd is None or len(cmd) == 0:
-                raise exceptions.StartException('%s in package [%s] not found!' % (startcfg.binary, startcfg.package))
+                raise exceptions.StartException(
+                    '%s in package [%s] not found!' % (startcfg.binary, startcfg.package))
             cmd = remove_src_binary(cmd)
             if len(cmd) > 1:
                 # Open selection for executables
@@ -236,7 +243,7 @@ def run_node(startcfg):
         if 'DISPLAY' in startcfg.env:
             if not startcfg.env['DISPLAY'] or startcfg.env['DISPLAY'] == 'remote':
                 del startcfg.env['DISPLAY']
-        #else:
+        # else:
         #    new_env['DISPLAY'] = ':0'
         # add environment from launch
         new_env.update(startcfg.env)
@@ -246,17 +253,20 @@ def run_node(startcfg):
         if startcfg.logformat:
             new_env['ROSCONSOLE_FORMAT'] = '%s' % startcfg.logformat
         if startcfg.loglevel:
-            new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(startcfg.package, startcfg.loglevel)
+            new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(
+                startcfg.package, startcfg.loglevel)
         # handle respawn
         if startcfg.respawn:
             if startcfg.respawn_delay > 0:
                 new_env['RESPAWN_DELAY'] = '%d' % startcfg.respawn_delay
-            respawn_params = _get_respawn_params(startcfg.fullname, startcfg.params)
+            respawn_params = _get_respawn_params(
+                startcfg.fullname, startcfg.params)
             if respawn_params['max'] > 0:
                 new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
             if respawn_params['min_runtime'] > 0:
                 new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
-            cmd_type = "%s %s %s" % (settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
+            cmd_type = "%s %s %s" % (
+                settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
         else:
             cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
         # check for masteruri
@@ -276,10 +286,14 @@ def run_node(startcfg):
             # load params to ROS master
             _load_parameters(masteruri, startcfg.params, startcfg.clear_params)
         # start
-        cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, list(startcfg.env.keys())), cmd_type, ' '.join(args)))
-        rospy.loginfo("%s (launch_file: '%s', masteruri: %s)" % (cmd_str, startcfg.config_path, masteruri))
-        rospy.logdebug("environment while run node '%s': '%s'" % (cmd_str, new_env))
-        SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" % startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
+        cmd_str = utf8('%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, list(
+            startcfg.env.keys())), cmd_type, ' '.join(args)))
+        rospy.loginfo("%s (launch_file: '%s', masteruri: %s)" %
+                      (cmd_str, startcfg.config_path, masteruri))
+        rospy.logdebug(
+            "environment while run node '%s': '%s'" % (cmd_str, new_env))
+        SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
+                        startcfg.fullname, description="Run [%s]%s" % (utf8(startcfg.package), utf8(startcfg.binary)))
     else:
         nmduri = startcfg.nmduri
         rospy.loginfo("remote run node '%s' at '%s'" % (nodename, nmduri))
@@ -288,7 +302,8 @@ def run_node(startcfg):
         # run on a remote machine
         channel = remote.get_insecure_channel(nmduri)
         if channel is None:
-            raise exceptions.StartException("Unknown launch manager url for host %s to start %s" % (host, startcfg.fullname))
+            raise exceptions.StartException(
+                "Unknown launch manager url for host %s to start %s" % (host, startcfg.fullname))
         lm = LaunchStub(channel)
         lm.start_standalone_node(startcfg)
 
@@ -380,7 +395,8 @@ def _load_parameters(masteruri, params, clear_params):
             # resolve path elements
             if isstring(value) and (value.startswith('$')):
                 value = interpret_path(value)
-                rospy.logdebug("interpret parameter '%s' to '%s'" % (value, pval))
+                rospy.logdebug("interpret parameter '%s' to '%s'" %
+                               (value, pval))
             # add parameter to the multicall
             param_server_multi.setParam(rospy.get_name(), pkey, value)
             test_ret = _test_value(pkey, value)
@@ -389,11 +405,13 @@ def _load_parameters(masteruri, params, clear_params):
         r = param_server_multi()
         for code, msg, _ in r:
             if code != 1:
-                raise exceptions.StartException("Failed to set parameter: %s" % (msg))
+                raise exceptions.StartException(
+                    "Failed to set parameter: %s" % (msg))
     except roslaunch.core.RLException as e:
         raise exceptions.StartException(e)
     except rospkg.ResourceNotFound as rnf:
-        raise exceptions.StartException("Failed to set parameter. ResourceNotFound: %s" % (rnf))
+        raise exceptions.StartException(
+            "Failed to set parameter. ResourceNotFound: %s" % (rnf))
     except Exception as e:
         raise exceptions.StartException("Failed to set parameter. ROS Parameter Server "
                                         "reports: %s\n\n%s" % (e, '\n'.join(param_errors)))

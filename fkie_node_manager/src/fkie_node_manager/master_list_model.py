@@ -149,7 +149,8 @@ class MasterItem(QStandardItem):
     ITEM_TYPE = QStandardItem.UserType + 34
 
     def __init__(self, master, local=False, quality=None, parent=None):
-        self.name = ''.join([master.name, ' (localhost)']) if local else master.name
+        self.name = ''.join([master.name, ' (localhost)']
+                            ) if local else master.name
         QStandardItem.__init__(self, '')  # self.name)
         self.parent_item = None
         self._master = master
@@ -182,7 +183,8 @@ class MasterItem(QStandardItem):
             ips = []
             for r in result:
                 if r[0] == AF_INET6:
-                    (_family, _socktype, _proto, _canonname, (ip, _port, _flow, _scope)) = r
+                    (_family, _socktype, _proto, _canonname,
+                     (ip, _port, _flow, _scope)) = r
                 else:
                     (_family, _socktype, _proto, _canonname, (ip, _port)) = r
                 if self.master_ip is None and ip:
@@ -267,12 +269,15 @@ class MasterItem(QStandardItem):
         tooltip = ''.join(['<html><body>'])
         tooltip = ''.join([tooltip, '<h4>', master.uri, '</h4>'])
         tooltip = ''.join([tooltip, '<dl>'])
-        tooltip = ''.join([tooltip, '<dt>', 'IP: ', str(self.master_ip), '</dt>'])
+        tooltip = ''.join(
+            [tooltip, '<dt>', 'IP: ', str(self.master_ip), '</dt>'])
         if master.online:
             if quality is not None and quality != -1.:
-                tooltip = ''.join([tooltip, '<dt>', 'Quality: ', str(quality), ' %', '</dt>'])
+                tooltip = ''.join(
+                    [tooltip, '<dt>', 'Quality: ', str(quality), ' %', '</dt>'])
             else:
-                tooltip = ''.join([tooltip, '<dt>', 'Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % DiscoveredMaster.MIN_HZ_FOR_QUALILTY])
+                tooltip = ''.join(
+                    [tooltip, '<dt>', 'Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % DiscoveredMaster.MIN_HZ_FOR_QUALILTY])
         else:
             tooltip = ''.join([tooltip, '<dt>', 'offline', '</dt>'])
         tooltip = ''.join([tooltip, '</dl>'])
@@ -284,16 +289,21 @@ class MasterItem(QStandardItem):
             if self._master_errors or self._diagnostics or self.master_ip is None or timediff:
                 item.setIcon(self.ICONS['warning'])
                 if timediff:
-                    tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %.3f seconds!</font>' % self._timediff, '</h4>'])
+                    tooltip = ''.join(
+                        [tooltip, '<h4>', '<font color="#CC0000">Time difference to the host is about %.3f seconds!</font>' % self._timediff, '</h4>'])
                     item.setIcon(self.ICONS['clock_warn'])
                 if self.master_ip is None:
-                    tooltip = ''.join([tooltip, '<h4>', '<font color="#CC0000">Host not reachable by name!!! The ROS topics may not by connected!!!</font>', '</h4>'])
+                    tooltip = ''.join(
+                        [tooltip, '<h4>', '<font color="#CC0000">Host not reachable by name!!! The ROS topics may not by connected!!!</font>', '</h4>'])
                 if self._master_errors:
-                    tooltip = ''.join([tooltip, '<h4>Errors reported by master_discovery:</h4>'])
+                    tooltip = ''.join(
+                        [tooltip, '<h4>Errors reported by master_discovery:</h4>'])
                     for err in self._master_errors:
-                        tooltip = ''.join([tooltip, '<dt><font color="#CC0000">%s</font></dt>' % err])
+                        tooltip = ''.join(
+                            [tooltip, '<dt><font color="#CC0000">%s</font></dt>' % err])
                 for diag in self._diagnostics:
-                    tooltip = ''.join([tooltip, '<dt><font color="#CC0000">%s</font></dt>' % diag.message])
+                    tooltip = ''.join(
+                        [tooltip, '<dt><font color="#CC0000">%s</font></dt>' % diag.message])
             elif quality is not None and quality != -1.:
                 if quality > 30:
                     item.setIcon(self.ICONS['green'])
@@ -324,7 +334,8 @@ class MasterItem(QStandardItem):
         ns, sep, name = text.rpartition('/')
         result = ''
         if sep:
-            result = ''.join(['<html><body>', '<span style="color:gray;">', str(ns), sep, '</span><b>', name, '</b></body></html>'])
+            result = ''.join(['<html><body>', '<span style="color:gray;">', str(
+                ns), sep, '</span><b>', name, '</b></body></html>'])
         else:
             result = name
         return result
@@ -377,7 +388,8 @@ class MasterModel(QStandardItemModel):
         self.setColumnCount(len(MasterModel.header))
         self._masteruri = local_masteruri
         self.parent_view = None
-        self.pyqt_workaround = dict()  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+        # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+        self.pyqt_workaround = dict()
 
     def flags(self, index):
         '''
@@ -450,7 +462,8 @@ class MasterModel(QStandardItemModel):
         name_item = MasterItem(master, local)
         items.append(name_item)
         name_item.parent_item = root
-        self.pyqt_workaround[master.name] = items  # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+        # workaround for using with PyQt: store the python object to keep the defined attributes in the MasterItem subclass
+        self.pyqt_workaround[master.name] = items
         # add the items to the data model
         if index > -1:
             root.insertRow(index, items)
@@ -601,7 +614,8 @@ class MasterIconsDelegate(QItemDelegate):
 
     def _scale_icons(self, icon_size):
         self._icon_size = icon_size
-        params = (self._icon_size, self._icon_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        params = (self._icon_size, self._icon_size,
+                  Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         self.IMAGES = {'green': nm.settings().image('stock_connect_green.png').scaled(*params),
                        'yellow': nm.settings().image('stock_connect_yellow.png').scaled(*params),
                        'red': nm.settings().image('stock_connect_red.png').scaled(*params),
@@ -636,9 +650,11 @@ class MasterIconsDelegate(QItemDelegate):
             tooltip = '%s\n<dt>IP: %s</dt>' % (tooltip, str(item.master_ip))
             if item.master.online:
                 if item.quality is not None and item.quality != -1.:
-                    tooltip = '%s\n<dt>Quality: %.2f </dt>' % (tooltip, item.quality)
+                    tooltip = '%s\n<dt>Quality: %.2f </dt>' % (
+                        tooltip, item.quality)
                 else:
-                    tooltip = '%s\n<dt>Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % (tooltip, DiscoveredMaster.MIN_HZ_FOR_QUALILTY)
+                    tooltip = '%s\n<dt>Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % (
+                        tooltip, DiscoveredMaster.MIN_HZ_FOR_QUALILTY)
             else:
                 tooltip = '%s\n<dt>offline</dt>' % (tooltip)
             # update warnings
@@ -648,11 +664,14 @@ class MasterIconsDelegate(QItemDelegate):
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['warning'])
                     if item.master_ip is None:
-                        tooltip = '%s\n<h4><font color="#CC0000">Host not reachable by name! The ROS topics may not by connected!</font></h4>' % (tooltip)
+                        tooltip = '%s\n<h4><font color="#CC0000">Host not reachable by name! The ROS topics may not by connected!</font></h4>' % (
+                            tooltip)
                     if master_errors:
-                        tooltip = '%s\n<h4>Errors reported by master_discovery:</h4>' % (tooltip)
+                        tooltip = '%s\n<h4>Errors reported by master_discovery:</h4>' % (
+                            tooltip)
                         for err in master_errors:
-                            tooltip = '%s\n<dt><font color="#CC0000">%s</font></dt>' % (tooltip, err)
+                            tooltip = '%s\n<dt><font color="#CC0000">%s</font></dt>' % (
+                                tooltip, err)
                 elif self._enabled:
                     rect = self.calcDecorationRect(option.rect)
                     if item.quality is not None and item.quality != -1.:
@@ -667,7 +686,8 @@ class MasterIconsDelegate(QItemDelegate):
                 # check for time difference
                 timediff = abs(item._timediff) > nm.settings().max_timediff
                 if timediff:
-                    tooltip = '%s\n<h4><font color="#CC0000">Time difference to the host is about %.3f seconds!</font></h4>' % (tooltip, item._timediff)
+                    tooltip = '%s\n<h4><font color="#CC0000">Time difference to the host is about %.3f seconds!</font></h4>' % (
+                        tooltip, item._timediff)
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['clock_warn'])
             else:
@@ -676,7 +696,8 @@ class MasterIconsDelegate(QItemDelegate):
             # update diagnostic warnings
             for diag in item.diagnostics:
                 if diag.level > 0:
-                    tooltip = '%s\n<dt><font color="#CC0000">%s</font></dt>' % (tooltip, diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                    tooltip = '%s\n<dt><font color="#CC0000">%s</font></dt>' % (
+                        tooltip, diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                     if 'Network Load' in diag.name:
                         rect = self.calcDecorationRect(option.rect)
                         painter.drawImage(rect, self.IMAGES['net_warn'])
@@ -707,7 +728,8 @@ class MasterIconsDelegate(QItemDelegate):
         rect = QRect()
         rect.setX(main_rect.x() + self._idx_icon + self._hspacing)
         rect.setY(main_rect.y() + self._vspacing)
-        rect.setWidth(self._icon_size if image else main_rect.width() - self._idx_icon)
+        rect.setWidth(
+            self._icon_size if image else main_rect.width() - self._idx_icon)
         rect.setHeight(self._icon_size)
         self._idx_icon += self._icon_size + self._hspacing
         return rect
@@ -722,7 +744,6 @@ class MasterButtonDelegate(QStyledItemDelegate):
             item.button.widget.click()
             return True
         return QStyledItemDelegate.editorEvent(self, event, model, option, index)
-
 
     def paint(self, painter, option, index):
         item = index.model().itemFromIndex(index)

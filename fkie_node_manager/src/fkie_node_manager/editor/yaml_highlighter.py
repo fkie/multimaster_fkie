@@ -32,7 +32,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QRegExp, Qt
 from python_qt_binding.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat
 
@@ -56,35 +55,46 @@ class YamlHighlighter(QSyntaxHighlighter):
         tagList = ["\\btrue\\b", "\\bfalse\\b"]
         # create patterns for tags
         for tag in tagList:
-            self.rules.append((self._create_regexp(tag), self._create_format(Qt.blue)))
+            self.rules.append((self._create_regexp(
+                tag), self._create_format(Qt.blue)))
 
         # create pattern for digits
-        self.rules.append((self._create_regexp("\\d+"), self._create_format(QColor(127, 64, 127))))
+        self.rules.append((self._create_regexp("\\d+"),
+                           self._create_format(QColor(127, 64, 127))))
 
         # create pattern for params
-        self.rules.append((self._create_regexp("\s*[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp(
+            "\s*[_.\w]*\s*:"), self._create_format(Qt.darkBlue)))
 
         # create pattern for params
-        self.rules.append((self._create_regexp(":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$"), self._create_format(Qt.darkBlue)))
+        self.rules.append((self._create_regexp(
+            ":\s*:[_\.\w]*$|:\s*\@[_\.\w]*$"), self._create_format(Qt.darkBlue)))
 
         # create pattern for list signes
-        self.rules.append((self._create_regexp("^\s*-"), self._create_format(Qt.darkRed, 'bold')))
+        self.rules.append((self._create_regexp("^\s*-"),
+                           self._create_format(Qt.darkRed, 'bold')))
 
         # create pattern for ???
-        self.rules.append((self._create_regexp("^---$"), self._create_format(Qt.darkRed)))
+        self.rules.append((self._create_regexp("^---$"),
+                           self._create_format(Qt.darkRed)))
 
         # create pattern for braces
-        self.rules.append((self._create_regexp("[\[\]\{\}\,]"), self._create_format(Qt.darkGreen)))
+        self.rules.append((self._create_regexp(
+            "[\[\]\{\}\,]"), self._create_format(Qt.darkGreen)))
 
         # create patterns for strings
-        self.rules.append((self._create_regexp("\".*\"|\'.*\'"), self._create_format(Qt.blue)))
+        self.rules.append((self._create_regexp(
+            "\".*\"|\'.*\'"), self._create_format(Qt.blue)))
 
         # create patterns for substitutions
-        self.rules.append((self._create_regexp("\\$\\(.*\\)"), self._create_format(QColor(127, 64, 127))))
+        self.rules.append((self._create_regexp("\\$\\(.*\\)"),
+                           self._create_format(QColor(127, 64, 127))))
 
         # create patterns for DOCTYPE
-        self.rules.append((self._create_regexp("<!DOCTYPE.*>"), self._create_format(Qt.lightGray)))
-        self.rules.append((self._create_regexp("<\\?xml.*\\?>"), self._create_format(Qt.lightGray)))
+        self.rules.append((self._create_regexp("<!DOCTYPE.*>"),
+                           self._create_format(Qt.lightGray)))
+        self.rules.append((self._create_regexp("<\\?xml.*\\?>"),
+                           self._create_format(Qt.lightGray)))
 
     def highlightBlock(self, text):
         self.setFormat(0, len(text), self.default_format)

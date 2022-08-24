@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 import fkie_multimaster_msgs.grpc.version_pb2 as vmsg
 from . import settings
@@ -48,5 +47,6 @@ class VersionStub(object):
         :rtype: (str, str)
         '''
         request = vmsg.Empty()
-        response = self.vm_stub.GetVersion(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.vm_stub.GetVersion(
+            request, timeout=settings.GRPC_TIMEOUT)
         return (response.version, response.date)

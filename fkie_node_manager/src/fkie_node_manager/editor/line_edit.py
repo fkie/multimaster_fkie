@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QIcon
 try:
@@ -48,7 +47,8 @@ class EnhancedLineEdit(QLineEdit):
         QLineEdit.__init__(self, parent)
         # Create a clear button with icon
         self.clearBtn = clearBtn = QToolButton(self)
-        icon = QIcon.fromTheme("edit-clear", nm.settings().icon('crystal_clear_button_close.png'))
+        icon = QIcon.fromTheme(
+            "edit-clear", nm.settings().icon('crystal_clear_button_close.png'))
         clearBtn.setIcon(icon)
         clearBtn.setCursor(Qt.ArrowCursor)
         clearBtn.setStyleSheet("QToolButton { border: none; padding: 0px; }")
@@ -59,7 +59,8 @@ class EnhancedLineEdit(QLineEdit):
         self.textChanged[str].connect(self.update_close_button)
 
         frameWidth = self.style().pixelMetric(QStyle.PM_DefaultFrameWidth)
-        self.setStyleSheet("QLineEdit { padding-right: %dpx; } " % (clearBtn.sizeHint().width() + frameWidth + 1))
+        self.setStyleSheet("QLineEdit { padding-right: %dpx; } " %
+                           (clearBtn.sizeHint().width() + frameWidth + 1))
         msz = self.minimumSizeHint()
         self.setMinimumSize(max(msz.width(), clearBtn.sizeHint().height() + frameWidth * 2 + 2),
                             max(msz.height(), clearBtn.sizeHint().height() + frameWidth * 2 + 2))

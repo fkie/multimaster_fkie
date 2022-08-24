@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QObject, QRegExp, Qt, Signal
@@ -98,14 +97,17 @@ class LoggerHandler(QObject):
         try:
             service_name = '%s/get_loggers' % self.nodename
             master = xmlrpcclient.ServerProxy(self.masteruri)
-            code, _, serviceuri = master.lookupService(rospy.get_name(), service_name)
+            code, _, serviceuri = master.lookupService(
+                rospy.get_name(), service_name)
             if code == 1:
-                _req, resp = nm.starter().callService(serviceuri, service_name, GetLoggers, service_args=[])
+                _req, resp = nm.starter().callService(
+                    serviceuri, service_name, GetLoggers, service_args=[])
                 self.loggers_signal.emit(resp.loggers)
         except (rospy.ServiceException, nm.StartException) as e:
             rospy.logwarn("Get loggers for %s failed: %s" % (self.nodename, e))
         except IOError as err:
-            rospy.logwarn("Get loggers for %s failed; cannot get service URI from %s: %s" % (self.nodename, self.masteruri, err))
+            rospy.logwarn("Get loggers for %s failed; cannot get service URI from %s: %s" % (
+                self.nodename, self.masteruri, err))
         self._thread_update = None
 
     def _handle_loggers(self, loggers):
@@ -125,7 +127,8 @@ class LoggerHandler(QObject):
             self.layout.insertWidget(0, self._all_item)
             index += 1
         for logger_name, logger_level in sorted(self._stored_values.items()):
-            item = LoggerItem(self.nodename, self.masteruri, logger_name, logger_level)
+            item = LoggerItem(self.nodename, self.masteruri,
+                              logger_name, logger_level)
             self._logger_items[logger_name] = item
             if (not logger_name in new_logger) or new_logger[logger_name] != logger_level:
                 item.set_level(logger_level, True)
@@ -152,7 +155,8 @@ class LoggerHandler(QObject):
             if isinstance(item, LoggerItem) and item.loggername not in ignore:
                 itemlist.append((item.loggername, item.current_level))
             index += 1
-        self._thread_set_all = SetAllThread(self.nodename, self.masteruri, itemlist, loglevel)
+        self._thread_set_all = SetAllThread(
+            self.nodename, self.masteruri, itemlist, loglevel)
         self._thread_set_all.success_signal.connect(self.on_success_set)
         self._thread_set_all.error_signal.connect(self.on_error_set)
         self._thread_set_all.setDaemon(True)
@@ -206,15 +210,19 @@ class SetAllThread(QObject, threading.Thread):
         '''
         service_name = '%s/set_logger_level' % self._nodename
         master = xmlrpcclient.ServerProxy(self._masteruri)
-        code, _, serviceuri = master.lookupService(rospy.get_name(), service_name)
+        code, _, serviceuri = master.lookupService(
+            rospy.get_name(), service_name)
         if code == 1:
             for logger, level in self._loggers:
                 try:
                     if not self._cancel:
-                        LoggerItem.call_service_set_level(serviceuri, service_name, logger, self._newlevel)
-                        self.success_signal.emit(self._nodename, logger, self._newlevel)
+                        LoggerItem.call_service_set_level(
+                            serviceuri, service_name, logger, self._newlevel)
+                        self.success_signal.emit(
+                            self._nodename, logger, self._newlevel)
                 except Exception as err:
-                    rospy.logwarn("Set logger %s for %s to %s failed: %s" % (logger, self._nodename, self._newlevel, err))
+                    rospy.logwarn("Set logger %s for %s to %s failed: %s" % (
+                        logger, self._nodename, self._newlevel, err))
                     if level is not None:
                         self.error_signal.emit(self._nodename, logger, level)
         self.success_signal.emit(self._nodename, 'all', self._newlevel)

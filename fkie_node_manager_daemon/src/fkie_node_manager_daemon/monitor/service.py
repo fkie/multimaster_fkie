@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 import socket
 import threading
@@ -73,13 +72,16 @@ class Service:
         self._settings = settings
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
-        self.use_diagnostics_agg = settings.param('global/use_diagnostics_agg', False)
+        self.use_diagnostics_agg = settings.param(
+            'global/use_diagnostics_agg', False)
         self._sub_diag_agg = None
         self._sub_diag = None
         if self.use_diagnostics_agg:
-            self._sub_diag_agg = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+            self._sub_diag_agg = rospy.Subscriber(
+                '/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
         else:
-            self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
+            self._sub_diag = rospy.Subscriber(
+                '/diagnostics', DiagnosticArray, self._callback_diagnostics)
         hostname = socket.gethostname()
 
         self.sensors = []
@@ -102,9 +104,11 @@ class Service:
                 self._sub_diag_agg.unregister()
                 self._sub_diag_agg = None
             if value:
-                self._sub_diag_agg = rospy.Subscriber('/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+                self._sub_diag_agg = rospy.Subscriber(
+                    '/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
             else:
-                self._sub_diag = rospy.Subscriber('/diagnostics', DiagnosticArray, self._callback_diagnostics)
+                self._sub_diag = rospy.Subscriber(
+                    '/diagnostics', DiagnosticArray, self._callback_diagnostics)
             self.use_diagnostics_agg = value
 
     def _callback_diagnostics(self, msg):

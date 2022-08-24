@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QColor
 try:
@@ -48,7 +47,8 @@ import sys
 try:
     from roscpp.srv import SetLoggerLevel, SetLoggerLevelRequest
 except ImportError as err:
-    sys.stderr.write("Cannot import SetLoggerLevel service definition: %s" % err)
+    sys.stderr.write(
+        "Cannot import SetLoggerLevel service definition: %s" % err)
 
 import fkie_node_manager as nm
 
@@ -74,7 +74,8 @@ class LoggerItem(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(1, 1, 1, 1)
         self.debug = QRadioButton()
-        self.debug.setStyleSheet("QRadioButton{ background-color: #39B54A;}")  # QColor(57, 181, 74)
+        self.debug.setStyleSheet(
+            "QRadioButton{ background-color: #39B54A;}")  # QColor(57, 181, 74)
         self.debug.toggled.connect(self.toggled_debug)
         layout.addWidget(self.debug)
         self.info = QRadioButton()
@@ -82,11 +83,13 @@ class LoggerItem(QFrame):
         self.info.toggled.connect(self.toggled_info)
         layout.addWidget(self.info)
         self.warn = QRadioButton()
-        self.warn.setStyleSheet("QRadioButton{ background-color: #FFC706;}")  # QColor(255, 199, 6)
+        # QColor(255, 199, 6)
+        self.warn.setStyleSheet("QRadioButton{ background-color: #FFC706;}")
         self.warn.toggled.connect(self.toggled_warn)
         layout.addWidget(self.warn)
         self.error = QRadioButton()
-        self.error.setStyleSheet("QRadioButton{ background-color: #DE382B;}")  # QColor(222, 56, 43)
+        self.error.setStyleSheet(
+            "QRadioButton{ background-color: #DE382B;}")  # QColor(222, 56, 43)
         self.error.toggled.connect(self.toggled_error)
         layout.addWidget(self.error)
         self.fatal = QRadioButton()
@@ -157,7 +160,8 @@ class LoggerItem(QFrame):
                 self._callback(level)
             else:
                 # call set loglevel service
-                thread = threading.Thread(target=self._set_level, kwargs={'level': level, 'current_level': self.current_level})
+                thread = threading.Thread(target=self._set_level, kwargs={
+                                          'level': level, 'current_level': self.current_level})
                 thread.setDaemon(True)
                 thread.start()
                 pass
@@ -170,15 +174,19 @@ class LoggerItem(QFrame):
             service_name = '%s/set_logger_level' % self.nodename
             # get service URI from ROS-Master
             master = xmlrpcclient.ServerProxy(self.masteruri)
-            code, _, serviceuri = master.lookupService(rospy.get_name(), service_name)
+            code, _, serviceuri = master.lookupService(
+                rospy.get_name(), service_name)
             if code == 1:
-                self.call_service_set_level(serviceuri, service_name, self.loggername, level)
+                self.call_service_set_level(
+                    serviceuri, service_name, self.loggername, level)
                 self.success_signal.emit(level)
         except rospy.ServiceException as e:
-            rospy.logwarn("Set logger %s for %s to %s failed: %s" % (self.loggername, self.nodename, level, e))
+            rospy.logwarn("Set logger %s for %s to %s failed: %s" %
+                          (self.loggername, self.nodename, level, e))
             if backup_level is not None:
                 self.error_signal.emit(backup_level)
 
     @classmethod
     def call_service_set_level(cls, serviceuri, servicename, loggername, level):
-        _req, _resp = nm.starter().callService(serviceuri, servicename, SetLoggerLevel, service_args=[loggername, level])
+        _req, _resp = nm.starter().callService(serviceuri, servicename,
+                                               SetLoggerLevel, service_args=[loggername, level])

@@ -23,16 +23,17 @@ from typing import Text
 
 
 class NodeDescription:
-    def __init__(self, name:Text, *, is_executable:bool=False, composable_container:Text='', composable_nodes:List[Text]=[]):
+    def __init__(self, name: Text, *, is_executable: bool = False, composable_container: Text = '', composable_nodes: List[Text] = []):
         self.name = name
         self.is_executable = is_executable
         self.composable_container = composable_container
-        self.composable_nodes = composable_nodes if composable_nodes else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.composable_nodes = composable_nodes if composable_nodes else []
 
 
 class Capability:
 
-    def __init__(self, name:Text='', *, namespace:Text='', cap_type:Text='', images:List[Text]=[], description:Text='', nodes:List[Text]=[]):
+    def __init__(self, name: Text = '', *, namespace: Text = '', cap_type: Text = '', images: List[Text] = [], description: Text = '', nodes: List[Text] = []):
         '''
         Capabilities defined in launch file.
 
@@ -48,9 +49,11 @@ class Capability:
         self.namespace = namespace
         self.name = name
         self.type = cap_type
-        self.images = images if images else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.images = images if images else []
         self.description = description
-        self.nodes = nodes if nodes else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.nodes = nodes if nodes else []
 
     def __repr__(self):
         return "<%s[%s/%s], with %d nodes>" % (self.__class__, self.namespace, self.name, len(self.nodes))
@@ -63,7 +66,7 @@ class Capability:
 
 class RobotDescription:
 
-    def __init__(self, *, machine:Text='', robot_name:Text='', robot_type:Text='', robot_images:List[Text]=[], robot_descr:Text='', capabilities:List[Capability]=[]):
+    def __init__(self, *, machine: Text = '', robot_name: Text = '', robot_type: Text = '', robot_images: List[Text] = [], robot_descr: Text = '', capabilities: List[Capability] = []):
         '''
         Description of the robot configured by this launch file.
 
@@ -79,9 +82,11 @@ class RobotDescription:
         self.machine = machine
         self.robot_name = robot_name
         self.robot_type = robot_type
-        self.robot_images = robot_images if robot_images else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.robot_images = robot_images if robot_images else []
         self.robot_descr = robot_descr
-        self.capabilities = capabilities if capabilities else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.capabilities = capabilities if capabilities else []
 
     def __repr__(self):
         return "<%s[%s], machine=%s, with %d capabilities>" % (self.__class__, self.robot_name, self.machine, len(self.capabilities))
@@ -94,7 +99,7 @@ class RobotDescription:
 
 class LaunchDescription:
 
-    def __init__(self, path='', nmduri:Text='', *, nodes:List[NodeDescription]=[], robot_descriptions:List[RobotDescription]=[]):
+    def __init__(self, path='', nmduri: Text = '', *, nodes: List[NodeDescription] = [], robot_descriptions: List[RobotDescription] = []):
         '''
         Description of the robot configured by this launch file.
 
@@ -107,8 +112,10 @@ class LaunchDescription:
         '''
         self.path = path
         self.nmduri = nmduri
-        self.nodes = nodes if nodes else []  # create a new array to a void to fill a default one
-        self.robot_descriptions = robot_descriptions if robot_descriptions else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.nodes = nodes if nodes else []
+        # create a new array to a void to fill a default one
+        self.robot_descriptions = robot_descriptions if robot_descriptions else []
 
     def __repr__(self):
         return "<%s[%s, nmduri: %s], with %d nodes>" % (self.__class__, self.path, self.nmduri, len(self.nodes))

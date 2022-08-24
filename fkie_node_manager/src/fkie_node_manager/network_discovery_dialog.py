@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 try:
     import queue
 except ImportError:
@@ -105,7 +104,8 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         with self.mutex:
             try:
                 for p in range(networks_count):
-                    msock = DiscoverSocket(default_port + p, default_mcast_group)
+                    msock = DiscoverSocket(
+                        default_port + p, default_mcast_group)
                     self.sockets.append(msock)
                     msock.settimeout(self.TIMEOUT)
             except Exception as e:
@@ -122,7 +122,8 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
                 hostname = self._hosts[address[0]]
             except Exception:
                 self.status_text_signal.emit("resolve %s" % address[0])
-                hostname = nm.nameres().hostname(utf8(address[0]), resolve=True)
+                hostname = nm.nameres().hostname(
+                    utf8(address[0]), resolve=True)
                 self._hosts[address[0]] = hostname
             try:
                 (_version, _msg_tuple) = Discoverer.msg2masterState(msg, address)
@@ -150,7 +151,8 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
                         try:
                             recv_item = msock.receive_queue.get(False)
                             self._received_msgs += 1
-                            self.on_heartbeat_received(recv_item.msg, recv_item.sender_addr, (recv_item.via == QueueReceiveItem.MULTICAST))
+                            self.on_heartbeat_received(
+                                recv_item.msg, recv_item.sender_addr, (recv_item.via == QueueReceiveItem.MULTICAST))
                         except queue.Empty:
                             received = False
                 status_text = 'received messages: %d' % (self._received_msgs)
@@ -175,9 +177,11 @@ class NetworkDiscoveryDialog(QDialog, threading.Thread):
         self.display_clear_signal.emit()
         text = '<div style="font-family:Fixedsys,Courier,monospace; padding:10px;">\n'
         for index, addr_dict in self._discovered.items():
-            text += 'Network <b>%s</b>: <a href="%s">join</a><dl>' % (utf8(index), utf8(index))
+            text += 'Network <b>%s</b>: <a href="%s">join</a><dl>' % (
+                utf8(index), utf8(index))
             for addr, (hostname, ts) in addr_dict.items():
-                text += '<dt>%s   <b><u>%s</u></b> %s, received messages: %s</dt>\n' % (self._getTsStr(ts), utf8(hostname), utf8(addr), str(self._msg_counts[hostname]))
+                text += '<dt>%s   <b><u>%s</u></b> %s, received messages: %s</dt>\n' % (
+                    self._getTsStr(ts), utf8(hostname), utf8(addr), str(self._msg_counts[hostname]))
             text += '</dl><br>'
         text += '</div>'
         self.display_append_signal.emit(text)

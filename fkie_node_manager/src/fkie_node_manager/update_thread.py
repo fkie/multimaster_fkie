@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Signal
 import random
 import socket
@@ -111,20 +110,24 @@ class UpdateThread(QObject, threading.Thread):
                 muri, errors = remote_monitor.masterErrors()
                 self.master_errors_signal.emit(muri, errors)
             except xmlrpcclient.Fault as _err:
-                rospy.logwarn("Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
+                rospy.logwarn(
+                    "Older master_discovery on %s detected. It does not support master error reports!" % self._masteruri)
             # get the time difference
             try:
                 myts = time.time()
                 muri, remote_ts = remote_monitor.getCurrentTime()
-                self.timediff_signal.emit(muri, remote_ts - myts - (time.time() - myts) / 2.0)
+                self.timediff_signal.emit(
+                    muri, remote_ts - myts - (time.time() - myts) / 2.0)
             except xmlrpcclient.Fault as _errts:
-                rospy.logwarn("Older master_discovery on %s detected. It does not support getCurrentTime!" % self._masteruri)
+                rospy.logwarn(
+                    "Older master_discovery on %s detected. It does not support getCurrentTime!" % self._masteruri)
             # get the user name
             try:
                 muri, username = remote_monitor.getUser()
                 self.username_signal.emit(muri, username)
             except xmlrpcclient.Fault as _errts:
-                rospy.logwarn("Older master_discovery on %s detected. It does not support getUser!" % self._masteruri)
+                rospy.logwarn(
+                    "Older master_discovery on %s detected. It does not support getUser!" % self._masteruri)
             # now get master info from master discovery
             remote_info = remote_monitor.masterInfo()
             master_info = MasterInfo.from_list(remote_info)
@@ -135,7 +138,8 @@ class UpdateThread(QObject, threading.Thread):
             import traceback
 #      print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Cannot update ROS state, connection to %s failed:\n\t%s", utf8(self._monitoruri), formatted_lines[-1])
+            rospy.logwarn("Cannot update ROS state, connection to %s failed:\n\t%s", utf8(
+                self._monitoruri), formatted_lines[-1])
             # 'print "request failed", self._monitoruri
             self.error_signal.emit(self._masteruri, formatted_lines[-1])
         finally:

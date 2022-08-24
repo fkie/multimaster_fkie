@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 try:
     from urlparse import urlparse  # python 2 compatibility
@@ -70,7 +69,8 @@ def nmduri(uri='', prefix='grpc://'):
     o = urlparse(muri)
     port = o.port
     if o.scheme not in ['http', 'grpc']:
-        raise ValueError("uri parameter does not contain a scheme of ['http', ''grpc']: %s" % uri)
+        raise ValueError(
+            "uri parameter does not contain a scheme of ['http', ''grpc']: %s" % uri)
     if o.scheme == 'http':
         port += NMD_SERVER_PORT_OFFSET
     return "%s%s:%d" % (prefix, o.hostname, port)
@@ -89,7 +89,8 @@ def masteruri(grpc_path):
     if not grpc_path:
         return masteruri_from_master(True)
     if not grpc_path.startswith('grpc://'):
-        raise ValueError("Invalid grpc path to get masteruri: %s; `grpc` scheme missed!" % grpc_path)
+        raise ValueError(
+            "Invalid grpc path to get masteruri: %s; `grpc` scheme missed!" % grpc_path)
     o = urlparse(grpc_path)
     port = o.port
     if o.scheme == 'grpc':
@@ -159,7 +160,8 @@ def split(grpc_path, with_scheme=False):
     if not grpc_path:
         url = nmduri()
     if url and not url.startswith('grpc://'):
-        raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
+        raise ValueError(
+            "Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
     url_parse_result = urlparse(url)
     if with_scheme:
         return ("%s://%s" % (url_parse_result.scheme, url_parse_result.netloc), url_parse_result.path)

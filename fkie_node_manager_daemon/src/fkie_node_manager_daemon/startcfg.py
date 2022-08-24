@@ -31,8 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
-
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from .common import utf8
 from .host import get_hostname
@@ -157,11 +155,14 @@ class StartConfig():
         if self.cwd:
             msg.cwd = self.cwd
         if self.env:
-            msg.env.extend([lmsg.Argument(name=name, value=value) for name, value in self.env.items()])
+            msg.env.extend([lmsg.Argument(name=name, value=value)
+                            for name, value in self.env.items()])
         if self.remaps:
-            msg.remaps.extend([lmsg.Remapping(from_name=name, to_name=value) for name, value in self.remaps.items()])
+            msg.remaps.extend([lmsg.Remapping(from_name=name, to_name=value)
+                               for name, value in self.remaps.items()])
         if self.params:
-            msg.params.extend([lmsg.Argument(name=name, value=utf8(value), value_type=self._msg_type(value)) for name, value in self.params.items()])
+            msg.params.extend([lmsg.Argument(name=name, value=utf8(
+                value), value_type=self._msg_type(value)) for name, value in self.params.items()])
         if self.clear_params:
             msg.clear_params.extend(self.clear_params)
         if self.args:
@@ -186,8 +187,10 @@ class StartConfig():
         startcfg.prefix = msg.prefix
         startcfg.cwd = msg.cwd
         startcfg.env = {env.name: env.value for env in msg.env}
-        startcfg.remaps = {remap.from_name: remap.to_name for remap in msg.remaps}
-        startcfg.params = {param.name: cls._from_msg_type(param.value, param.value_type) for param in msg.params}
+        startcfg.remaps = {
+            remap.from_name: remap.to_name for remap in msg.remaps}
+        startcfg.params = {param.name: cls._from_msg_type(
+            param.value, param.value_type) for param in msg.params}
         startcfg.clear_params = list(msg.clear_params)
         startcfg.args = list(msg.args)
         startcfg.masteruri = msg.masteruri

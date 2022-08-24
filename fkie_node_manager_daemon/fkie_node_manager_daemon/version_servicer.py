@@ -28,7 +28,8 @@ class VersionServicer(vgrpc.VersionServiceServicer):
     def __init__(self):
         nmd.rosnode.get_logger().info("Create version servicer")
         vgrpc.VersionServiceServicer.__init__(self)
-        self._version, self._date = version.detect_version(nmd.rosnode, 'fkie_node_manager_daemon')
+        self._version, self._date = version.detect_version(
+            nmd.rosnode, 'fkie_node_manager_daemon')
 
     def GetVersion(self, request, context):
         reply = vmsg.Version()

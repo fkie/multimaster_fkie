@@ -1,30 +1,29 @@
+import subprocess
+from pkg_resources import resource_fiexec_depend
+from datetime import date
+from setuptools.command.build_py import build_py
+from setuptools import setup, Command
+import xml.etree.ElementTree as ET
 import os
 
 package_name = 'fkie_multimaster_msgs'
 
 if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
-   from distutils.core import setup
-   from catkin_pkg.python_setup import generate_distutils_setup
+    from distutils.core import setup
+    from catkin_pkg.python_setup import generate_distutils_setup
 
-   d = generate_distutils_setup(
-      ##  don't do this unless you want a globally visible script
-      scripts=[],
-      packages=[package_name, '%s.crossbar' % package_name],
-      package_dir={'': '.'}
-   )
+    d = generate_distutils_setup(
+        # don't do this unless you want a globally visible script
+        scripts=[],
+        packages=[package_name, '%s.crossbar' % package_name],
+        package_dir={'': '.'}
+    )
 
-   setup(**d)
-   exit(0)
+    setup(**d)
+    exit(0)
 
 ### ROS2 ###
 
-import xml.etree.ElementTree as ET
-from setuptools import setup, Command
-from setuptools.command.build_py import build_py
-from datetime import date
-import os
-from pkg_resources import resource_fiexec_depend
-import subprocess
 
 version = "0.0.0"
 
@@ -32,14 +31,16 @@ version = "0.0.0"
 def get_version():
     if os.path.isdir("../.git"):
         try:
-            ps = subprocess.Popen(['git', 'describe', '--tags', '--dirty', '--always', '--abbrev=8'], stdout=subprocess.PIPE)
+            ps = subprocess.Popen(
+                ['git', 'describe', '--tags', '--dirty', '--always', '--abbrev=8'], stdout=subprocess.PIPE)
             output = ps.stdout.read()
             vers = output.decode('utf-8').strip()
             parts = vers.split('.', 3)
             if len(parts) < 3:
                 raise Exception('no version tag found in git')
             ps.wait()
-            ps = subprocess.Popen(['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE)
+            ps = subprocess.Popen(
+                ['git', 'show', '-s', '--format=%ci'], stdout=subprocess.PIPE)
             output = ps.stdout.read().split()
             if output:
                 date_str = output[0].decode('utf-8')
@@ -61,6 +62,7 @@ def strip_dirty_vers(vers):
     parts = vers.split('-', 2)
     return parts[0]
 
+
 class BuildPyCommand(build_py):
     def run(self):
         # honor the --dry-run flag
@@ -78,13 +80,15 @@ class BuildPyCommand(build_py):
         # run base class code
         super(BuildPyCommand, self).run()
 
+
 setup(
     name=package_name,
     version=strip_dirty_vers(get_version()[0]),
     packages=[package_name, package_name + '.crossbar'],
     cmdclass={'build_py': BuildPyCommand},
     data_files=[
-        ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
+        ('share/ament_index/resource_index/packages',
+         ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml'])
     ],
     install_requires=['setuptools'],

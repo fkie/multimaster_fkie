@@ -49,7 +49,7 @@ _NODE_MANAGER_CERT = None
 # Strict mode: Try to find security files, and if they can’t be found, fail to run the participant.
 # The type of mode desired can be specified by setting the ROS_SECURITY_STRATEGY environment variable to “Enforce” (case-sensitive) for strict mode, and anything else for permissive mode.
 
-def init_keys(rosnode:[Node, None]=None) -> None:
+def init_keys(rosnode: [Node, None] = None) -> None:
     global _INITIALIZED
     if _INITIALIZED:
         return
@@ -60,14 +60,19 @@ def init_keys(rosnode:[Node, None]=None) -> None:
                 global _NODE_MANAGER_PRIVATE_KEY
                 global _NODE_MANAGER_CERT
                 ros_security_keystore = os.environ['ROS_SECURITY_KEYSTORE']
-                public_cert = os.path.join(ros_security_keystore, 'ca.cert.pem')
+                public_cert = os.path.join(
+                    ros_security_keystore, 'ca.cert.pem')
                 enclave_path = ros_security_keystore
                 if 'ROS_DISTRO' in os.environ and os.environ['ROS_DISTRO'] > 'eloquent':
-                    public_cert = os.path.join(ros_security_keystore, 'public', 'ca.cert.pem')
-                    enclave_path = os.path.join(ros_security_keystore, 'enclaves')
+                    public_cert = os.path.join(
+                        ros_security_keystore, 'public', 'ca.cert.pem')
+                    enclave_path = os.path.join(
+                        ros_security_keystore, 'enclaves')
                 if os.path.exists(public_cert):
-                    nm_cert = os.path.join(enclave_path, 'node_manager', 'cert.pem')
-                    nm_private_key = os.path.join(enclave_path, 'node_manager', 'key.pem')
+                    nm_cert = os.path.join(
+                        enclave_path, 'node_manager', 'cert.pem')
+                    nm_private_key = os.path.join(
+                        enclave_path, 'node_manager', 'key.pem')
                     if os.path.exists(nm_private_key) and os.path.exists(nm_cert):
                         f = open(public_cert, 'rb')
                         _CA_CERT = f.read()
@@ -80,11 +85,13 @@ def init_keys(rosnode:[Node, None]=None) -> None:
                             global _STRICT_MODE_ENABLED
                             _STRICT_MODE_ENABLED = True
                         if rosnode is not None:
-                            rosnode.get_logger().warn('Security keys (cert.pem, key.pem) for node manager in %s not found!' % (os.path.dirname(nm_cert)))
+                            rosnode.get_logger().warn('Security keys (cert.pem, key.pem) for node manager in %s not found!' %
+                                                      (os.path.dirname(nm_cert)))
                             if _STRICT_MODE_ENABLED:
                                 rosnode.get_logger().warn('Security strict mode enabled!')
             elif rosnode is not None:
-                rosnode.get_logger().warn('ROS_SECURITY_ENABLE is True, but ROS_SECURITY_KEYSTORE is not set!')
+                rosnode.get_logger().warn(
+                    'ROS_SECURITY_ENABLE is True, but ROS_SECURITY_KEYSTORE is not set!')
     _INITIALIZED = True
 
 
@@ -94,26 +101,28 @@ def has_keys() -> bool:
     global _NODE_MANAGER_CERT
     return all((_CA_CERT, _NODE_MANAGER_PRIVATE_KEY, _NODE_MANAGER_CERT))
 
+
 def is_strict_mode() -> bool:
     global _STRICT_MODE_ENABLED
     return _STRICT_MODE_ENABLED
 
-def get_ca_cert() -> [Text,None]:
+
+def get_ca_cert() -> [Text, None]:
     global _CA_CERT
     return _CA_CERT
 
 
-def get_keys() -> Tuple[Text,Text]:
+def get_keys() -> Tuple[Text, Text]:
     global _NODE_MANAGER_PRIVATE_KEY
     global _NODE_MANAGER_CERT
     return (_NODE_MANAGER_PRIVATE_KEY, _NODE_MANAGER_CERT)
 
 
-def get_node_manager_cert() -> [Text,None]:
+def get_node_manager_cert() -> [Text, None]:
     global _NODE_MANAGER_CERT
     return _NODE_MANAGER_CERT
 
 
-def get_node_manager_private_key() -> [Text,None]:
+def get_node_manager_private_key() -> [Text, None]:
     global _NODE_MANAGER_PRIVATE_KEY
     return _NODE_MANAGER_PRIVATE_KEY

@@ -65,7 +65,8 @@ class CrossbarBaseSession(ApplicationSession):
         self.crossbar_connecting = False
         self.uri = f"ws://localhost:{self.port}/ws"
         self.crossbar_runner = ApplicationRunner(self.uri, self.config.realm)
-        task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
+        task = asyncio.run_coroutine_threadsafe(
+            self.crossbar_connect(), self.crossbar_loop)
 
     def onConnect(self):
         #rospy.loginfo("%s: autobahn connected" % self.__class__.__name__)
@@ -97,13 +98,13 @@ class CrossbarBaseSession(ApplicationSession):
                 self.crossbar_connected = True
                 self.crossbar_connecting = False
             except Exception as err:
-                import sys
-                sys.stderr.write(err)
+                print(err)
 
                 # try to start the crossbar server
                 try:
                     config_path = crossbar_start_server(self.port)
-                    print(f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
+                    print(
+                        f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
                     print(traceback.format_exc())
@@ -121,4 +122,5 @@ class CrossbarBaseSession(ApplicationSession):
         await asyncio.gather(task)
 
     def crossbar_reconnect(self):
-        asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
+        asyncio.run_coroutine_threadsafe(
+            self.crossbar_connect(), self.crossbar_loop)

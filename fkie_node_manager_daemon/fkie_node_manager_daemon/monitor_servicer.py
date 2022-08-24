@@ -23,7 +23,7 @@ import rclpy
 import signal
 import subprocess
 import time
-from fkie_node_manager_daemon.monitor import Service# , grpc_msg
+from fkie_node_manager_daemon.monitor import Service  # , grpc_msg
 import fkie_node_manager_daemon as nmd
 
 
@@ -31,35 +31,37 @@ class MonitorServicer():
 
     def __init__(self, settings):
         nmd.rosnode.get_logger().info("Create monitor servicer")
-        #mgrpc.MonitorServiceServicer.__init__(self)
+        # mgrpc.MonitorServiceServicer.__init__(self)
         self._monitor = Service(settings)
 
     def stop(self):
         self._monitor.stop()
 
-    def level2bytes(self, levels:list):
+    def level2bytes(self, levels: list):
         return [int.to_bytes(lvl, length=1, byteorder='big') for lvl in levels]
 
     def GetSystemDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_system_diagnostics(self.level2bytes(request.level), request.timestamp)
-        #return grpc_msg(rosmsg)
+        rosmsg = self._monitor.get_system_diagnostics(
+            self.level2bytes(request.level), request.timestamp)
+        # return grpc_msg(rosmsg)
 
     def GetSystemWarnings(self, request, context):
         rosmsg = self._monitor.get_system_diagnostics(2, 0)
-        #return grpc_msg(rosmsg)
+        # return grpc_msg(rosmsg)
 
     def GetDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_diagnostics(self.level2bytes(request.level), request.timestamp)
-        #return grpc_msg(rosmsg)
+        rosmsg = self._monitor.get_diagnostics(
+            self.level2bytes(request.level), request.timestamp)
+        # return grpc_msg(rosmsg)
 
     def GetWarnings(self, request, context):
         rosmsg = self._monitor.get_diagnostics(2, 0)
-        #return grpc_msg(rosmsg)
+        # return grpc_msg(rosmsg)
 
     def KillProcess(self, request, context):
         os.kill(request.pid, signal.SIGKILL)
         #reply = mmsg.Empty()
-        #return reply
+        # return reply
 
     def SetTime(self, request, context):
         dtime = datetime.fromtimestamp(request.timestamp)
@@ -72,4 +74,4 @@ class MonitorServicer():
             raise Exception(result_err)
         #reply = mmsg.Timestamp()
         #reply.timestamp = time.time()
-        #return reply
+        # return reply

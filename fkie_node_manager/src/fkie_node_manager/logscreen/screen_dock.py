@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
@@ -59,7 +58,8 @@ class ScreenDock(DetachableTabDock):
     The connect() can be called from different thread.
     '''
 
-    connect_signal = Signal(str, str, str, str)  # host, screen_name, nodename, user
+    # host, screen_name, nodename, user
+    connect_signal = Signal(str, str, str, str)
     closed_signal = Signal(DetachableTabDock)
 
     def __init__(self, parent=None):
@@ -69,9 +69,11 @@ class ScreenDock(DetachableTabDock):
         DetachableTabDock.__init__(self, parent)
         self.setObjectName("ScreenDock")
         self.setWindowTitle("Screens")
-        self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
+        self.setFeatures(QDockWidget.DockWidgetFloatable |
+                         QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         self.connect_signal.connect(self._on_connect)
-        self.tab_widget.close_tab_request_signal.connect(self.close_tab_requested)
+        self.tab_widget.close_tab_request_signal.connect(
+            self.close_tab_requested)
         self.tab_widget.tab_removed_signal.connect(self.tab_removed)
         self._nodes = {}  # tuple of (host, nodename) : ScreenWidget
 
@@ -82,7 +84,8 @@ class ScreenDock(DetachableTabDock):
         if (masteruri, nodename) not in self._nodes:
             sw = ScreenWidget(masteruri, screen_name, nodename, str(user))
             if sw.valid():
-                tab_index = self.tab_widget.addTab(sw, nodename + ('' if screen_name else ' ROSLOG'))
+                tab_index = self.tab_widget.addTab(
+                    sw, nodename + ('' if screen_name else ' ROSLOG'))
                 self.tab_widget.setCurrentIndex(tab_index)
                 self._nodes[(masteruri, nodename)] = sw
             else:
@@ -94,7 +97,8 @@ class ScreenDock(DetachableTabDock):
                 self.tab_widget.setCurrentIndex(index)
             else:
                 for dia in self._open_dialogs:
-                    index = dia.tab_widget.indexOf(self._nodes[(masteruri, nodename)])
+                    index = dia.tab_widget.indexOf(
+                        self._nodes[(masteruri, nodename)])
                     if index >= 0:
                         dia.tab_widget.setCurrentIndex(index)
                         dia.raise_()

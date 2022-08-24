@@ -4,7 +4,8 @@ import os
 import subprocess
 import shutil
 
-CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser('~'), 'tmp'), '.crossbar')
+CROSSBAR_PATH = os.path.join(os.path.join(
+    os.path.expanduser('~'), 'tmp'), '.crossbar')
 
 CROSSBAR_CONFIG_JSON = {
     "version": 2,
@@ -68,7 +69,8 @@ CROSSBAR_CONFIG_JSON = {
 
 def crossbar_create_config(port: int) -> None:
     global CROSSBAR_PATH
-    CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser('~'), os.path.join('tmp', 'crossbar_%d' % port)), '.crossbar')
+    CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser(
+        '~'), os.path.join('tmp', 'crossbar_%d' % port)), '.crossbar')
     try:
         os.makedirs(CROSSBAR_PATH)
     except OSError as e:
@@ -78,17 +80,22 @@ def crossbar_create_config(port: int) -> None:
         CROSSBAR_CONFIG_JSON["workers"][0]["transports"][0]["endpoint"]["port"] = port
         file.write(json.dumps(CROSSBAR_CONFIG_JSON, ensure_ascii=False))
 
+
 def crossbar_start_server(port: int) -> str:
     crossbar_create_config(port)
     if shutil.which('crossbar') is None:
         try:
             import rospy
-            rospy.logerr("shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
+            rospy.logerr(
+                "shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
         except:
             import sys
-            sys.stderr.write("shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
+            sys.stderr.write(
+                "shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
         return ""
 
-    print(shutil.which('screen'), "-dmS", "_crossbar_server_%d" % port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH)
-    p = subprocess.Popen([shutil.which('screen'), "-dmS", "_crossbar_server_%d" % port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH])
+    print(shutil.which('screen'), "-dmS", "_crossbar_server_%d" %
+          port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH)
+    p = subprocess.Popen([shutil.which('screen'), "-dmS", "_crossbar_server_%d" %
+                          port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH])
     return CROSSBAR_PATH

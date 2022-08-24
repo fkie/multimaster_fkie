@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import Signal, Qt, QRect, QSize
 from python_qt_binding.QtGui import QBrush, QColor, QIcon, QPalette, QPixmap
 import os
@@ -97,16 +96,21 @@ class CapabilityHeader(QHeaderView):
         if logicalIndex in range(len(self._data)) and self._data[logicalIndex]['images']:
             if len(self._data[logicalIndex]['images']) == 1:
                 pix = self._data[logicalIndex]['images'][0]
-                pix = pix.scaled(rect.width(), rect.height() - 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pix = pix.scaled(rect.width(), rect.height() -
+                                 20, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.style().drawItemPixmap(painter, rect, 5, pix)
             elif len(self._data[logicalIndex]['images']) > 1:
-                new_rect = QRect(rect.left(), rect.top(), rect.width(), (rect.height() - 20) / 2.)
+                new_rect = QRect(rect.left(), rect.top(),
+                                 rect.width(), (rect.height() - 20) / 2.)
                 pix = self._data[logicalIndex]['images'][0]
-                pix = pix.scaled(new_rect.width(), new_rect.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pix = pix.scaled(new_rect.width(), new_rect.height(
+                ), Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.style().drawItemPixmap(painter, new_rect, 5, pix)
-                new_rect = QRect(rect.left(), rect.top() + new_rect.height(), rect.width(), new_rect.height())
+                new_rect = QRect(rect.left(), rect.top(
+                ) + new_rect.height(), rect.width(), new_rect.height())
                 pix = self._data[logicalIndex]['images'][1]
-                pix = pix.scaled(new_rect.width(), new_rect.height(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pix = pix.scaled(new_rect.width(), new_rect.height(
+                ), Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.style().drawItemPixmap(painter, new_rect, 5, pix)
 
     def mousePressEvent(self, event):
@@ -127,7 +131,8 @@ class CapabilityHeader(QHeaderView):
                 text = examples.html_body(text)
             except Exception:
                 import traceback
-                rospy.logwarn("Error while generate description for %s: %s", self._data[index]['name'], traceback.format_exc(1))
+                rospy.logwarn("Error while generate description for %s: %s",
+                              self._data[index]['name'], traceback.format_exc(1))
             self.description_requested_signal.emit(title, text)
 
     def setDescription(self, index, cfg, name, displayed_name, robot_type, description, images):
@@ -173,7 +178,8 @@ class CapabilityHeader(QHeaderView):
                 for image_path in images:
                     img = interpret_path(image_path)
                     if img and img[0] != os.path.sep:
-                        img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
+                        img = os.path.join(
+                            nm.settings().PACKAGE_DIR, image_path)
                     if os.path.isfile(img):
                         obj['images'].append(QPixmap(img))
 
@@ -190,7 +196,8 @@ class CapabilityHeader(QHeaderView):
         Inserts an item at the given index into the header.
         :param str index: the index
         '''
-        new_dict = {'cfgs': [], 'name': '', 'displayed_name': '', 'type': '', 'description': '', 'images': []}
+        new_dict = {'cfgs': [], 'name': '', 'displayed_name': '',
+                    'type': '', 'description': '', 'images': []}
         if index < len(self._data):
             self._data.insert(index, new_dict)
         else:
@@ -204,7 +211,8 @@ class CapabilityHeader(QHeaderView):
         :return: index of the inserted item
         :rtype: int
         '''
-        new_dict = {'cfgs': [], 'name': name, 'displayed_name': displayed_name, 'type': '', 'description': '', 'images': []}
+        new_dict = {'cfgs': [], 'name': name, 'displayed_name': displayed_name,
+                    'type': '', 'description': '', 'images': []}
         for index, item in enumerate(self._data):
             if item['displayed_name'].lower() > displayed_name.lower():
                 self._data.insert(index, new_dict)
@@ -272,14 +280,18 @@ class CapabilityControlWidget(QFrame):
         self.warning_frame = warning_frame = QFrame(self)
         warning_layout = QHBoxLayout(warning_frame)
         warning_layout.setContentsMargins(0, 0, 0, 0)
-        warning_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
+        warning_layout.addItem(QSpacerItem(
+            0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.warning_label = QLabel()
         icon = nm.settings().icon('crystal_clear_warning.png')
         self.warning_label.setPixmap(icon.pixmap(QSize(40, 40)))
-        self.warning_label.setToolTip('Multiple configuration for same node found!\nA first one will be selected for the start a node!')
+        self.warning_label.setToolTip(
+            'Multiple configuration for same node found!\nA first one will be selected for the start a node!')
         warning_layout.addWidget(self.warning_label)
-        warning_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
-        frame_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
+        warning_layout.addItem(QSpacerItem(
+            0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
+        frame_layout.addItem(QSpacerItem(
+            0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
         frame_layout.addWidget(warning_frame)
         # create frame for start/stop buttons
         buttons_frame = QFrame()
@@ -299,7 +311,8 @@ class CapabilityControlWidget(QFrame):
         buttons_layout.addWidget(self.off_button)
         buttons_layout.addItem(QSpacerItem(20, 20))
         frame_layout.addWidget(buttons_frame)
-        frame_layout.addItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
+        frame_layout.addItem(QSpacerItem(
+            0, 0, QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.warning_frame.setVisible(False)
 
     def hasConfigs(self):
@@ -403,10 +416,12 @@ class CapabilityTable(QTableWidget):
     def __init__(self, parent=None):
         QTableWidget.__init__(self, parent)
         self._robotHeader = CapabilityHeader(Qt.Horizontal, self)
-        self._robotHeader.description_requested_signal.connect(self._show_description)
+        self._robotHeader.description_requested_signal.connect(
+            self._show_description)
         self.setHorizontalHeader(self._robotHeader)
         self._capabilityHeader = CapabilityHeader(Qt.Vertical, self)
-        self._capabilityHeader.description_requested_signal.connect(self._show_description)
+        self._capabilityHeader.description_requested_signal.connect(
+            self._show_description)
         self.setVerticalHeader(self._capabilityHeader)
 
     def updateCapabilities(self, masteruri, cfg_name, description):
@@ -424,9 +439,11 @@ class CapabilityTable(QTableWidget):
         # append a new robot
         descr_utf8 = utf8(description.robot_descr.replace("\\n ", "\n"))
         if robot_index == -1:
-            robot_index = self._robotHeader.insertSortedItem(masteruri, robot_name)
+            robot_index = self._robotHeader.insertSortedItem(
+                masteruri, robot_name)
             self.insertColumn(robot_index)
-            self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
+            self._robotHeader.setDescription(
+                robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
             item = QTableWidgetItem()
             item.setSizeHint(QSize(96, 96))
             self.setHorizontalHeaderItem(robot_index, item)
@@ -434,7 +451,8 @@ class CapabilityTable(QTableWidget):
                 self.horizontalHeaderItem(robot_index).setText(robot_name)
         else:
             # update
-            self._robotHeader.setDescription(robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
+            self._robotHeader.setDescription(
+                robot_index, cfg_name, masteruri, robot_name, description.robot_type, descr_utf8, description.robot_images)
 
         # set the capabilities
         for c in description.capabilities:
@@ -444,26 +462,33 @@ class CapabilityTable(QTableWidget):
             if cap_index == -1 or self.cellWidget(cap_index, robot_index) is None:
                 if cap_index == -1:
                     # append a new capability
-                    cap_index = self._capabilityHeader.insertSortedItem(cname, cname)
+                    cap_index = self._capabilityHeader.insertSortedItem(
+                        cname, cname)
                     self.insertRow(cap_index)
                     self.setRowHeight(cap_index, 96)
-                    self._capabilityHeader.setDescription(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
+                    self._capabilityHeader.setDescription(
+                        cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
                     item = QTableWidgetItem()
                     item.setSizeHint(QSize(96, 96))
                     self.setVerticalHeaderItem(cap_index, item)
                     self.verticalHeaderItem(cap_index).setText(cname)
                 else:
-                    self._capabilityHeader.setDescription(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
+                    self._capabilityHeader.setDescription(
+                        cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
                 # add the capability control widget
-                controlWidget = CapabilityControlWidget(masteruri, cfg_name, c.namespace, c.nodes)
+                controlWidget = CapabilityControlWidget(
+                    masteruri, cfg_name, c.namespace, c.nodes)
                 controlWidget.start_nodes_signal.connect(self._start_nodes)
                 controlWidget.stop_nodes_signal.connect(self._stop_nodes)
                 self.setCellWidget(cap_index, robot_index, controlWidget)
-                self._capabilityHeader.controlWidget.insert(cap_index, controlWidget)
+                self._capabilityHeader.controlWidget.insert(
+                    cap_index, controlWidget)
             else:
-                self._capabilityHeader.update_description(cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
+                self._capabilityHeader.update_description(
+                    cap_index, cfg_name, cname, cname, c.type, cdescription, c.images)
                 try:
-                    self.cellWidget(cap_index, robot_index).updateNodes(cfg_name, c.namespace, c.nodes)
+                    self.cellWidget(cap_index, robot_index).updateNodes(
+                        cfg_name, c.namespace, c.nodes)
                 except Exception:
                     import traceback
                     print(traceback.format_exc())
@@ -537,7 +562,8 @@ class CapabilityTable(QTableWidget):
                                     error_nodes.append(n)
                         else:
                             stopped_nodes.append(n)
-                    controlWidget.setNodeState(running_nodes, stopped_nodes, error_nodes)
+                    controlWidget.setNodeState(
+                        running_nodes, stopped_nodes, error_nodes)
 
     def _start_nodes(self, masteruri, cfg, nodes):
         self.start_nodes_signal.emit(masteruri, cfg, nodes)

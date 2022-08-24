@@ -113,7 +113,7 @@ class RPCThreading(ThreadingMixIn, SimpleXMLRPCServer):
     def __init__(self, addr, requestHandler=SimpleXMLRPCRequestHandler,
                  logRequests=True, allow_none=False, encoding=None, bind_and_activate=True):
         SimpleXMLRPCServer.__init__(self, addr, requestHandler=requestHandler,
-                 logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
+                                    logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
 
 
 class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
@@ -129,7 +129,7 @@ class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
     def __init__(self, addr, requestHandler=SimpleXMLRPCRequestHandler,
                  logRequests=True, allow_none=False, encoding=None, bind_and_activate=True):
         SimpleXMLRPCServer.__init__(self, addr, requestHandler=requestHandler,
-                 logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
+                                    logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
 
 
 class MasterMonitor(ApplicationSession):
@@ -208,25 +208,36 @@ class MasterMonitor(ApplicationSession):
                 RPCClass = RPCThreading
                 if ipv6:
                     RPCClass = RPCThreadingV6
-                self.rpcServer = RPCClass((rpc_addr, rpcport), logRequests=False, allow_none=True)
-                rospy.loginfo("Start RPC-XML Server at %s", self.rpcServer.server_address)
+                self.rpcServer = RPCClass(
+                    (rpc_addr, rpcport), logRequests=False, allow_none=True)
+                rospy.loginfo("Start RPC-XML Server at %s",
+                              self.rpcServer.server_address)
                 self.rpcServer.register_introspection_functions()
-                self.rpcServer.register_function(self.getListedMasterInfo, 'masterInfo')
-                self.rpcServer.register_function(self.getListedMasterInfoFiltered, 'masterInfoFiltered')
-                self.rpcServer.register_function(self.getMasterContacts, 'masterContacts')
-                self.rpcServer.register_function(self.getMasterErrors, 'masterErrors')
-                self.rpcServer.register_function(self.getCurrentTime, 'getCurrentTime')
+                self.rpcServer.register_function(
+                    self.getListedMasterInfo, 'masterInfo')
+                self.rpcServer.register_function(
+                    self.getListedMasterInfoFiltered, 'masterInfoFiltered')
+                self.rpcServer.register_function(
+                    self.getMasterContacts, 'masterContacts')
+                self.rpcServer.register_function(
+                    self.getMasterErrors, 'masterErrors')
+                self.rpcServer.register_function(
+                    self.getCurrentTime, 'getCurrentTime')
                 self.rpcServer.register_function(self.setTime, 'setTime')
-                self.rpcServer.register_function(self.getTopicsMd5sum, 'getTopicsMd5sum')
+                self.rpcServer.register_function(
+                    self.getTopicsMd5sum, 'getTopicsMd5sum')
                 self.rpcServer.register_function(self.getUser, 'getUser')
-                self._rpcThread = threading.Thread(target=self.rpcServer.serve_forever)
+                self._rpcThread = threading.Thread(
+                    target=self.rpcServer.serve_forever)
                 self._rpcThread.setDaemon(True)
                 self._rpcThread.start()
                 self.ready = True
             except socket.error as e:
                 if not do_retry:
-                    raise Exception("Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?" % (rpcport, e))
-                rospy.logwarn("Error while start RPC-XML server on port %d: %s\nTry again..." % (rpcport, e))
+                    raise Exception(
+                        "Error while start RPC-XML server on port %d: %s\nIs a Node Manager already running?" % (rpcport, e))
+                rospy.logwarn(
+                    "Error while start RPC-XML server on port %d: %s\nTry again..." % (rpcport, e))
                 time.sleep(1)
             except:
                 print(traceback.format_exc())
@@ -235,9 +246,12 @@ class MasterMonitor(ApplicationSession):
 
         self._master = xmlrpcclient.ServerProxy(self.getMasteruri())
         # Hide parameter
-        self._re_hide_nodes = gen_pattern(rospy.get_param('~hide_nodes', []), 'hide_nodes')
-        self._re_hide_topics = gen_pattern(rospy.get_param('~hide_topics', []), 'hide_topics')
-        self._re_hide_services = gen_pattern(rospy.get_param('~hide_services', []), 'hide_services')
+        self._re_hide_nodes = gen_pattern(
+            rospy.get_param('~hide_nodes', []), 'hide_nodes')
+        self._re_hide_topics = gen_pattern(
+            rospy.get_param('~hide_topics', []), 'hide_topics')
+        self._re_hide_services = gen_pattern(
+            rospy.get_param('~hide_services', []), 'hide_services')
 
         self.crossbar_connected = False
         self.crossbar_connecting = False
@@ -251,12 +265,16 @@ class MasterMonitor(ApplicationSession):
         # Start Crossbar server only if requested
         if connect_crossbar:
             self.crossbar_loop = asyncio.get_event_loop()
-            self._crossbarThread = threading.Thread(target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+            self._crossbarThread = threading.Thread(
+                target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
             self._crossbarThread.start()
 
-            ApplicationSession.__init__(self, ComponentConfig(self.crossbar_realm, {}))
-            self.crossbar_runner = ApplicationRunner(f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
-            task = asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
+            ApplicationSession.__init__(
+                self, ComponentConfig(self.crossbar_realm, {}))
+            self.crossbar_runner = ApplicationRunner(
+                f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
+            task = asyncio.run_coroutine_threadsafe(
+                self.crossbar_connect(), self.crossbar_loop)
 
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
@@ -267,18 +285,20 @@ class MasterMonitor(ApplicationSession):
         # first access, make call to parameter server
         self._update_launch_uris_lock = threading.RLock()
         self.__launch_uris = {}
-        code, msg, value = self._master.subscribeParam(self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
+        code, msg, value = self._master.subscribeParam(
+            self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
         # the new timer will be created in self._update_launch_uris()
         self._timer_update_launch_uris = None
         if code == 1:
             for k, v in value.items():
-                self.__launch_uris[roslib.names.ns_join('/roslaunch/uris', k)] = v
+                self.__launch_uris[roslib.names.ns_join(
+                    '/roslaunch/uris', k)] = v
         self._update_launch_uris()
         # === END: UPDATE THE LAUNCH URIS Section ===
         self._multiple_screen_do_check = False
-        self._multiple_screen_thread = threading.Thread(target=self.checkMultipleScreens, daemon=True)
+        self._multiple_screen_thread = threading.Thread(
+            target=self.checkMultipleScreens, daemon=True)
         self._multiple_screen_thread.start()
-
 
     def __update_param(self, key, value):
         # updates the /roslaunch/uris parameter list
@@ -304,9 +324,11 @@ class MasterMonitor(ApplicationSession):
             if self._master is not None:
                 rospy.loginfo("Unsubscribe from parameter `/roslaunch/uris`")
                 try:
-                    self._master.unsubscribeParam(self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
+                    self._master.unsubscribeParam(
+                        self.ros_node_name, rospy.get_node_uri(), '/roslaunch/uris')
                 except Exception as e:
-                    rospy.logwarn("Error while unsubscribe from `/roslaunch/uris`: %s" % e)
+                    rospy.logwarn(
+                        "Error while unsubscribe from `/roslaunch/uris`: %s" % e)
             rospy.loginfo("shutdown own RPC server")
             self.rpcServer.shutdown()
             del self.rpcServer.socket
@@ -329,7 +351,8 @@ class MasterMonitor(ApplicationSession):
                     except:
                         try:
                             # remove the parameter from parameter server on error
-                            master = xmlrpcclient.ServerProxy(self.getMasteruri())
+                            master = xmlrpcclient.ServerProxy(
+                                self.getMasteruri())
                             master.deleteParam(self.ros_node_name, key)
                         except:
                             pass
@@ -337,7 +360,8 @@ class MasterMonitor(ApplicationSession):
                 socket.setdefaulttimeout(None)
                 # create the new timer
                 if not rospy.is_shutdown():
-                    self._timer_update_launch_uris = threading.Timer(self.INTERVAL_UPDATE_LAUNCH_URIS, self._update_launch_uris)
+                    self._timer_update_launch_uris = threading.Timer(
+                        self.INTERVAL_UPDATE_LAUNCH_URIS, self._update_launch_uris)
                     self._timer_update_launch_uris.start()
 
     def _getNodePid(self, nodes):
@@ -366,13 +390,17 @@ class MasterMonitor(ApplicationSession):
                     pid = _succeed(node.getPid(self.ros_node_name))
                 except (Exception, socket.error) as e:
                     with self._lock:
-                        self._limited_log(nodename, "can't get PID: %s" % str(e), level=rospy.DEBUG)
+                        self._limited_log(
+                            nodename, "can't get PID: %s" % str(e), level=rospy.DEBUG)
                     master = xmlrpcclient.ServerProxy(self.getMasteruri())
-                    code, message, new_uri = master.lookupNode(self.ros_node_name, nodename)
+                    code, message, new_uri = master.lookupNode(
+                        self.ros_node_name, nodename)
                     with self._lock:
-                        self.__new_master_state.getNode(nodename).uri = None if (code == -1) else new_uri
+                        self.__new_master_state.getNode(
+                            nodename).uri = None if (code == -1) else new_uri
                         if code == -1:
-                            self._limited_log(nodename, "can't update contact information. ROS master responds with: %s" % message)
+                            self._limited_log(
+                                nodename, "can't update contact information. ROS master responds with: %s" % message)
                         try:
                             del self.__cached_nodes[nodename]
                         except:
@@ -419,10 +447,13 @@ class MasterMonitor(ApplicationSession):
                               'callerid': self.ros_node_name, 'service': service}
                     roslib.network.write_ros_handshake_header(s, header)
                     buf = io.StringIO() if sys.version_info < (3, 0) else io.BytesIO()
-                    stype = roslib.network.read_ros_handshake_header(s, buf, 2048)
+                    stype = roslib.network.read_ros_handshake_header(
+                        s, buf, 2048)
                     with self._lock:
-                        self.__new_master_state.getService(service).type = stype['type']
-                        self.__cached_services[service] = (uri, stype['type'], time.time())
+                        self.__new_master_state.getService(
+                            service).type = stype['type']
+                        self.__cached_services[service] = (
+                            uri, stype['type'], time.time())
                 except socket.error:
                     with self._lock:
                         try:
@@ -432,7 +463,8 @@ class MasterMonitor(ApplicationSession):
         #      raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service, uri))
                 except:
                     with self._lock:
-                        self._limited_log(service, "can't get service type: %s" % traceback.format_exc(), level=rospy.DEBUG)
+                        self._limited_log(
+                            service, "can't get service type: %s" % traceback.format_exc(), level=rospy.DEBUG)
                     with self._lock:
                         try:
                             del self.__cached_services[service]
@@ -450,7 +482,8 @@ class MasterMonitor(ApplicationSession):
         :rtype:  :mod:`fkie_master_discovery.master_info.MasterInfo.listedState()` for result type
         '''
         t = str(time.time())
-        result = (t, t, self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [])
+        result = (t, t, self.getMasteruri(), str(
+            self.getMastername()), [], [], [], [], [], [])
         if not (self.__master_state is None):
             try:
                 with self._state_access_lock:
@@ -466,12 +499,14 @@ class MasterMonitor(ApplicationSession):
         :rtype:  :mod:`fkie_master_discovery.master_info.MasterInfo.listedState()` for result type
         '''
         t = str(time.time())
-        result = (t, t, self.getMasteruri(), str(self.getMastername()), [], [], [], [], [], [])
+        result = (t, t, self.getMasteruri(), str(
+            self.getMastername()), [], [], [], [], [], [])
         if not (self.__master_state is None):
             try:
                 with self._state_access_lock:
                     fi = FilterInterface.from_list(filter_list)
-                    fi.set_hide_pattern(self._re_hide_nodes, self._re_hide_topics, self._re_hide_services)
+                    fi.set_hide_pattern(
+                        self._re_hide_nodes, self._re_hide_topics, self._re_hide_services)
                     result = self.__master_state.listedState(fi)
             except:
                 print(traceback.format_exc())
@@ -510,18 +545,21 @@ class MasterMonitor(ApplicationSession):
                     self.__cached_nodes = dict()
                     self.__cached_services = dict()
                 socket.setdefaulttimeout(5)
-                self.__new_master_state = master_state = MasterInfo(self.getMasteruri(), self.getMastername())
+                self.__new_master_state = master_state = MasterInfo(
+                    self.getMasteruri(), self.getMastername())
                 # update master state
                 master = self._master
                 # master = xmlrpclib.ServerProxy(self.getMasteruri())
                 # get topic types
-                code, message, topicTypes = master.getTopicTypes(self.ros_node_name)
+                code, message, topicTypes = master.getTopicTypes(
+                    self.ros_node_name)
                 # convert topicType list to the dict
                 topicTypesDict = {}
                 for topic, type in topicTypes:
                     topicTypesDict[topic] = type
                 # get system state
-                code, message, state = master.getSystemState(self.ros_node_name)
+                code, message, state = master.getSystemState(
+                    self.ros_node_name)
 
                 # add published topics
                 for t, l in state[0]:
@@ -530,7 +568,8 @@ class MasterMonitor(ApplicationSession):
                         master_state.nodes = n
                         master_state.getNode(n).publishedTopics = t
                         master_state.getTopic(t).publisherNodes = n
-                        master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
+                        master_state.getTopic(
+                            t).type = topicTypesDict.get(t, 'None')
                 # add subscribed topics
                 for t, l in state[1]:
                     master_state.topics = t
@@ -538,7 +577,8 @@ class MasterMonitor(ApplicationSession):
                         master_state.nodes = n
                         master_state.getNode(n).subscribedTopics = t
                         master_state.getTopic(t).subscriberNodes = n
-                        master_state.getTopic(t).type = topicTypesDict.get(t, 'None')
+                        master_state.getTopic(
+                            t).type = topicTypesDict.get(t, 'None')
 
                 # add services
                 services = dict()
@@ -559,7 +599,8 @@ class MasterMonitor(ApplicationSession):
                                 services[service.name] = service.uri
                         else:
                             tmp_slist.append(service)
-                            param_server_multi.lookupService(self.ros_node_name, t)
+                            param_server_multi.lookupService(
+                                self.ros_node_name, t)
                 try:
                     r = param_server_multi()
                     for (code, msg, uri), service in zip(r, tmp_slist):
@@ -568,14 +609,17 @@ class MasterMonitor(ApplicationSession):
                             if service.isLocal:
                                 services[service.name] = uri
                             else:
-                                self.__cached_services[service.name] = (uri, None, time.time())
+                                self.__cached_services[service.name] = (
+                                    uri, None, time.time())
                         else:
                             with self._lock:
-                                self._limited_log(service.name, "can't get contact information. ROS master responds with: %s" % msg)
+                                self._limited_log(
+                                    service.name, "can't get contact information. ROS master responds with: %s" % msg)
                 except:
                     traceback.print_exc()
                 if services:
-                    pidThread = threading.Thread(target=self._getServiceInfo, args=((services,)))
+                    pidThread = threading.Thread(
+                        target=self._getServiceInfo, args=((services,)))
                     pidThread.start()
                     threads.append(pidThread)
 
@@ -594,7 +638,8 @@ class MasterMonitor(ApplicationSession):
                         else:
                             # 'print "request node:", node.name
                             tmp_nlist.append(node)
-                            param_server_multi.lookupNode(self.ros_node_name, name)
+                            param_server_multi.lookupNode(
+                                self.ros_node_name, name)
                     r = param_server_multi()
                     for (code, msg, uri), node in zip(r, tmp_nlist):
                         if code == 1:
@@ -602,16 +647,19 @@ class MasterMonitor(ApplicationSession):
                             if node.isLocal:
                                 nodes[node.name] = uri
                             else:
-                                self.__cached_nodes[node.name] = (uri, None, time.time())
+                                self.__cached_nodes[node.name] = (
+                                    uri, None, time.time())
                         else:
                             with self._lock:
-                                self._limited_log(node.name, "can't get contact information. ROS master responds with: %s" % msg)
+                                self._limited_log(
+                                    node.name, "can't get contact information. ROS master responds with: %s" % msg)
                 except:
                     traceback.print_exc()
 
                 if nodes:
                     # get process id of the nodes
-                    pidThread = threading.Thread(target=self._getNodePid, args=((nodes,)))
+                    pidThread = threading.Thread(
+                        target=self._getNodePid, args=((nodes,)))
                     pidThread.start()
                     threads.append(pidThread)
 
@@ -699,11 +747,13 @@ class MasterMonitor(ApplicationSession):
                 if service.name.endswith('get_sync_info'):
                     if get_hostname(self.getMasteruri()) == get_hostname(service.uri):
                         socket.setdefaulttimeout(3)
-                        get_sync_info = rospy.ServiceProxy(service.name, GetSyncInfo)
+                        get_sync_info = rospy.ServiceProxy(
+                            service.name, GetSyncInfo)
                         try:
                             sync_info = get_sync_info()
                         except rospy.ServiceException as e:
-                            rospy.logwarn("ERROR Service call 'get_sync_info' failed: %s", str(e))
+                            rospy.logwarn(
+                                "ERROR Service call 'get_sync_info' failed: %s", str(e))
                         finally:
                             socket.setdefaulttimeout(None)
 
@@ -714,7 +764,8 @@ class MasterMonitor(ApplicationSession):
                         try:
                             # TODO: add nodeuri to the nodes (needs changes in the MSG definitions)
                             # set the sync node only if it has the same uri
-                            nuri = getNodeuri(n, m.publisher, m.subscriber, m.services)
+                            nuri = getNodeuri(
+                                n, m.publisher, m.subscriber, m.services)
                             state_node = master_state.getNode(n)
                             if state_node is not None and (state_node.uri == nuri or nuri is None):
                                 state_node.masteruri = m.masteruri
@@ -740,7 +791,8 @@ class MasterMonitor(ApplicationSession):
         code = -1
         if self.__masteruri_rpc is None:
             master = xmlrpcclient.ServerProxy(self.__masteruri)
-            code, message, self.__masteruri_rpc = master.getUri(self.ros_node_name)
+            code, message, self.__masteruri_rpc = master.getUri(
+                self.ros_node_name)
         return self.__masteruri_rpc if code >= 0 or self.__masteruri_rpc is not None else self.__masteruri
 
     def getMastername(self):
@@ -758,7 +810,8 @@ class MasterMonitor(ApplicationSession):
                 try:
                     master_port = urlparse(self.__masteruri).port
                     if master_port != 11311:
-                        self.__mastername = '%s_%d' % (self.__mastername, master_port)
+                        self.__mastername = '%s_%d' % (
+                            self.__mastername, master_port)
                 except:
                     pass
             except:
@@ -844,7 +897,6 @@ class MasterMonitor(ApplicationSession):
         '''
         return (str(self.getMasteruri()), getpass.getuser())
 
-
     def checkState(self, clear_cache=False):
         '''
         Gets the state from the ROS master and compares it to the stored state.
@@ -874,7 +926,8 @@ class MasterMonitor(ApplicationSession):
                     rospy.logwarn(timejump_msg)
                     if timejump_msg not in self._master_errors:
                         self._master_errors.append(timejump_msg)
-                    self._exit_timer = threading.Timer(5.0, self._timejump_exit)
+                    self._exit_timer = threading.Timer(
+                        5.0, self._timejump_exit)
                     self._exit_timer.start()
             if do_update:
                 self.updateSyncInfo()
@@ -890,15 +943,18 @@ class MasterMonitor(ApplicationSession):
             if result:
                 try:
                     result = {"timestamp": self.__new_master_state.timestamp}
-                    self.publish('ros.nodes.changed', json.dumps(result, cls=SelfEncoder))
+                    self.publish('ros.nodes.changed',
+                                 json.dumps(result, cls=SelfEncoder))
                 except Exception as cpe:
                     pass
                 self._multiple_screen_do_check = True
             return result
 
     def _timejump_exit(self):
-        rospy.logwarn('Shutdown yourself to avoid system instability because of time jump into past!\n')
-        rospy.signal_shutdown('Shutdown yourself to avoid system instability because of time jump into past')
+        rospy.logwarn(
+            'Shutdown yourself to avoid system instability because of time jump into past!\n')
+        rospy.signal_shutdown(
+            'Shutdown yourself to avoid system instability because of time jump into past')
 
     def reset(self):
         '''
@@ -948,11 +1004,13 @@ class MasterMonitor(ApplicationSession):
                 if node_uri:
                     socket.setdefaulttimeout(10)
                     p = xmlrpcclient.ServerProxy(node_uri)
-                    (code, statusMessage, ignore) = p.shutdown(rospy.get_name(), '[node manager] request from %s' % self.__mastername)
+                    (code, statusMessage, ignore) = p.shutdown(
+                        rospy.get_name(), '[node manager] request from %s' % self.__mastername)
                     if code == 1:
                         success = True
                     else:
-                        msg = "Error while shutting down node '%s': %s" % (name, statusMessage)
+                        msg = "Error while shutting down node '%s': %s" % (
+                            name, statusMessage)
                         rospy.logwarn(msg)
                         return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             except KeyError:
@@ -979,22 +1037,26 @@ class MasterMonitor(ApplicationSession):
                     if node_name in screen_dict:
                         screen_dict[node_name].screens.append(session_name)
                     else:
-                        screen_dict[node_name] = ScreenRepetitions(name=node_name, screens=[session_name])
+                        screen_dict[node_name] = ScreenRepetitions(
+                            name=node_name, screens=[session_name])
                 crossbar_msg: List(ScreenRepetitions) = []
                 for node_name, msg in screen_dict.items():
                     if len(msg.screens) > 1:
                         crossbar_msg.append(msg)
                 try:
-                    self.publish('ros.screen.multiple', json.dumps(crossbar_msg, cls=SelfEncoder))
+                    self.publish('ros.screen.multiple', json.dumps(
+                        crossbar_msg, cls=SelfEncoder))
                 except Exception:
                     pass
             time.sleep(1.0)
 
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
-        rospy.loginfo("setProviderList: {0}".format(json.dumps(provider_list, cls=SelfEncoder)))
+        rospy.loginfo("setProviderList: {0}".format(
+            json.dumps(provider_list, cls=SelfEncoder)))
         # notify changes
-        self.publish('ros.provider.list', json.dumps(provider_list, cls=SelfEncoder))
+        self.publish('ros.provider.list', json.dumps(
+            provider_list, cls=SelfEncoder))
 
     @wamp.register('ros.provider.get_list')
     def getProviderList(self) -> str:
@@ -1032,14 +1094,14 @@ class MasterMonitor(ApplicationSession):
                 try:
                     config_path = crossbar_start_server(self.crossbar_port)
                     if len(config_path) > 0:
-                        rospy.loginfo(f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws realm: {self.config.realm}, config: {config_path}")
+                        rospy.loginfo(
+                            f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
                     print(traceback.format_exc())
                 self.crossbar_connecting = False
                 self.crossbar_connected = False
                 time.sleep(2.0)
-
 
     async def crossbar_connect(self) -> None:
         current_task = asyncio.current_task()
@@ -1050,4 +1112,5 @@ class MasterMonitor(ApplicationSession):
         await asyncio.gather(task)
 
     def crossbar_reconnect(self):
-        asyncio.run_coroutine_threadsafe(self.crossbar_connect(), self.crossbar_loop)
+        asyncio.run_coroutine_threadsafe(
+            self.crossbar_connect(), self.crossbar_loop)

@@ -31,12 +31,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import time
 from python_qt_binding.QtCore import QObject
 from fkie_node_manager_daemon.common import isstring
 
 # from xml.dom import Node as DomNode #avoid aliasing
+
+
 class LaunchConfigException(Exception):
     pass
 

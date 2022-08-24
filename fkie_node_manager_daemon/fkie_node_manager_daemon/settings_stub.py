@@ -34,7 +34,8 @@ class SettingsStub(object):
         '''
         request = smsg.Filter()
         request.nslist.extend(nslist)
-        response = self.ss_stub.GetConfig(request, timeout=settings.GRPC_TIMEOUT)
+        response = self.ss_stub.GetConfig(
+            request, timeout=settings.GRPC_TIMEOUT)
         return response.data
 
     def set_config(self, data):

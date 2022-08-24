@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from threading import Thread, RLock
 try:
     from urlparse import urlparse  # python 2 compatibility
@@ -83,14 +82,16 @@ class MasterEntry(object):
                     # it is an IP, try to get the hostname
                     self._addresses.append(address)
                     # resolve the name in a thread
-                    thread = Thread(target=self._get_hostname, args=((address,)))
+                    thread = Thread(target=self._get_hostname,
+                                    args=((address,)))
                     thread.daemon = True
                     thread.start()
                 else:
                     # it is a hostname: add at the fist place and try to get an IP for this host
                     self._addresses.insert(0, address)
                     # resolve the name in a thread
-                    thread = Thread(target=self._get_address, args=((address,)))
+                    thread = Thread(target=self._get_address,
+                                    args=((address,)))
                     thread.daemon = True
                     thread.start()
 
@@ -176,7 +177,8 @@ class MasterEntry(object):
         if isinstance(item, MasterEntry):
             result = []
             if nmdurl.equal_uri(self.masteruri, item.masteruri):
-                result = set(self.addresses()).intersection(set(item.addresses()))
+                result = set(self.addresses()).intersection(
+                    set(item.addresses()))
             return len(result) > 0
         return False
 
@@ -254,7 +256,8 @@ class NameResolution(object):
                 nr = nr + 1
                 new_name = '%s_%d' % (mastername, nr)
                 mm = self.masteruri(new_name)
-            rospy.logwarn("master name '%s' is already assigned to '%s', rename to '%s'" % (mastername, mm, new_name))
+            rospy.logwarn("master name '%s' is already assigned to '%s', rename to '%s'" % (
+                mastername, mm, new_name))
             return new_name
         return mastername
 
@@ -337,7 +340,7 @@ class NameResolution(object):
                         break
         try:
             pass
-            #self.add_address(address)
+            # self.add_address(address)
             # if MasterEntry.is_legal_ip(address):
             #     (hostname, _, _) = socket.gethostbyaddr(address)
             #     return hostname

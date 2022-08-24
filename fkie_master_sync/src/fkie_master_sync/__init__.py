@@ -32,7 +32,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import sys
 
 import roslib
@@ -78,7 +77,8 @@ def main():
     '''
     # setup the loglevel
     try:
-        log_level = getattr(rospy, rospy.get_param('/%s/log_level' % PROCESS_NAME, "INFO"))
+        log_level = getattr(rospy, rospy.get_param(
+            '/%s/log_level' % PROCESS_NAME, "INFO"))
     except Exception as e:
         print("Error while set the log level: %s\n->INFO level will be used!" % e)
         log_level = rospy.INFO

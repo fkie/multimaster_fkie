@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import grpc
 import os
 import re
@@ -180,13 +179,16 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         :param str path: the absolute path of the launch file
         :param bool autostart: True to start all nodes after the launch file was loaded.
         '''
-        launch_config = LaunchConfig(path, monitor_servicer=self._monitor_servicer)
+        launch_config = LaunchConfig(
+            path, monitor_servicer=self._monitor_servicer)
         loaded, res_argv = launch_config.load([])
         if loaded:
-            rospy.logdebug("loaded %s\n  used args: %s" % (path, utf8(res_argv)))
+            rospy.logdebug("loaded %s\n  used args: %s" %
+                           (path, utf8(res_argv)))
             self._loaded_files[CfgId(path, '')] = launch_config
             if autostart:
-                start_thread = threading.Thread(target=self._autostart_nodes_threaded, args=(launch_config,))
+                start_thread = threading.Thread(
+                    target=self._autostart_nodes_threaded, args=(launch_config,))
                 start_thread.start()
         else:
             rospy.logwarn("load %s failed!" % (path))
@@ -198,7 +200,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         for _cfgid, launchcfg in self._loaded_files.items():
             n = launchcfg.get_node(node_name)
             if n is not None:
-                startcfg = launcher.create_start_config(node_name, launchcfg, '', masteruri='', loglevel='', reload_global_param=False)
+                startcfg = launcher.create_start_config(
+                    node_name, launchcfg, '', masteruri='', loglevel='', reload_global_param=False)
                 launcher.run_node(startcfg)
                 return
         raise Exception("Node '%s' not found!" % node_name)
@@ -212,7 +215,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             try:
                 if self._get_start_exclude(cfg, node_fullname):
                     # skip autostart
-                    rospy.logdebug("%s is in exclude list, skip autostart", node_fullname)
+                    rospy.logdebug(
+                        "%s is in exclude list, skip autostart", node_fullname)
                     continue
                 self._autostart_node(node_fullname, cfg)
             except Exception as err:
@@ -234,16 +238,19 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                     break
             if not start_now:
                 # Start the timer for waiting for the topic
-                start_timer = threading.Timer(3.0, self._autostart_node, args=(node_name, cfg))
+                start_timer = threading.Timer(
+                    3.0, self._autostart_node, args=(node_name, cfg))
                 start_timer.start()
         else:
             start_now = True
         if start_now:
-            startcfg = launcher.create_start_config(node_name, cfg, '', masteruri='', loglevel='', reload_global_param=False)
+            startcfg = launcher.create_start_config(
+                node_name, cfg, '', masteruri='', loglevel='', reload_global_param=False)
             start_delay = self._get_start_delay(cfg, node_name)
             if start_delay > 0:
                 # start timer for delayed start
-                start_timer = threading.Timer(start_delay, launcher.run_node, args=(startcfg,))
+                start_timer = threading.Timer(
+                    start_delay, launcher.run_node, args=(startcfg,))
                 start_timer.setDaemon(True)
                 start_timer.start()
             else:
@@ -273,10 +280,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             if topic:
                 import rosgraph
                 if rosgraph.names.is_private(topic):
-                    rospy.logwarn('Private for autostart required topic `%s` is ignored!' % topic)
+                    rospy.logwarn(
+                        'Private for autostart required topic `%s` is ignored!' % topic)
                     topic = ''
                 elif not rosgraph.names.is_global(topic):
-                    topic = rospy.names.ns_join(rosgraph.names.namespace(node), topic)
+                    topic = rospy.names.ns_join(
+                        rosgraph.names.namespace(node), topic)
         except Exception:
             pass
         return topic
@@ -285,8 +294,10 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         rospy.logdebug('GetLoadedFiles request:\n%s' % str(request))
         # self._register_callback(context)
         for _cfgid, lf in self._loaded_files.items():
-            reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname, path=lf.filename, masteruri=lf.masteruri, host=lf.host)
-            reply.args.extend(lmsg.Argument(name=name, value=value) for name, value in lf.resolve_dict.items())
+            reply = lmsg.LoadedFile(package=lf.packagename, launch=lf.launchname,
+                                    path=lf.filename, masteruri=lf.masteruri, host=lf.host)
+            reply.args.extend(lmsg.Argument(name=name, value=value)
+                              for name, value in lf.resolve_dict.items())
             yield reply
 
     def LoadLaunch(self, request, context):
@@ -295,21 +306,25 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         '''
         result = lmsg.LoadLaunchReply()
         launchfile = request.path
-        rospy.logdebug("Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s" % (launchfile, request.package, request.launch, request.masteruri, request.host, request.args))
+        rospy.logdebug("Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s" % (
+            launchfile, request.package, request.launch, request.masteruri, request.host, request.args))
         if not launchfile:
             # determine path from package name and launch name
             try:
-                paths = roslib.packages.find_resource(request.package, request.launch)
+                paths = roslib.packages.find_resource(
+                    request.package, request.launch)
                 if not paths:
                     result.status.code = FILE_NOT_FOUND
-                    result.status.error_msg = utf8("Launch files %s in package %s found!" % (request.launch, request.package))
+                    result.status.error_msg = utf8(
+                        "Launch files %s in package %s found!" % (request.launch, request.package))
                     return result
                 elif len(paths) > 1:
                     if request.force_first_file:
                         launchfile = paths[0]
                     else:
                         result.status.code = MULTIPLE_LAUNCHES
-                        result.status.error_msg = utf8("Multiple launch files with name %s in package %s found!" % (request.launch, request.package))
+                        result.status.error_msg = utf8(
+                            "Multiple launch files with name %s in package %s found!" % (request.launch, request.package))
                         for mp in paths:
                             result.path.append(mp)
                         rospy.logdebug("..load aborted, MULTIPLE_LAUNCHES")
@@ -317,42 +332,50 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 else:
                     launchfile = paths[0]
             except rospkg.ResourceNotFound as rnf:
-                    result.status.code = FILE_NOT_FOUND
-                    result.status.error_msg = utf8("Package %s not found: %s" % (request.package, rnf))
-                    rospy.logdebug("..load aborted, FILE_NOT_FOUND")
-                    return result
+                result.status.code = FILE_NOT_FOUND
+                result.status.error_msg = utf8(
+                    "Package %s not found: %s" % (request.package, rnf))
+                rospy.logdebug("..load aborted, FILE_NOT_FOUND")
+                return result
         result.path.append(launchfile)
         # it is already loaded?
         if (launchfile, request.masteruri) in list(self._loaded_files.keys()):
             result.status.code = ALREADY_OPEN
-            result.status.error_msg = utf8("Launch file %s already loaded!" % (launchfile))
+            result.status.error_msg = utf8(
+                "Launch file %s already loaded!" % (launchfile))
             rospy.logdebug("..load aborted, ALREADY_OPEN")
             return result
         # load launch configuration
         try:
             # test for required args
             provided_args = ["%s" % arg.name for arg in request.args]
-            launch_config = LaunchConfig(launchfile, masteruri=request.masteruri, host=request.host, monitor_servicer=self._monitor_servicer)
+            launch_config = LaunchConfig(
+                launchfile, masteruri=request.masteruri, host=request.host, monitor_servicer=self._monitor_servicer)
             # get the list with needed launch args
             req_args = launch_config.get_args()
             req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg, value in req_args_dict.items():
                     if arg not in provided_args:
-                        result.args.extend([lmsg.Argument(name=arg, value=value) for arg, value in req_args_dict.items()])
+                        result.args.extend(
+                            [lmsg.Argument(name=arg, value=value) for arg, value in req_args_dict.items()])
                         result.status.code = PARAMS_REQUIRED
                         rospy.logdebug("..load aborted, PARAMS_REQUIRED")
                         return result
-            argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args if arg.name in req_args_dict]
+            argv = ["%s:=%s" % (arg.name, arg.value)
+                    for arg in request.args if arg.name in req_args_dict]
             _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
-            result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
-            self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
+            result.args.extend([lmsg.Argument(name=name, value=value)
+                                for name, value in launch_config.resolve_dict.items()])
+            self._loaded_files[CfgId(
+                launchfile, request.masteruri)] = launch_config
             rospy.logdebug("..load complete!")
 
             # notify changes to crossbar GUI
             try:
-                self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                self.publish('ros.launch.changed',
+                             json.dumps({}, cls=SelfEncoder))
             except Exception as cpe:
                 pass
         except Exception as e:
@@ -371,28 +394,33 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         Loads launch file by crossbar request
         '''
         rospy.logdebug('Request to [ros.launch.load]')
-        result = LaunchLoadReply(paths = [], args = [], changed_nodes = [])
+        result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
 
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
-        
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+
         launchfile = request.path
-        rospy.logdebug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (launchfile, request.ros_package, request.launch, request.masteruri, request.host, request.args))
-        
+        rospy.logdebug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (
+            launchfile, request.ros_package, request.launch, request.masteruri, request.host, request.args))
+
         if not launchfile:
             # determine path from package name and launch name
             try:
-                paths = roslib.packages.find_resource(request.ros_package, request.launch)
+                paths = roslib.packages.find_resource(
+                    request.ros_package, request.launch)
                 if not paths:
                     result.status.code = 'FILE_NOT_FOUND'
-                    result.status.msg = utf8('Launch files %s in package %s found!' % (request.launch, request.ros_package))
+                    result.status.msg = utf8('Launch files %s in package %s found!' % (
+                        request.launch, request.ros_package))
                     return json.dumps(result, cls=SelfEncoder)
                 elif len(paths) > 1:
                     if request.force_first_file:
                         launchfile = paths[0]
                     else:
                         result.status.code = 'MULTIPLE_LAUNCHES'
-                        result.status.msg = utf8('Multiple launch files with name %s in package %s found!' % (request.launch, request.ros_package))
+                        result.status.msg = utf8('Multiple launch files with name %s in package %s found!' % (
+                            request.launch, request.ros_package))
                         for mp in paths:
                             result.paths.append(mp)
                         rospy.logdebug('..load aborted, MULTIPLE_LAUNCHES')
@@ -400,16 +428,18 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 else:
                     launchfile = paths[0]
             except rospkg.ResourceNotFound as rnf:
-                    result.status.code = 'FILE_NOT_FOUND'
-                    result.status.msg = utf8('Package %s not found: %s' % (request.ros_package, rnf))
-                    rospy.logdebug('..load aborted, FILE_NOT_FOUND')
-                    return json.dumps(result, cls=SelfEncoder)
+                result.status.code = 'FILE_NOT_FOUND'
+                result.status.msg = utf8(
+                    'Package %s not found: %s' % (request.ros_package, rnf))
+                rospy.logdebug('..load aborted, FILE_NOT_FOUND')
+                return json.dumps(result, cls=SelfEncoder)
         result.paths.append(launchfile)
 
         # it is already loaded?
         if (launchfile, request.masteruri) in list(self._loaded_files.keys()):
             result.status.code = 'ALREADY_OPEN'
-            result.status.msg = utf8('Launch file %s already loaded!' % (launchfile))
+            result.status.msg = utf8(
+                'Launch file %s already loaded!' % (launchfile))
             rospy.logdebug('..load aborted, ALREADY_OPEN')
             return json.dumps(result, cls=SelfEncoder)
 
@@ -417,33 +447,39 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         try:
             # test for required args
             provided_args = ['%s' % arg.name for arg in request.args]
-            launch_config = LaunchConfig(launchfile, masteruri=request.masteruri, host=request.host, monitor_servicer=self._monitor_servicer)
-            
+            launch_config = LaunchConfig(
+                launchfile, masteruri=request.masteruri, host=request.host, monitor_servicer=self._monitor_servicer)
+
             # get the list with needed launch args
             req_args = launch_config.get_args()
             req_args_dict = launch_config.argv2dict(req_args)
-            
+
             if request.request_args and req_args:
                 for arg, value in req_args_dict.items():
                     if arg not in provided_args:
                         # result.args.append([LaunchArgument(name=arg, value=value) for arg, value in req_args_dict.items()])
-                        result.args.append(LaunchArgument(name=arg, value=value))
-                        
+                        result.args.append(
+                            LaunchArgument(name=arg, value=value))
+
                 if len(result.args) > 0:
                     result.status.code = 'PARAMS_REQUIRED'
                     rospy.logdebug('..load aborted, PARAMS_REQUIRED')
                     return json.dumps(result, cls=SelfEncoder)
 
-            argv = ['%s:=%s' % (arg.name, arg.value) for arg in request.args if arg.name in req_args_dict]
+            argv = ['%s:=%s' % (arg.name, arg.value)
+                    for arg in request.args if arg.name in req_args_dict]
             _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
-            result.args.extend([LaunchArgument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
-            self._loaded_files[CfgId(launchfile, request.masteruri)] = launch_config
+            result.args.extend([LaunchArgument(name=name, value=value)
+                                for name, value in launch_config.resolve_dict.items()])
+            self._loaded_files[CfgId(
+                launchfile, request.masteruri)] = launch_config
             rospy.logdebug('..load complete!')
 
             # notify changes to crossbar GUI
             try:
-                self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                self.publish('ros.launch.changed',
+                             json.dumps({}, cls=SelfEncoder))
             except Exception as cpe:
                 pass
         except Exception as e:
@@ -461,7 +497,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         result = lmsg.LoadLaunchReply()
         result.path.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
-        rospy.logdebug("reload launch file: %s, masteruri: %s", request.path, request.masteruri)
+        rospy.logdebug("reload launch file: %s, masteruri: %s",
+                       request.path, request.masteruri)
         if cfgid in self._loaded_files:
             try:
                 cfg = self._loaded_files[cfgid]
@@ -471,17 +508,24 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 result.status.code = OK
                 # detect files changes
                 if stored_roscfg and cfg.roscfg:
-                    stored_values = [(name, utf8(p.value)) for name, p in stored_roscfg.params.items()]
-                    new_values = [(name, utf8(p.value)) for name, p in cfg.roscfg.params.items()]
+                    stored_values = [(name, utf8(p.value))
+                                     for name, p in stored_roscfg.params.items()]
+                    new_values = [(name, utf8(p.value))
+                                  for name, p in cfg.roscfg.params.items()]
                     # detect changes parameter
-                    paramset = set(name for name, _ in (set(new_values) - set(stored_values)))  # _:=value
+                    paramset = set(name for name, _ in (
+                        set(new_values) - set(stored_values)))  # _:=value
                     # detect new parameter
-                    paramset |= (set(cfg.roscfg.params.keys()) - set(stored_roscfg.params.keys()))
+                    paramset |= (set(cfg.roscfg.params.keys()) -
+                                 set(stored_roscfg.params.keys()))
                     # detect removed parameter
-                    paramset |= (set(stored_roscfg.params.keys()) - set(cfg.roscfg.params.keys()))
+                    paramset |= (set(stored_roscfg.params.keys()) -
+                                 set(cfg.roscfg.params.keys()))
                     # detect new nodes
-                    stored_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in stored_roscfg.nodes]
-                    new_nodes = [roslib.names.ns_join(item.namespace, item.name) for item in cfg.roscfg.nodes]
+                    stored_nodes = [roslib.names.ns_join(
+                        item.namespace, item.name) for item in stored_roscfg.nodes]
+                    new_nodes = [roslib.names.ns_join(
+                        item.namespace, item.name) for item in cfg.roscfg.nodes]
                     nodes2start = set(new_nodes) - set(stored_nodes)
                     # determine the nodes of the changed parameter
                     for p in paramset:
@@ -493,16 +537,18 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                         for new_n in cfg.roscfg.nodes:
                             if n.name == new_n.name and n.namespace == new_n.namespace:
                                 if n.args != new_n.args or n.remap_args != new_n.remap_args:
-                                    nodes2start.add(roslib.names.ns_join(n.namespace, n.name))
+                                    nodes2start.add(
+                                        roslib.names.ns_join(n.namespace, n.name))
                     # filter out anonymous nodes
                     for n in nodes2start:
                         if not re.search(r"\d{3,6}_\d{10,}", n):
                             result.changed_nodes.append(n)
 #                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
-                
+
                 # notify changes to crossbar GUI
                 try:
-                    self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                    self.publish('ros.launch.changed',
+                                 json.dumps({}, cls=SelfEncoder))
                 except Exception as cpe:
                     pass
             except Exception as e:
@@ -530,7 +576,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
 
                 # notify changes to crossbar GUI
                 try:
-                    self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                    self.publish('ros.launch.changed',
+                                 json.dumps({}, cls=SelfEncoder))
                 except Exception as cpe:
                     pass
             except Exception as e:
@@ -550,10 +597,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         rospy.logdebug('Request to [ros.launch.unload]')
 
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
 
         rospy.logdebug('UnloadLaunch request:\n%s' % str(request))
-        result = LaunchLoadReply(paths = [], changed_nodes = [], args = [])
+        result = LaunchLoadReply(paths=[], changed_nodes=[], args=[])
 
         result.paths.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
@@ -564,7 +612,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
 
                 # notify changes to crossbar GUI
                 try:
-                    self.publish('ros.launch.changed', json.dumps({}, cls=SelfEncoder))
+                    self.publish('ros.launch.changed',
+                                 json.dumps({}, cls=SelfEncoder))
                 except Exception as cpe:
                     pass
             except Exception as e:
@@ -587,7 +636,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             requested_files = list(self._loaded_files.keys())
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
-            reply = lmsg.LaunchContent(launch_file=cfgid.path, masteruri=lc.masteruri, host=lc.host)
+            reply = lmsg.LaunchContent(
+                launch_file=cfgid.path, masteruri=lc.masteruri, host=lc.host)
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
                 reply.node.append(node_fullname)
@@ -638,10 +688,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 if n.package == 'nodelet' and n.type == 'nodelet':
                     args = n.args.split(' ')
                     if len(args) == 3 and args[0] == 'load':
-                        nodelet_mngr = roslib.names.ns_join(n.namespace, args[2])
+                        nodelet_mngr = roslib.names.ns_join(
+                            n.namespace, args[2])
                         if nodelet_mngr not in nodelets:
                             nodelets[nodelet_mngr] = []
-                        nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
+                        nodelets[nodelet_mngr].append(
+                            roslib.names.ns_join(n.namespace, n.name))
             for mngr, ndl in nodelets.items():
                 nlmsg = lmsg.Nodelets(manager=mngr)
                 nlmsg.nodes.extend(ndl)
@@ -650,22 +702,26 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             associations = {}
             for n in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
-                associations_param = roslib.names.ns_join(node_fullname, 'nm/associations')
+                associations_param = roslib.names.ns_join(
+                    node_fullname, 'nm/associations')
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r'[;,\s]\s*', line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(item.namespace, split))
+                        values.append(roslib.names.ns_join(
+                            item.namespace, split))
                     associations[node_fullname] = values
                 # DEPRECATED 'associations'
-                associations_param = roslib.names.ns_join(node_fullname, 'associations')
+                associations_param = roslib.names.ns_join(
+                    node_fullname, 'associations')
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r'[;,\s]\s*', line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(item.namespace, split))
+                        values.append(roslib.names.ns_join(
+                            item.namespace, split))
                     associations[node_fullname] = values
             for node, ass in associations.items():
                 assmsg = lmsg.Associations(node=node)
@@ -680,8 +736,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         reply = []
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
-            reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host, 
-                            nodes=[], parameters=[], nodelets=[], associations=[])
+            reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host,
+                                     nodes=[], parameters=[], nodelets=[], associations=[])
 
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
@@ -697,10 +753,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 if n.package == 'nodelet' and n.type == 'nodelet':
                     args = n.args.split(' ')
                     if len(args) == 3 and args[0] == 'load':
-                        nodelet_mngr = roslib.names.ns_join(n.namespace, args[2])
+                        nodelet_mngr = roslib.names.ns_join(
+                            n.namespace, args[2])
                         if nodelet_mngr not in nodelets:
                             nodelets[nodelet_mngr] = []
-                        nodelets[nodelet_mngr].append(roslib.names.ns_join(n.namespace, n.name))
+                        nodelets[nodelet_mngr].append(
+                            roslib.names.ns_join(n.namespace, n.name))
             for mngr, ndl in nodelets.items():
                 nlmsg = LaunchNodelets(manager=mngr, nodes=ndl)
                 reply_lc.nodelets.append(nlmsg)
@@ -709,28 +767,32 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             associations = {}
             for n in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(n.namespace, n.name)
-                associations_param = roslib.names.ns_join(node_fullname, 'nm/associations')
+                associations_param = roslib.names.ns_join(
+                    node_fullname, 'nm/associations')
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r'[;,\s]\s*', line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(item.namespace, split))
+                        values.append(roslib.names.ns_join(
+                            item.namespace, split))
                     associations[node_fullname] = values
                 # DEPRECATED 'associations'
-                associations_param = roslib.names.ns_join(node_fullname, 'associations')
+                associations_param = roslib.names.ns_join(
+                    node_fullname, 'associations')
                 if associations_param in lc.roscfg.params:
                     line = lc.roscfg.params[associations_param].value
                     splits = re.split(r'[;,\s]\s*', line)
                     values = []
                     for split in splits:
-                        values.append(roslib.names.ns_join(item.namespace, split))
+                        values.append(roslib.names.ns_join(
+                            item.namespace, split))
                     associations[node_fullname] = values
             for node, ass in associations.items():
                 assmsg = LaunchAssociations(node=node, nodes=ass)
                 reply_lc.associations.append(assmsg)
             reply.append(reply_lc)
-        
+
         return json.dumps(reply, cls=SelfEncoder)
 
     def StartNode(self, request_iterator, context):
@@ -758,17 +820,20 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 if len(launch_configs) > 1:
                     result.status.code = MULTIPLE_LAUNCHES
                     result.status.error_msg = "Node '%s' found in multiple launch files" % request.name
-                    result.launch.extend([lcfg.filename for lcfg in launch_configs])
+                    result.launch.extend(
+                        [lcfg.filename for lcfg in launch_configs])
                     yield result
                 try:
                     result.launch.append(launch_configs[0].filename)
-                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param, cmd_prefix=request.cmd_prefix)
+                    startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel,
+                                                            logformat=request.logformat, reload_global_param=request.reload_global_param, cmd_prefix=request.cmd_prefix)
                     launcher.run_node(startcfg)
                     result.status.code = OK
                     yield result
                 except exceptions.BinarySelectionRequest as bsr:
                     result.status.code = MULTIPLE_BINARIES
-                    result.status.error_msg = "multiple binaries found for node '%s': %s" % (request.name, bsr.choices)
+                    result.status.error_msg = "multiple binaries found for node '%s': %s" % (
+                        request.name, bsr.choices)
                     result.path.extend(bsr.choices)
                     yield result
                 except grpc.RpcError as conerr:
@@ -778,12 +843,14 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             except exceptions.ResourceNotFound as err_nf:
                 result = lmsg.StartNodeReply(name=request.name)
                 result.status.code = ERROR
-                result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(err_nf))
+                result.status.error_msg = "Error while start node '%s': %s" % (
+                    request.name, utf8(err_nf))
                 yield result
             except Exception as _errr:
                 result = lmsg.StartNodeReply(name=request.name)
                 result.status.code = ERROR
-                result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
+                result.status.error_msg = "Error while start node '%s': %s" % (
+                    request.name, utf8(traceback.format_exc()))
                 yield result
 
     @wamp.register('ros.launch.start_node')
@@ -791,7 +858,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         rospy.logdebug('Request to [ros.launch.start_node]')
 
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
 
         result = LaunchNodeReply(name=request.name, paths=[], launch_files=[])
 
@@ -816,16 +884,19 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             if len(launch_configs) > 1:
                 result.status.code = 'MULTIPLE_LAUNCHES'
                 result.status.msg = "Node '%s' found in multiple launch files" % request.name
-                result.launch_files.extend([lcfg.filename for lcfg in launch_configs])
+                result.launch_files.extend(
+                    [lcfg.filename for lcfg in launch_configs])
                 return json.dumps(result, cls=SelfEncoder)
             try:
                 result.launch_files.append(launch_configs[0].filename)
-                startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param, cmd_prefix=request.cmd_prefix)
+                startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel,
+                                                        logformat=request.logformat, reload_global_param=request.reload_global_param, cmd_prefix=request.cmd_prefix)
                 launcher.run_node(startcfg)
                 result.status.code = 'OK'
             except exceptions.BinarySelectionRequest as bsr:
                 result.status.code = 'MULTIPLE_BINARIES'
-                result.status.msg = "multiple binaries found for node '%s': %s" % (request.name, bsr.choices)
+                result.status.msg = "multiple binaries found for node '%s': %s" % (
+                    request.name, bsr.choices)
                 result.paths.extend(bsr.choices)
                 return json.dumps(result, cls=SelfEncoder)
             except grpc.RpcError as conerr:
@@ -834,11 +905,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 return json.dumps(result, cls=SelfEncoder)
         except exceptions.ResourceNotFound as err_nf:
             result.status.code = 'ERROR'
-            result.status.msg = "Error while start node '%s': %s" % (request.name, utf8(err_nf))
+            result.status.msg = "Error while start node '%s': %s" % (
+                request.name, utf8(err_nf))
             return json.dumps(result, cls=SelfEncoder)
         except Exception as _errr:
             result.status.code = 'ERROR'
-            result.status.msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
+            result.status.msg = "Error while start node '%s': %s" % (
+                request.name, utf8(traceback.format_exc()))
             return json.dumps(result, cls=SelfEncoder)
         finally:
             return json.dumps(result, cls=SelfEncoder)
@@ -853,7 +926,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 result.status.code = OK
             except exceptions.BinarySelectionRequest as bsr:
                 result.status.code = MULTIPLE_BINARIES
-                result.status.error_msg = "multiple binaries found for node '%s': %s" % (request.name, bsr.choices)
+                result.status.error_msg = "multiple binaries found for node '%s': %s" % (
+                    request.name, bsr.choices)
                 result.launch.extend(bsr.choices)
         except grpc.RpcError as conerr:
             result.status.code = CONNECTION_ERROR
@@ -861,15 +935,18 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         except Exception:
             result = lmsg.StartNodeReply(name=request.name)
             result.status.code = ERROR
-            result.status.error_msg = "Error while start node '%s': %s" % (request.name, utf8(traceback.format_exc()))
+            result.status.error_msg = "Error while start node '%s': %s" % (
+                request.name, utf8(traceback.format_exc()))
         return result
 
     @wamp.register('ros.launch.get_included_files')
     def GetIncludedFiles(self, request_json: LaunchIncludedFilesRequest) -> List[LaunchIncludedFile]:
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
         path = request.path
-        rospy.logdebug('Request to [ros.launch.get_included_files]%s' % str(path))
+        rospy.logdebug(
+            'Request to [ros.launch.get_included_files]%s' % str(path))
         result = []
         try:
             pattern = INCLUDE_PATTERN
@@ -879,7 +956,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
             # search for loaded file and get the arguments
-            resolve_args = {arg.name: arg.value for arg in request.include_args}
+            resolve_args = {
+                arg.name: arg.value for arg in request.include_args}
             if not resolve_args:
                 for cfgid, lcfg in self._loaded_files.items():
                     if cfgid.path == request.path:
@@ -890,19 +968,22 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 file_size = 0
                 if inc_file.exists:
                     file_size = os.path.getsize(inc_file.inc_path)
-                lincf = LaunchIncludedFile(path = inc_file.path_or_str,
-                                           line_number = inc_file.line_number,
-                                           inc_path = inc_file.inc_path,
-                                           exists = inc_file.exists,
-                                           raw_inc_path = inc_file.raw_inc_path,
-                                           rec_depth = inc_file.rec_depth,
-                                           args = [LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
-                                           default_inc_args = [LaunchArgument(name=name, value=value) for name, value in inc_file.args.items()],
-                                           size = file_size
+                lincf = LaunchIncludedFile(path=inc_file.path_or_str,
+                                           line_number=inc_file.line_number,
+                                           inc_path=inc_file.inc_path,
+                                           exists=inc_file.exists,
+                                           raw_inc_path=inc_file.raw_inc_path,
+                                           rec_depth=inc_file.rec_depth,
+                                           args=[LaunchArgument(
+                                               name=name, value=value) for name, value in inc_file.args.items()],
+                                           default_inc_args=[LaunchArgument(
+                                               name=name, value=value) for name, value in inc_file.args.items()],
+                                           size=file_size
                                            )
                 result.append(lincf)
         except Exception:
-            rospy.logwarn("Can't get include files for %s: %s" % (request.path, traceback.format_exc()))
+            rospy.logwarn("Can't get include files for %s: %s" %
+                          (request.path, traceback.format_exc()))
         return json.dumps(result, cls=SelfEncoder)
 
     def GetIncludedFiles(self, request, context):
@@ -915,7 +996,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
             # search for loaded file and get the arguments
-            resolve_args = {arg.name: arg.value for arg in request.include_args}
+            resolve_args = {
+                arg.name: arg.value for arg in request.include_args}
             if not resolve_args:
                 for cfgid, lcfg in self._loaded_files.items():
                     if cfgid.path == request.path:
@@ -932,18 +1014,22 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 if reply.exists:
                     reply.size = os.path.getsize(reply.path)
                 reply.rec_depth = inc_file.rec_depth
-                reply.include_args.extend(lmsg.Argument(name=name, value=value) for name, value in inc_file.args.items())
+                reply.include_args.extend(lmsg.Argument(
+                    name=name, value=value) for name, value in inc_file.args.items())
                 # return each file one by one
                 yield reply
         except Exception:
-            rospy.logwarn("Can't get include files for %s: %s" % (request.path, traceback.format_exc()))
+            rospy.logwarn("Can't get include files for %s: %s" %
+                          (request.path, traceback.format_exc()))
 
     @wamp.register('ros.launch.interpret_path')
-    def InterpretPath(self, request_json: LaunchInterpretPathRequest)-> List[LaunchInterpretPathReply]:
+    def InterpretPath(self, request_json: LaunchInterpretPathRequest) -> List[LaunchInterpretPathReply]:
         # Covert input dictionary into a proper python object
-        request = json.loads(json.dumps(request_json), object_hook=lambda d: SimpleNamespace(**d))
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
         text = request.text
-        rospy.logdebug('Request to [ros.launch.interpret_path]: %s' % str(text))
+        rospy.logdebug(
+            'Request to [ros.launch.interpret_path]: %s' % str(text))
         args = {arg.name: arg.value for arg in request.args}
         result = []
         if text:
@@ -965,22 +1051,27 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                             req_args = []
                             for arg_name in args_in_name:
                                 if arg_name in args:
-                                    req_args.append(LaunchArgument(arg_name, args[arg_name]))
+                                    req_args.append(LaunchArgument(
+                                        arg_name, args[arg_name]))
                                 else:
                                     req_args.append(LaunchArgument(arg_name))
-                            reply = LaunchInterpretPathReply(text=search_for, status='PARAMS_REQUIRED', args=req_args)
+                            reply = LaunchInterpretPathReply(
+                                text=search_for, status='PARAMS_REQUIRED', args=req_args)
                             reply.status.code = 'PARAMS_REQUIRED'
                             result.append(reply)
                         else:
                             search_for_rpl = replace_arg(search_for, args)
-                            reply = LaunchInterpretPathReply(text=search_for, status='OK', path=search_for_rpl, exists=os.path.exists(search_for), args=request.args)
+                            reply = LaunchInterpretPathReply(
+                                text=search_for, status='OK', path=search_for_rpl, exists=os.path.exists(search_for), args=request.args)
                             result.append(reply)
             except Exception as err:
-                reply = LaunchInterpretPathReply(text=text, status='ERROR', args=request.args)
+                reply = LaunchInterpretPathReply(
+                    text=text, status='ERROR', args=request.args)
                 reply.status.error_msg = utf8(err)
                 result.append(reply)
         else:
-            reply = LaunchInterpretPathReply(text=text, status='ERROR', args=request.args)
+            reply = LaunchInterpretPathReply(
+                text=text, status='ERROR', args=request.args)
             reply.status.msg = utf8('empty request')
             result.append(reply)
         return json.dumps(result, cls=SelfEncoder)
@@ -1017,14 +1108,16 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                     resolve_args.update(lcfg.resolve_dict)
                     break
             # add mtimes for all included files
-            inc_files = find_included_files(request.path, True, True, INCLUDE_PATTERN, SEARCH_IN_EXT, resolve_args)
+            inc_files = find_included_files(
+                request.path, True, True, INCLUDE_PATTERN, SEARCH_IN_EXT, resolve_args)
             for inc_file in inc_files:
                 incf = inc_file.inc_path
                 if incf not in already_in:
                     mtime = 0
                     if os.path.exists(incf):
                         mtime = os.path.getmtime(incf)
-                    result.included_files.extend([lmsg.FileObj(path=incf, mtime=mtime)])
+                    result.included_files.extend(
+                        [lmsg.FileObj(path=incf, mtime=mtime)])
                     already_in.append(incf)
             return result
         except Exception:
@@ -1067,7 +1160,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             result.launch.extend([lcfg.filename for lcfg in launch_configs])
             return result
         result.launch.append(launch_configs[0].filename)
-        startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param)
+        startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri,
+                                                loglevel=request.loglevel, logformat=request.logformat, reload_global_param=request.reload_global_param)
         startcfg.fill_msg(result.startcfg)
         result.status.code = OK
         return result

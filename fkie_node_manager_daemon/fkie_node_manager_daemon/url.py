@@ -56,7 +56,8 @@ def nmduri(uri='', prefix='grpc://'):
     o = urlparse(muri)
     port = o.port
     if o.scheme not in ['grpc']:
-        raise ValueError("uri parameter does not contain a scheme of ['grpc']: %s" % uri)
+        raise ValueError(
+            "uri parameter does not contain a scheme of ['grpc']: %s" % uri)
     hostname = o.hostname
     if hostname in ['::']:
         hostname = get_host_name()
@@ -72,7 +73,7 @@ def nmdport():
     '''
     Returns the port for GRPC-server.
     The ROS_DOMAIN_ID increases the default port.
-    
+
     :rtype: int
     '''
     port = NMD_DEFAULT_PORT
@@ -129,7 +130,8 @@ def split(grpc_path, with_scheme=False):
     if not grpc_path:
         url = nmduri()
     if url and not url.startswith('grpc://'):
-        raise ValueError("Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
+        raise ValueError(
+            "Invalid grpc path to split: %s; `grpc` scheme missed!" % grpc_path)
     url_parse_result = urlparse(url)
     if with_scheme:
         return ("%s://%s" % (url_parse_result.scheme, url_parse_result.netloc), url_parse_result.path)

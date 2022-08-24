@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from datetime import datetime
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Signal
@@ -77,11 +76,14 @@ class LogWidget(QDockWidget):
         self._log_err_count = 0
         self._log_fatal_count = 0
         # load the UI file
-        log_dock_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ui', 'LogDockWidget.ui')
+        log_dock_file = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), 'ui', 'LogDockWidget.ui')
         loadUi(log_dock_file, self)
         self.setObjectName("LogWidget")
-        self.closeButton.setIcon(nm.settings().icon('crystal_clear_button_close.png'))
-        self.setFeatures(QDockWidget.DockWidgetFloatable | QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
+        self.closeButton.setIcon(nm.settings().icon(
+            'crystal_clear_button_close.png'))
+        self.setFeatures(QDockWidget.DockWidgetFloatable |
+                         QDockWidget.DockWidgetMovable | QDockWidget.DockWidgetClosable)
         # connect to the button signals
         self.clearCloseButton.clicked.connect(self._on_log_clear_close_clicked)
         self.closeButton.clicked.connect(self.hide)
@@ -108,9 +110,11 @@ class LogWidget(QDockWidget):
                             self.checkBox_info.setChecked(True)
                         break
             except rospy.ServiceException as e:
-                err_msg = "Service call '%s' failed: %s" % (service_name, utf8(e))
+                err_msg = "Service call '%s' failed: %s" % (
+                    service_name, utf8(e))
                 rospy.logwarn(err_msg)
-        self.checkBox_debug.stateChanged.connect(self._on_checkbox_debug_state_changed)
+        self.checkBox_debug.stateChanged.connect(
+            self._on_checkbox_debug_state_changed)
 
     def _on_checkbox_debug_state_changed(self, state):
         try:

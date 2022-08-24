@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import os
 import rospy
 import ruamel.yaml
@@ -45,10 +44,12 @@ GRPC_TIMEOUT = 15.0
 RESPAWN_SCRIPT = 'rosrun fkie_node_manager respawn'
 ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
-LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
+LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get(
+    'ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
 ''':var LOG_PATH: logging path where all screen configuration and log files are stored.'''
 
 SETTINGS_PATH = os.path.expanduser('~/.config/ros.fkie/')
+
 
 class Settings:
 
@@ -134,7 +135,8 @@ class Settings:
             else:
                 result = value
         except Exception as exc:
-            rospy.logdebug("Cant't get parameter '%s', full parameter path: '%s'" % (utf8(exc), param_name))
+            rospy.logdebug("Cant't get parameter '%s', full parameter path: '%s'" % (
+                utf8(exc), param_name))
         return result
 
     def set_param(self, param_name, value, tag=':value'):
@@ -167,7 +169,8 @@ class Settings:
                         changed = cfg_item[pname][val_tag] != value
                         cfg_item[pname][val_tag] = value
                     else:
-                        raise Exception('%s is a read only parameter!' % param_name)
+                        raise Exception(
+                            '%s is a read only parameter!' % param_name)
                 else:
                     changed = cfg_item[pname] != value
                     cfg_item[pname] = value
@@ -178,7 +181,8 @@ class Settings:
             if changed:
                 self.save()
         except Exception as exc:
-            rospy.logdebug("Cant't set parameter '%s', full parameter path: '%s'" % (utf8(exc), param_name))
+            rospy.logdebug("Cant't set parameter '%s', full parameter path: '%s'" % (
+                utf8(exc), param_name))
 
     def reload(self):
         '''
@@ -189,12 +193,15 @@ class Settings:
             try:
                 self._cfg = self.default()
                 with open(self.filename, 'r') as stream:
-                    result = ruamel.yaml.load(stream, Loader=ruamel.yaml.Loader)
+                    result = ruamel.yaml.load(
+                        stream, Loader=ruamel.yaml.Loader)
                     if result is None:
-                        rospy.loginfo('reset configuration file %s' % self.filename)
+                        rospy.loginfo('reset configuration file %s' %
+                                      self.filename)
                         self.save()
                     else:
-                        rospy.loginfo('loaded configuration from %s' % self.filename)
+                        rospy.loginfo(
+                            'loaded configuration from %s' % self.filename)
                         self._cfg = self._apply_recursive(result, self._cfg)
             except (ruamel.yaml.YAMLError, IOError) as exc:
                 rospy.loginfo('%s: use default configuration!' % utf8(exc))
@@ -207,10 +214,12 @@ class Settings:
         '''
         with open(self.filename, 'w') as stream:
             try:
-                ruamel.yaml.dump(self._cfg, stream, Dumper=ruamel.yaml.RoundTripDumper)
+                ruamel.yaml.dump(self._cfg, stream,
+                                 Dumper=ruamel.yaml.RoundTripDumper)
                 rospy.logdebug("Configuration saved to '%s'" % self.filename)
             except ruamel.yaml.YAMLError as exc:
-                rospy.logwarn("Cant't save configuration to '%s': %s" % (self.filename, utf8(exc)))
+                rospy.logwarn("Cant't save configuration to '%s': %s" % (
+                    self.filename, utf8(exc)))
 
     def yaml(self, _nslist=[]):
         '''
@@ -229,7 +238,8 @@ class Settings:
         :param str data: YAML as string representation.
         '''
         with self._mutex:
-            self._cfg = self._apply_recursive(ruamel.yaml.load(data, Loader=ruamel.yaml.Loader), self._cfg)
+            self._cfg = self._apply_recursive(ruamel.yaml.load(
+                data, Loader=ruamel.yaml.Loader), self._cfg)
             do_reset = self.param('global/reset', False)
             if do_reset:
                 rospy.loginfo("Reset configuration requested!")
@@ -245,7 +255,8 @@ class Settings:
             try:
                 if isinstance(value, dict):
                     if self._is_writable(value):
-                        new_cfg[key] = self._apply_recursive(new_data[key], value)
+                        new_cfg[key] = self._apply_recursive(
+                            new_data[key], value)
                 elif key not in [':hint', ':default', ':ro', ':min', ':max', ':alt']:
                     if isinstance(new_data, dict):
                         new_cfg[key] = new_data[key]
@@ -255,7 +266,8 @@ class Settings:
                     new_cfg[key] = value
             except Exception:
                 import traceback
-                print("_apply_recursive error:", traceback.format_exc(), "use old value:", value)
+                print("_apply_recursive error:",
+                      traceback.format_exc(), "use old value:", value)
                 new_cfg[key] = value
         return new_cfg
 

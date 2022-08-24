@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject
 import os
 import codecs
@@ -54,7 +53,8 @@ class History(QObject):
         self.PARAM_CACHE = self.loadCache(nm.settings().PARAM_HISTORY_FILE)
 
     def storeAll(self):
-        self.storeCache(nm.settings().PARAM_HISTORY_FILE, self.PARAM_CACHE, nm.settings().param_history_length)
+        self.storeCache(nm.settings().PARAM_HISTORY_FILE,
+                        self.PARAM_CACHE, nm.settings().param_history_length)
 
     def cachedParamValues(self, key):
         try:
@@ -117,7 +117,8 @@ class History(QObject):
                             ignored[key] = (value, utf8(e))
                         except Exception:
                             import traceback
-                            rospy.logwarn("Storing history aborted: %s", traceback.format_exc(3))
+                            rospy.logwarn(
+                                "Storing history aborted: %s", traceback.format_exc(3))
                         count += 1
                     else:
                         break

@@ -49,6 +49,7 @@ class PathItem:
     :param int size: size, in bytes, of path
     :param str path_type: one of types {file, dir, symlink, package}
     '''
+
     def __init__(self, path: str, mtime: float, size: int, path_type: str) -> None:
         self.path = path
         self.mtime = mtime
@@ -67,6 +68,7 @@ class LogPathItem:
     :param str ros_log: the absolute path to the ros log file.
     :param bool ros_log_exists: False if the file does not exists.
     '''
+
     def __init__(self, node: str, screen_log: str = '', screen_log_exists: bool = False, ros_log: str = '', ros_log_exists: bool = False) -> None:
         self.node = node
         self.screen_log = screen_log

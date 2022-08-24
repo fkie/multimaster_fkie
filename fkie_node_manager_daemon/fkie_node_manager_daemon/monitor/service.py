@@ -77,12 +77,15 @@ class Service:
         self._settings = settings
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
-        self.use_diagnostics_agg = settings.param('global/use_diagnostics_agg', False)
+        self.use_diagnostics_agg = settings.param(
+            'global/use_diagnostics_agg', False)
         self._sub_diag = None
         if self.use_diagnostics_agg:
-            self._sub_diag = nmd.rosnode.create_subscription(DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
+            self._sub_diag = nmd.rosnode.create_subscription(
+                DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
         else:
-            self._sub_diag = nmd.rosnode.create_subscription(DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
+            self._sub_diag = nmd.rosnode.create_subscription(
+                DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
         hostname = get_host_name()
 
         self.sensors = []
@@ -102,9 +105,11 @@ class Service:
                 nmd.rosnode.destroy_subscription(self._sub_diag)
                 self._sub_diag = None
             if value:
-                self._sub_diag = nmd.rosnode.create_subscription(DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
+                self._sub_diag = nmd.rosnode.create_subscription(
+                    DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
             else:
-                self._sub_diag = nmd.rosnode.create_subscription(DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
+                self._sub_diag = nmd.rosnode.create_subscription(
+                    DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
             self.use_diagnostics_agg = value
 
     def _callback_diagnostics(self, msg: DiagnosticArray):
@@ -122,24 +127,26 @@ class Service:
                     diag_obj.timestamp = stamp
                     self._diagnostics.append(diag_obj)
 
-    def get_system_diagnostics(self, filter_level:list=[], filter_ts: float=0):
+    def get_system_diagnostics(self, filter_level: list = [], filter_ts: float = 0):
         result = DiagnosticArray()
         with self._mutex:
             now = self._clock.now()
-            result.header.stamp =  self._clock.now().to_msg()  # rospy.Time.from_sec(nowsec)
+            result.header.stamp = self._clock.now().to_msg()  # rospy.Time.from_sec(nowsec)
             for sensor in self.sensors:
-                diag_msg = sensor.last_state(rostime2float(now), filter_level, filter_ts)
+                diag_msg = sensor.last_state(
+                    rostime2float(now), filter_level, filter_ts)
                 if diag_msg is not None:
                     result.status.append(diag_msg)
         return result
 
-    def get_diagnostics(self, filter_level:list=[], filter_ts: float=0):
+    def get_diagnostics(self, filter_level: list = [], filter_ts: float = 0):
         result = DiagnosticArray()
-        result.header.stamp = self._clock.now().to_msg()  # rospy.Time.from_sec(time.time())
+        # rospy.Time.from_sec(time.time())
+        result.header.stamp = self._clock.now().to_msg()
         with self._mutex:
             for diag_obj in self._diagnostics:
                 if diag_obj.timestamp >= filter_ts:
-#                    if int.from_bytes(diag_obj.msg.level, byteorder='big') >= filter_level:
+                    #                    if int.from_bytes(diag_obj.msg.level, byteorder='big') >= filter_level:
                     if diag_obj.msg.level in filter_level:
                         result.status.append(diag_obj.msg)
         return result
@@ -152,4 +159,3 @@ class Service:
             if self._sub_diag is not None:
                 nmd.rosnode.destroy_subscription(self._sub_diag)
                 self._sub_diag = None
-

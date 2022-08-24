@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QPoint, QRect, Qt, Signal
 import os
 
@@ -50,7 +49,8 @@ class DetachableTabWidget(QTabWidget):
     '''
     This class was overloaded to close tabs on middle mouse click
     '''
-    detach_signal = Signal(str, QWidget, QPoint, QRect, bool)  # bool: True if double click
+    detach_signal = Signal(str, QWidget, QPoint, QRect,
+                           bool)  # bool: True if double click
     close_tab_request_signal = Signal(QTabWidget, int)
     tab_removed_signal = Signal(QWidget)
     empty_tabbar_signal = Signal()
@@ -128,7 +128,8 @@ class DetachableTabWidget(QTabWidget):
         '''
         content_widget = self.widget(index)
         if content_widget is not None:
-            self.detach_signal.emit(self.tabText(index), content_widget, point, content_widget.frameGeometry(), by_double_click)
+            self.detach_signal.emit(self.tabText(
+                index), content_widget, point, content_widget.frameGeometry(), by_double_click)
 
     # def event(self, event):
 
@@ -169,6 +170,3 @@ class DetachableTabWidget(QTabWidget):
         '''
         while (self.count() > 0):
             self.removeTab(0)
-
-
-

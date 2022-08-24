@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import psutil
 import rospy
 import time
@@ -46,7 +45,8 @@ class CpuTemperatur(SensorInterface):
     def __init__(self, hostname='', interval=5.0, warn_level=85.0):
         # self._cpu_temp_warn = rospy.get_param('~cpu_temp_warn', warn_level)
         self._cpu_temp_warn = warn_level
-        SensorInterface.__init__(self, hostname, sensorname='CPU Temperature', interval=interval)
+        SensorInterface.__init__(
+            self, hostname, sensorname='CPU Temperature', interval=interval)
 
     def reload_parameter(self, settings):
         pass
@@ -69,7 +69,8 @@ class CpuTemperatur(SensorInterface):
                         if current > max_temp:
                             max_temp = current
             if max_temp > warn_level:
-                diag_msg = 'CPU Temperature: %.2f degree (warn level >%.2f)' % (max_temp, self._cpu_temp_warn)
+                diag_msg = 'CPU Temperature: %.2f degree (warn level >%.2f)' % (
+                    max_temp, self._cpu_temp_warn)
             diag_vals.append(KeyValue(key='Max [degree]', value=max_temp))
             # Update status
             with self.mutex:
@@ -80,5 +81,6 @@ class CpuTemperatur(SensorInterface):
         except Exception as error:
             import traceback
             print(traceback.format_exc())
-            rospy.logwarn("Sensor temperatures are not checked because of error: %s" % utf8(error))
+            rospy.logwarn(
+                "Sensor temperatures are not checked because of error: %s" % utf8(error))
             self._interval = 0

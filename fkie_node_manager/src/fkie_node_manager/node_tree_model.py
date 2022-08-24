@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QFile, QRect, Qt, Signal
 from python_qt_binding.QtGui import QIcon, QImage, QStandardItem, QStandardItemModel
 try:
@@ -175,7 +174,8 @@ class GroupItem(QStandardItem):
             name = namespace(self._name)
         result = name
         if self.parent_item is not None:
-            result = normns(self.parent_item.get_namespace() + rospy.names.SEP) + normns(result + rospy.names.SEP)
+            result = normns(self.parent_item.get_namespace() +
+                            rospy.names.SEP) + normns(result + rospy.names.SEP)
         return normns(result)
 
     def count_nodes(self):
@@ -215,13 +215,17 @@ class GroupItem(QStandardItem):
             for groupname, descr in groups.items():
                 try:
                     nodes = descr['nodes']
-                    def_list = ['\A' + n.strip().replace('*', '.*') + '\Z' for n in nodes]
+                    def_list = ['\A' + n.strip().replace('*', '.*') +
+                                '\Z' for n in nodes]
                     if def_list:
-                        self._re_cap_nodes[(config, ns, groupname)] = re.compile('|'.join(def_list), re.I)
+                        self._re_cap_nodes[(config, ns, groupname)] = re.compile(
+                            '|'.join(def_list), re.I)
                     else:
-                        self._re_cap_nodes[(config, ns, groupname)] = re.compile('\b', re.I)
+                        self._re_cap_nodes[(config, ns, groupname)] = re.compile(
+                            '\b', re.I)
                 except Exception:
-                    rospy.logwarn("create_cap_nodes_pattern: %s" % traceback.format_exc(1))
+                    rospy.logwarn("create_cap_nodes_pattern: %s" %
+                                  traceback.format_exc(1))
 
     def add_capabilities(self, config, capabilities, masteruri):
         '''
@@ -242,7 +246,8 @@ class GroupItem(QStandardItem):
                 # create nodes for each group
                 nodes = descr['nodes']
                 if nodes:
-                    groupItem = self.get_group_item(roslib.names.ns_join(ns, group), nocreate=False)
+                    groupItem = self.get_group_item(
+                        roslib.names.ns_join(ns, group), nocreate=False)
                     groupItem.descr_name = group
                     if descr['type']:
                         groupItem.descr_type = descr['type']
@@ -251,7 +256,8 @@ class GroupItem(QStandardItem):
                     if descr['images']:
                         groupItem.descr_images = list(descr['images'])
                     # move the nodes from host to the group
-                    group_changed = self.move_nodes2group(groupItem, config, ns, group, self)
+                    group_changed = self.move_nodes2group(
+                        groupItem, config, ns, group, self)
                     # create new or update existing items in the group
                     for node_name in nodes:
                         # do not add nodes with * in the name
@@ -265,9 +271,11 @@ class GroupItem(QStandardItem):
                                 items = self.get_node_items_by_name(node_name)
                                 if items:
                                     # copy the state of the existing node
-                                    groupItem.add_node(items[0].node_info, config)
+                                    groupItem.add_node(
+                                        items[0].node_info, config)
                                 elif config:
-                                    groupItem.add_node(NodeInfo(node_name, masteruri), config)
+                                    groupItem.add_node(
+                                        NodeInfo(node_name, masteruri), config)
                                 group_changed = True
                     if group_changed:
                         groupItem.update_displayed_config()
@@ -295,7 +303,8 @@ class GroupItem(QStandardItem):
                     group_item._add_row_sorted(row)
                     group_changed = True
             elif isinstance(item, GroupItem) and not item.is_group:
-                group_changed = item.move_nodes2group(group_item, config, ns, groupname, host_item)
+                group_changed = item.move_nodes2group(
+                    group_item, config, ns, groupname, host_item)
         if self_changed:
             self.update_displayed_config()
             self.updateIcon()
@@ -386,7 +395,8 @@ class GroupItem(QStandardItem):
             item = self.child(i)
             if isinstance(item, GroupItem):
                 if recursive:
-                    result[len(result):] = item.get_node_items_by_name(node_name)
+                    result[len(result):] = item.get_node_items_by_name(
+                        node_name)
             elif isinstance(item, NodeItem) and item == node_name:
                 return [item]
         return result
@@ -403,12 +413,11 @@ class GroupItem(QStandardItem):
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, GroupItem):
-                    result[len(result):] = item.get_node_items_by_cfg(cfg)
+                result[len(result):] = item.get_node_items_by_cfg(cfg)
             elif isinstance(item, NodeItem):
                 if cfg in item.cfgs:
                     result.append(item)
         return result
-
 
     def get_node_items(self, recursive=True):
         '''
@@ -456,7 +465,8 @@ class GroupItem(QStandardItem):
                     return item
                 elif item > lns and not nocreate:
                     items = []
-                    newItem = GroupItem(lns, self, is_group=(is_group and not rns))
+                    newItem = GroupItem(
+                        lns, self, is_group=(is_group and not rns))
                     items.append(newItem)
                     cfgitem = CellItem(group_name, newItem)
                     items.append(cfgitem)
@@ -495,7 +505,8 @@ class GroupItem(QStandardItem):
             group_item = self
             if type(group_item) == HostItem:
                 # insert in the group
-                group_item = self.get_group_item(namespace(node.name), is_group=False)
+                group_item = self.get_group_item(
+                    namespace(node.name), is_group=False)
             # insert in order
             new_item_row = NodeItem.newNodeRow(node.name, node.masteruri)
             group_item._add_row_sorted(new_item_row)
@@ -538,7 +549,8 @@ class GroupItem(QStandardItem):
                 # set the running state of the node to None
                 if fixed_node_names is not None:
                     if item.name not in fixed_node_names:
-                        item.set_node_info(NodeInfo(item.name, item.node_info.masteruri))
+                        item.set_node_info(
+                            NodeInfo(item.name, item.node_info.masteruri))
                 if not (item.has_configs() or item.is_running() or item.published or item.subscribed or item.services):
                     removed = True
                     self._remove_row(i)
@@ -638,7 +650,7 @@ class GroupItem(QStandardItem):
                     for item in items:
                         # update the node item
                         run_changed = item.set_node_info(node)
-                        #updated_nodes.append(node)
+                        # updated_nodes.append(node)
                         if run_changed:
                             updated_nodes.append(node)
                 elif create_nodes:
@@ -682,19 +694,23 @@ class GroupItem(QStandardItem):
           informations. This nodes are running on remote host, but are not
           syncronized because of filter or errors.
         '''
-        ignore = ['/master_sync', '/master_discovery', '/node_manager', '/node_manager_daemon']
+        ignore = ['/master_sync', '/master_discovery',
+                  '/node_manager', '/node_manager_daemon']
         for i in range(self.rowCount()):
             item = self.child(i)
             if isinstance(item, GroupItem):
                 item.set_duplicate_nodes(running_nodes, is_sync_running)
             elif isinstance(item, NodeItem):
                 if is_sync_running:
-                    item.is_ghost = (item.node_info.uri is None and (item.name in running_nodes and running_nodes[item.name] == item.node_info.masteruri))
-                    item.has_running = (item.node_info.uri is None and item.name not in ignore and (item.name in running_nodes and running_nodes[item.name] != item.node_info.masteruri))
+                    item.is_ghost = (item.node_info.uri is None and (
+                        item.name in running_nodes and running_nodes[item.name] == item.node_info.masteruri))
+                    item.has_running = (item.node_info.uri is None and item.name not in ignore and (
+                        item.name in running_nodes and running_nodes[item.name] != item.node_info.masteruri))
                 else:
                     if item.is_ghost:
                         item.is_ghost = False
-                    item.has_running = (item.node_info.uri is None and item.name not in ignore and (item.name in running_nodes))
+                    item.has_running = (item.node_info.uri is None and item.name not in ignore and (
+                        item.name in running_nodes))
 
     def updateIcon(self):
         if isinstance(self, HostItem):
@@ -709,7 +725,8 @@ class GroupItem(QStandardItem):
             item = self.child(i)
             if isinstance(item, (GroupItem, NodeItem)):
                 if item.state == NodeItem.STATE_WARNING:
-                    self.setIcon(nm.settings().icon('crystal_clear_warning.png'))
+                    self.setIcon(nm.settings().icon(
+                        'crystal_clear_warning.png'))
                     self._state = NodeItem.STATE_WARNING
                     if self.parent_item is not None:
                         self.parent_item.updateIcon()
@@ -729,7 +746,8 @@ class GroupItem(QStandardItem):
                     if item.diagnostic_level > self.diagnostic_level:
                         self.diagnostic_level = item.diagnostic_level
         if self.diagnostic_level > 0:
-            self.setIcon(NodeItem._diagnostic_level2icon(self.diagnostic_level))
+            self.setIcon(NodeItem._diagnostic_level2icon(
+                self.diagnostic_level))
         else:
             if has_duplicate:
                 self._state = NodeItem.STATE_DUPLICATE
@@ -787,7 +805,8 @@ class GroupItem(QStandardItem):
                         tooltip += '<b><u>Detailed description:</u></b>'
                         tooltip += examples.html_body(utf8(self.descr))
                 except Exception:
-                    rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
+                    rospy.logwarn(
+                        "Error while generate description for a tooltip: %s", traceback.format_exc(1))
                     tooltip += '<br>'
             # get nodes
             nodes = []
@@ -842,9 +861,11 @@ class GroupItem(QStandardItem):
                 has_launches = NodeItem.has_launch_cfgs(cfgs)
                 has_defaults = NodeItem.has_default_cfgs(cfgs)
                 if has_launches and has_defaults:
-                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file_def_cfg.png'))
+                    cfg_col.setIcon(nm.settings().icon(
+                        'crystal_clear_launch_file_def_cfg.png'))
                 elif has_launches:
-                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file.png'))
+                    cfg_col.setIcon(nm.settings().icon(
+                        'crystal_clear_launch_file.png'))
                 elif has_defaults:
                     cfg_col.setIcon(nm.settings().icon('default_cfg.png'))
                 else:
@@ -941,7 +962,8 @@ class HostItem(GroupItem):
         self._local = None
         self._diagnostics = []
         name = self.create_host_description(master_entry)
-        GroupItem.__init__(self, name, parent, has_remote_launched_nodes=self._has_remote_launched_nodes)
+        GroupItem.__init__(
+            self, name, parent, has_remote_launched_nodes=self._has_remote_launched_nodes)
         self.descr_type = self.descr_name = self.descr = ''
         self.sysmon_state = False
         self.local = local
@@ -989,7 +1011,8 @@ class HostItem(GroupItem):
                 self.setIcon(QIcon(image_file))
             else:
                 if self._local:
-                    self.setIcon(nm.settings().icon('crystal_clear_miscellaneous.png'))
+                    self.setIcon(nm.settings().icon(
+                        'crystal_clear_miscellaneous.png'))
                 else:
                     self.setIcon(nm.settings().icon('remote.png'))
 
@@ -1052,30 +1075,41 @@ class HostItem(GroupItem):
                 try:
                     if self.descr:
                         tooltip += '<b><u>Detailed description:</u></b>'
-                        tooltip += examples.html_body(self.descr, input_encoding='utf8')
+                        tooltip += examples.html_body(self.descr,
+                                                      input_encoding='utf8')
                 except Exception:
-                    rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
+                    rospy.logwarn(
+                        "Error while generate description for a tooltip: %s", traceback.format_exc(1))
                     tooltip += '<br>'
         tooltip += '<h3>%s</h3>' % self.mastername
         tooltip += '<font size="+1"><i>%s</i></font><br>' % self.masteruri
-        tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (self.hostname, ' %s' % self.addresses if self.addresses else '')
+        tooltip += '<font size="+1">Host: <b>%s%s</b></font><br>' % (
+            self.hostname, ' %s' % self.addresses if self.addresses else '')
         if extended:
-            tooltip += '<a href="open-sync-dialog://%s">open sync dialog</a>' % (utf8(self.masteruri).replace('http://', ''))
+            tooltip += '<a href="open-sync-dialog://%s">open sync dialog</a>' % (
+                utf8(self.masteruri).replace('http://', ''))
             tooltip += '<p>'
-            tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (utf8(self.masteruri).replace('http://', ''))
+            tooltip += '<a href="show-all-screens://%s">show all screens</a>' % (
+                utf8(self.masteruri).replace('http://', ''))
             tooltip += '<p>'
-            tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (self.masteruri.replace('http://', ''), self.hostname)
+            tooltip += '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (
+                self.masteruri.replace('http://', ''), self.hostname)
             tooltip += '<p>'
-            tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (self.hostname, self.hostname, self.hostname)
+            tooltip += '<a href="poweroff://%s" title="calls `sudo poweroff` at `%s` via SSH">poweroff `%s`</a>' % (
+                self.hostname, self.hostname, self.hostname)
             tooltip += '<p>'
-            tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(self.masteruri).replace('http://', '')
+            tooltip += '<a href="remove-all-launch-server://%s">kill all launch server</a>' % utf8(
+                self.masteruri).replace('http://', '')
             tooltip += '<p>'
             if self.local:
                 icon_path_settings = nm.settings().icon_path('crystal_clear_settings_24.png')
-                sysmon_setup_str = '<a href="nmd-cfg://%s" title="Configure Daemon"><img src="%s" alt="configure"></a>' % (utf8(self.masteruri).replace('http://', ''), icon_path_settings)
+                sysmon_setup_str = '<a href="nmd-cfg://%s" title="Configure Daemon"><img src="%s" alt="configure"></a>' % (
+                    utf8(self.masteruri).replace('http://', ''), icon_path_settings)
                 sysmon_state_str = 'disable' if self.sysmon_state else 'enable'
-                sysmon_switch_str = '<a href="sysmon-switch://%s">%s</a>' % (utf8(self.masteruri).replace('http://', ''), sysmon_state_str)
-                tooltip += '<h3>System Monitoring: (%s) %s</h3>' % (sysmon_switch_str, sysmon_setup_str)
+                sysmon_switch_str = '<a href="sysmon-switch://%s">%s</a>' % (
+                    utf8(self.masteruri).replace('http://', ''), sysmon_state_str)
+                tooltip += '<h3>System Monitoring: (%s) %s</h3>' % (
+                    sysmon_switch_str, sysmon_setup_str)
                 if self._diagnostics:
                     for diag in self._diagnostics:
                         try:
@@ -1092,13 +1126,17 @@ class HostItem(GroupItem):
                                     stamp = val.value
                                 else:
                                     others.append((val.key, val.value))
-                            tooltip += '\n<b>%s:</b> <font color=grey>%s</font>' % (diag.name, stamp)
+                            tooltip += '\n<b>%s:</b> <font color=grey>%s</font>' % (
+                                diag.name, stamp)
                             if diag.level > 0:
-                                tooltip += '\n<dt><font color="red">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                                tooltip += '\n<dt><font color="red">%s</font></dt>' % (
+                                    diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                             else:
-                                tooltip += '\n<dt><font color="grey">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                                tooltip += '\n<dt><font color="grey">%s</font></dt>' % (
+                                    diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                             if free is not None:
-                                tooltip += '\n<dt><em>%s:</em> %s (%s%%)</dt>' % ('Free', free, free_percent)
+                                tooltip += '\n<dt><em>%s:</em> %s (%s%%)</dt>' % (
+                                    'Free', free, free_percent)
                             cpu_processes = 3
                             for key, value in others:
                                 key_fmt = key
@@ -1117,15 +1155,19 @@ class HostItem(GroupItem):
                                     pid = self._pid_from_str(val_fmt)
                                     if pid:
                                         kill_ref = ' <a href="kill-pid://pid%s">kill</a>' % pid
-                                    tooltip += '\n<dt><font color="red">%s</font>%s</dt>' % (val_fmt, kill_ref)
+                                    tooltip += '\n<dt><font color="red">%s</font>%s</dt>' % (
+                                        val_fmt, kill_ref)
                                     cpu_processes -= 1
                                 else:
-                                    tooltip += '\n<dt><em>%s:</em> %s</dt>' % (key_fmt, val_fmt)
+                                    tooltip += '\n<dt><em>%s:</em> %s</dt>' % (
+                                        key_fmt, val_fmt)
                             if cpu_processes > 0 and diag.name == 'CPU Load':
                                 for _idx in range(cpu_processes):
-                                    tooltip += '\n<dt><font color="grey">%s</font></dt>' % ('--')
+                                    tooltip += '\n<dt><font color="grey">%s</font></dt>' % (
+                                        '--')
                         except Exception as err:
-                            tooltip += '\n<dt><font color="red">%s</font></dt>' % (utf8(err))
+                            tooltip += '\n<dt><font color="red">%s</font></dt>' % (
+                                utf8(err))
                         tooltip += '<br>'
 
         # get sensors
@@ -1138,9 +1180,11 @@ class HostItem(GroupItem):
             tooltip += '<br>'
             tooltip += '<b><u>Capabilities:</u></b>'
             try:
-                tooltip += examples.html_body('- %s' % ('\n- '.join(capabilities)), input_encoding='utf8')
+                tooltip += examples.html_body('- %s' %
+                                              ('\n- '.join(capabilities)), input_encoding='utf8')
             except Exception:
-                rospy.logwarn("Error while generate description for a tooltip: %s", traceback.format_exc(1))
+                rospy.logwarn(
+                    "Error while generate description for a tooltip: %s", traceback.format_exc(1))
         return '<div>%s</div>' % tooltip if tooltip else ''
 
     def _pid_from_str(self, string):
@@ -1225,7 +1269,8 @@ class NodeItem(QStandardItem):
 #                  }
         self._cfgs = []
         self.launched_cfg = None  # is used to store the last configuration to launch the node
-        self.next_start_cfg = None  # is used to set the configuration for next start of the node
+        # is used to set the configuration for next start of the node
+        self.next_start_cfg = None
         self._std_config = None  # it's config with empty name. for default proposals
         self._is_ghost = False
         self._has_running = False
@@ -1239,7 +1284,8 @@ class NodeItem(QStandardItem):
         self._with_namespace = rospy.names.SEP in node_info.name
         self.kill_on_stop = False
         self._kill_parameter_handler = ParameterHandler()
-        self._kill_parameter_handler.parameter_values_signal.connect(self._on_kill_param_values)
+        self._kill_parameter_handler.parameter_values_signal.connect(
+            self._on_kill_param_values)
 
     @property
     def state(self):
@@ -1280,7 +1326,8 @@ class NodeItem(QStandardItem):
             self.setText(self._node_info.name)
             self._with_namespace = rospy.names.SEP in self._node_info.name
         else:
-            new_name = self._node_info.name.replace(parent_item.get_namespace(), '', 1)
+            new_name = self._node_info.name.replace(
+                parent_item.get_namespace(), '', 1)
             self.setText(new_name)
             self._with_namespace = rospy.names.SEP in new_name
 
@@ -1308,7 +1355,8 @@ class NodeItem(QStandardItem):
             self._node_info._publishedTopics = list(node_info.publishedTopics)
         if self._node_info.subscribedTopics != node_info.subscribedTopics:
             abbos_changed = True
-            self._node_info._subscribedTopics = list(node_info.subscribedTopics)
+            self._node_info._subscribedTopics = list(
+                node_info.subscribedTopics)
         if self._node_info.services != node_info.services:
             abbos_changed = True
             self._node_info._services = list(node_info.services)
@@ -1330,7 +1378,8 @@ class NodeItem(QStandardItem):
                 self.parent_item.updateIcon()
         if run_changed and self.is_running():
             # 'kill_on_stop' is deprecated
-            self._kill_parameter_handler.requestParameterValues(self.masteruri, [roslib.names.ns_join(self.name, 'kill_on_stop'), roslib.names.ns_join(self.name, 'nm/kill_on_stop')])
+            self._kill_parameter_handler.requestParameterValues(self.masteruri, [roslib.names.ns_join(
+                self.name, 'kill_on_stop'), roslib.names.ns_join(self.name, 'nm/kill_on_stop')])
             return True
         return False
 
@@ -1471,7 +1520,8 @@ class NodeItem(QStandardItem):
         if self.nodelet_mngr:
             tooltip += '<dt><b>Nodelet manager</b>: %s</dt>' % self.nodelet_mngr
         if self.nodelets:
-            tooltip += '<dt><b>This is nodelet manager for %d nodes</b></dt>' % len(self.nodelets)
+            tooltip += '<dt><b>This is nodelet manager for %d nodes</b></dt>' % len(
+                self.nodelets)
         tooltip += '<dt><b>ORG.MASTERURI:</b> %s</dt></dl>' % self.node_info.masteruri
         master_discovered = nm.nameres().has_master(self.node_info.masteruri)
 #    local = False
@@ -1535,7 +1585,8 @@ class NodeItem(QStandardItem):
         if self.parent_item is not None:
             uri_col = self.parent_item.child(self.row(), NodeItem.COL_URI)
             if uri_col is not None and isinstance(uri_col, QStandardItem):
-                uri_col.setText(utf8(self.node_info.uri) if self.node_info.uri is not None else "")
+                uri_col.setText(utf8(self.node_info.uri)
+                                if self.node_info.uri is not None else "")
 
     def update_displayed_config(self):
         '''
@@ -1545,15 +1596,18 @@ class NodeItem(QStandardItem):
             cfg_col = self.parent_item.child(self.row(), NodeItem.COL_CFG)
             if cfg_col is not None and isinstance(cfg_col, QStandardItem):
                 cfg_count = len(self._cfgs)
-                cfg_col.setText(utf8(''.join(['[', utf8(cfg_count), ']'])) if cfg_count > 1 else "")
+                cfg_col.setText(
+                    utf8(''.join(['[', utf8(cfg_count), ']'])) if cfg_count > 1 else "")
                 # no tooltip for clarity !!!
                 # set icons
                 has_launches = NodeItem.has_launch_cfgs(self._cfgs)
                 has_defaults = NodeItem.has_default_cfgs(self._cfgs)
                 if has_launches and has_defaults:
-                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file_def_cfg.png'))
+                    cfg_col.setIcon(nm.settings().icon(
+                        'crystal_clear_launch_file_def_cfg.png'))
                 elif has_launches:
-                    cfg_col.setIcon(nm.settings().icon('crystal_clear_launch_file.png'))
+                    cfg_col.setIcon(nm.settings().icon(
+                        'crystal_clear_launch_file.png'))
                 elif has_defaults:
                     cfg_col.setIcon(nm.settings().icon('default_cfg.png'))
                 else:
@@ -1612,7 +1666,8 @@ class NodeItem(QStandardItem):
                 if (type(item) == NodeItem) and item.name == self.name:
                     row = self.parent_item.takeRow(i)
                     break
-            group_item = self.parent_item.get_group_item(namespace(item.name), is_group=False)
+            group_item = self.parent_item.get_group_item(
+                namespace(item.name), is_group=False)
             group_item._add_row_sorted(row)
             group_item.updateIcon()
 
@@ -1723,7 +1778,8 @@ class NodeTreeModel(QStandardItemModel):
         '''
         super(NodeTreeModel, self).__init__(parent)
         self.setColumnCount(len(NodeTreeModel.header))
-        self.setHorizontalHeaderLabels([label for label, _ in NodeTreeModel.header])
+        self.setHorizontalHeaderLabels(
+            [label for label, _ in NodeTreeModel.header])
         self._local_host_address = host_address
         self._local_masteruri = masteruri
         self._std_capabilities = {'/': {'SYSTEM': {'images': [],
@@ -1740,7 +1796,8 @@ class NodeTreeModel(QStandardItemModel):
         # create a handler to request the parameter
         self.parameterHandler = ParameterHandler()
 #    self.parameterHandler.parameter_list_signal.connect(self._on_param_list)
-        self.parameterHandler.parameter_values_signal.connect(self._on_param_values)
+        self.parameterHandler.parameter_values_signal.connect(
+            self._on_param_values)
 #    self.parameterHandler.delivery_result_signal.connect(self._on_delivered_values)
 
     @property
@@ -1755,7 +1812,8 @@ class NodeTreeModel(QStandardItemModel):
     def _set_std_capabilities(self, host_item):
         if host_item is not None:
             cap = self._std_capabilities
-            mastername = roslib.names.SEP.join(['', host_item.mastername, '*', 'default_cfg'])
+            mastername = roslib.names.SEP.join(
+                ['', host_item.mastername, '*', 'default_cfg'])
             if mastername not in cap['/']['SYSTEM']['nodes']:
                 cap['/']['SYSTEM']['nodes'].append(mastername)
             host_item.add_capabilities('', cap, host_item.masteruri)
@@ -1822,7 +1880,8 @@ class NodeTreeModel(QStandardItemModel):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
         for (name, node) in nodes.items():
-            addr = get_hostname(node.uri if node.uri is not None else node.masteruri)
+            addr = get_hostname(
+                node.uri if node.uri is not None else node.masteruri)
             addresses.append(addr)
             muris.append(node.masteruri)
             host = self.get_hostitem(node.masteruri, addr)
@@ -1833,7 +1892,8 @@ class NodeTreeModel(QStandardItemModel):
         for (host_item, nodes_filtered) in hosts.items():
             # rename the host item if needed
             if host_item is not None:
-                updated_nodes.extend(host_item.update_running_state(nodes_filtered, local_info))
+                updated_nodes.extend(host_item.update_running_state(
+                    nodes_filtered, local_info))
             # request for all nodes in host the parameter capability_group
             self._requestCapabilityGroupParameter(host_item)
         # update nodes of the hosts, which are not more exists
@@ -1841,7 +1901,7 @@ class NodeTreeModel(QStandardItemModel):
             host = self.invisibleRootItem().child(i)
             # remove hosts if they are not updated
             if host.masteruri not in muris:
-               host.update_running_state({}, local_info)
+                host.update_running_state({}, local_info)
             # remove hosts which are connected to local master using ROS_MASTER_URI
             if (not host.local and host.host not in addresses):
                 host.update_running_state({}, local_info)
@@ -1853,9 +1913,11 @@ class NodeTreeModel(QStandardItemModel):
     def _requestCapabilityGroupParameter(self, host_item):
         if host_item is not None:
             items = host_item.get_node_items()
-            params = [roslib.names.ns_join(item.name, 'capability_group') for item in items if not item.has_configs() and item.is_running() and not host_item.is_in_cap_group(item.name, '', '/', 'SYSTEM')]
+            params = [roslib.names.ns_join(item.name, 'capability_group') for item in items if not item.has_configs(
+            ) and item.is_running() and not host_item.is_in_cap_group(item.name, '', '/', 'SYSTEM')]
             if params:
-                self.parameterHandler.requestParameterValues(host_item.masteruri, params)
+                self.parameterHandler.requestParameterValues(
+                    host_item.masteruri, params)
 
     def _on_param_values(self, masteruri, code, msg, params):
         '''
@@ -1888,7 +1950,8 @@ class NodeTreeModel(QStandardItemModel):
                         if ns not in capabilities:
                             capabilities[ns] = dict()
                         if val not in capabilities[ns]:
-                            capabilities[ns][val] = {'images': [], 'nodes': [], 'type': '', 'description': 'This group is created from `capability_group` parameter of the node defined in ROS parameter server.'}
+                            capabilities[ns][val] = {'images': [], 'nodes': [
+                            ], 'type': '', 'description': 'This group is created from `capability_group` parameter of the node defined in ROS parameter server.'}
                         if nodename not in capabilities[ns][val]['nodes']:
                             capabilities[ns][val]['nodes'].append(nodename)
                             changed = True
@@ -1897,12 +1960,15 @@ class NodeTreeModel(QStandardItemModel):
                         for group, _ in list(capabilities[ns].items()):
                             try:
                                 # remove the config from item, if parameter was not foun on the ROS parameter server
-                                groupItem = hostItem.get_group_item(roslib.names.ns_join(ns, group), nocreate=True)
+                                groupItem = hostItem.get_group_item(
+                                    roslib.names.ns_join(ns, group), nocreate=True)
                                 if groupItem is not None:
-                                    nodeItems = groupItem.get_node_items_by_name(nodename, True)
+                                    nodeItems = groupItem.get_node_items_by_name(
+                                        nodename, True)
                                     for item in nodeItems:
                                         item.rem_config('')
-                                capabilities[ns][group]['nodes'].remove(nodename)
+                                capabilities[ns][group]['nodes'].remove(
+                                    nodename)
                                 # remove the group, if empty
                                 if not capabilities[ns][group]['nodes']:
                                     del capabilities[ns][group]
@@ -1927,10 +1993,12 @@ class NodeTreeModel(QStandardItemModel):
             # update the capabilities and the view
             if changed:
                 if capabilities:
-                    hostItem.add_capabilities('', capabilities, hostItem.masteruri)
+                    hostItem.add_capabilities(
+                        '', capabilities, hostItem.masteruri)
             hostItem.clearup()
         else:
-            rospy.logwarn("Error on retrieve \'capability group\' parameter from %s: %s", utf8(masteruri), msg)
+            rospy.logwarn(
+                "Error on retrieve \'capability group\' parameter from %s: %s", utf8(masteruri), msg)
 
     def update_system_diagnostics(self, masteruri, diagnostics):
         host = get_hostname(masteruri)
@@ -1991,7 +2059,8 @@ class NodeTreeModel(QStandardItemModel):
                     items = hostItem.get_node_items_by_name(name)
                     for item in items:
                         if item.parent_item is not None:
-                            groups[item.parent_item.get_namespace()] = item.parent_item
+                            groups[item.parent_item.get_namespace()
+                                   ] = item.parent_item
                         item.add_config(cfg)
                         item.readd()
                         try:
@@ -2006,7 +2075,8 @@ class NodeTreeModel(QStandardItemModel):
                         items = hostItem.get_node_items_by_name(name)
                         for item in items:
                             if item.parent_item is not None:
-                                groups[item.parent_item.get_namespace()] = item.parent_item
+                                groups[item.parent_item.get_namespace()
+                                       ] = item.parent_item
                 for cfg in cfgs:
                     for node in cfgs[cfg]:
                         node.rem_config(cfg)
@@ -2016,7 +2086,8 @@ class NodeTreeModel(QStandardItemModel):
                 hostItem.clearup()
             self._remove_empty_hosts()
         except Exception:
-            rospy.logwarn('Error while apply configuration to current view: %s' %traceback.format_exc())
+            rospy.logwarn(
+                'Error while apply configuration to current view: %s' % traceback.format_exc())
         # update the duplicate state
 #    self.set_duplicate_nodes(self.get_nodes_running())
 
@@ -2050,7 +2121,7 @@ class NodeTreeModel(QStandardItemModel):
         # remove empty hosts
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host.rowCount() == 0: # or not host.remote_launched_nodes_updated():
+            if host.rowCount() == 0:  # or not host.remote_launched_nodes_updated():
                 self.invisibleRootItem().removeRow(i)
 
     def get_tree_node(self, node_name, masteruri):
@@ -2162,7 +2233,8 @@ class NodeInfoIconsDelegate(QItemDelegate):
 
     def _scale_icons(self, icon_size):
         self._icon_size = icon_size
-        params = (self._icon_size, self._icon_size, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        params = (self._icon_size, self._icon_size,
+                  Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         self.IMAGES = {'launchfile': nm.settings().image('crystal_clear_launch_file.png').scaled(*params),
                        'defaultcfg': nm.settings().image('default_cfg.png').scaled(*params),
                        'nodelet': nm.settings().image('crystal_clear_nodelet.png').scaled(*params),
@@ -2216,18 +2288,21 @@ class NodeInfoIconsDelegate(QItemDelegate):
                 if item.item.nodelets:
                     tooltip += "%sThis is a nodelet manager" % '\n' if tooltip else ''
                 elif item.item.nodelet_mngr:
-                    tooltip += "%sThis is a nodelet for %s" % ('\n' if tooltip else '', item.item.nodelet_mngr)
+                    tooltip += "%sThis is a nodelet for %s" % (
+                        '\n' if tooltip else '', item.item.nodelet_mngr)
                 item.setToolTip(tooltip)
             elif isinstance(item.item, HostItem):
                 tooltip = ''
                 if item.item.sysmon_state:
-                    tooltip += '<dt><font color="orange">%s</font></dt>' % ("active pull for system diagnostic is enabled")
+                    tooltip += '<dt><font color="orange">%s</font></dt>' % (
+                        "active pull for system diagnostic is enabled")
                     rect = self.calcDecorationRect(option.rect)
                     painter.drawImage(rect, self.IMAGES['sysmon'])
                 diagnistics = item.item.diagnostics
                 for diag in diagnistics:
                     if diag.level > 0:
-                        tooltip += '\n<dt><font color="red">%s</font></dt>' % (diag.message.replace('>', '&gt;').replace('<', '&lt;'))
+                        tooltip += '\n<dt><font color="red">%s</font></dt>' % (
+                            diag.message.replace('>', '&gt;').replace('<', '&lt;'))
                         if 'Network Load' in diag.name:
                             rect = self.calcDecorationRect(option.rect)
                             painter.drawImage(rect, self.IMAGES['net_warn'])
@@ -2236,7 +2311,8 @@ class NodeInfoIconsDelegate(QItemDelegate):
                             painter.drawImage(rect, self.IMAGES['cpu_warn'])
                         if 'CPU Temperature' in diag.name:
                             rect = self.calcDecorationRect(option.rect)
-                            painter.drawImage(rect, self.IMAGES['cpu_temp_warn'])
+                            painter.drawImage(
+                                rect, self.IMAGES['cpu_temp_warn'])
                         if 'Memory Usage' in diag.name:
                             rect = self.calcDecorationRect(option.rect)
                             painter.drawImage(rect, self.IMAGES['mem_warn'])
@@ -2268,7 +2344,8 @@ class NodeInfoIconsDelegate(QItemDelegate):
         rect = QRect()
         rect.setX(main_rect.x() + self._idx_icon + self._hspacing)
         rect.setY(main_rect.y() + self._vspacing)
-        rect.setWidth(self._icon_size if image else main_rect.width() - self._idx_icon)
+        rect.setWidth(
+            self._icon_size if image else main_rect.width() - self._idx_icon)
         rect.setHeight(self._icon_size)
         self._idx_icon += self._icon_size + self._hspacing
         return rect

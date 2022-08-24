@@ -32,7 +32,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QRegExp, Qt, QObject
 from python_qt_binding.QtGui import QColor, QFont, QFontDatabase, QTextCharFormat, QTextCursor
 
@@ -57,7 +56,8 @@ class FormatHelper(QObject):
 
     def font_style(self, index):
         if index < len(self.font_styles):
-            self.font_db.font(self.font_family, self.font_styles.at(0), self.point_size)
+            self.font_db.font(self.font_family,
+                              self.font_styles.at(0), self.point_size)
         return self.fmt.font()
 
 
@@ -81,16 +81,25 @@ class TerminalFormats(QObject):
                            'setFontWeight': QFont.Normal,
                            'setFontItalic': False,
                            'setFontUnderline': False}  # Normal/Default (reset all attributes)
-        self.formats[1] = {'setFontWeight': QFont.Bold}  # Bold/Bright (bold or increased intensity)
-        self.formats[2] = {'setFontWeight': QFont.Light}  # Dim/Faint (decreased intensity)
+        # Bold/Bright (bold or increased intensity)
+        self.formats[1] = {'setFontWeight': QFont.Bold}
+        # Dim/Faint (decreased intensity)
+        self.formats[2] = {'setFontWeight': QFont.Light}
         self.formats[3] = {'setFontItalic': True}  # Italicized (italic on)
-        self.formats[4] = {'setFontUnderline': True, 'setUnderlineStyle': QTextCharFormat.SingleUnderline}  # Underscore (single underlined)
-        self.formats[5] = {'setFontWeight': QFont.Bold}  # Blink (slow, appears as Bold)
-        self.formats[6] = {'setFontWeight': QFont.Black}  # Blink (rapid, appears as very Bold)
-        self.formats[7] = {'setForeground': ('background',), 'setBackground': ('foreground',)}  # Reverse/Inverse (swap foreground and background)
-        self.formats[8] = {'setForeground': ('background',)}  # Concealed/Hidden/Invisible (usefull for passwords)
+        # Underscore (single underlined)
+        self.formats[4] = {'setFontUnderline': True,
+                           'setUnderlineStyle': QTextCharFormat.SingleUnderline}
+        # Blink (slow, appears as Bold)
+        self.formats[5] = {'setFontWeight': QFont.Bold}
+        # Blink (rapid, appears as very Bold)
+        self.formats[6] = {'setFontWeight': QFont.Black}
+        self.formats[7] = {'setForeground': ('background',), 'setBackground': (
+            'foreground',)}  # Reverse/Inverse (swap foreground and background)
+        # Concealed/Hidden/Invisible (usefull for passwords)
+        self.formats[8] = {'setForeground': ('background',)}
         self.formats[9] = {'setFontStrikeOut': True}  # Crossed-out characters
-        self.formats[10] = {'setFont': QTextCharFormat().font()}  # Primary (default) font
+        # Primary (default) font
+        self.formats[10] = {'setFont': QTextCharFormat().font()}
         # font styles
         self.formats[11] = {'setFont': ('font_style', 0)}
         self.formats[12] = {'setFont': ('font_style', 1)}
@@ -105,12 +114,16 @@ class TerminalFormats(QObject):
         self.formats[21] = {'setFontWeight': QFont.Normal}  # Set Bold off
         self.formats[22] = {'setFontWeight': QFont.Normal}  # Set Dim off
         self.formats[23] = {'setFontItalic': False}
-        self.formats[24] = {'setFontUnderline': False, 'setUnderlineStyle': QTextCharFormat.NoUnderline}  # Unset underlining
+        self.formats[24] = {'setFontUnderline': False,
+                            'setUnderlineStyle': QTextCharFormat.NoUnderline}  # Unset underlining
         self.formats[25] = {'setFontWeight': QFont.Normal}  # Unset Blink/Bold
         # self.formats[26] = {}  # Reserved
-        self.formats[27] = {'setBackground': ('foreground',), 'setForeground': ('background',)}  # Positive (non-inverted)
-        self.formats[28] = {'setForeground': ('foreground',), 'setBackground': ('background',)}  # Concealed/Hidden/Invisible (usefull for passwords)
-        self.formats[29] = {'setFontStrikeOut': False}  # Crossed-out characters
+        self.formats[27] = {'setBackground': ('foreground',), 'setForeground': (
+            'background',)}  # Positive (non-inverted)
+        self.formats[28] = {'setForeground': ('foreground',), 'setBackground': (
+            'background',)}  # Concealed/Hidden/Invisible (usefull for passwords)
+        # Crossed-out characters
+        self.formats[29] = {'setFontStrikeOut': False}
         # foreground colors
         self.formats[30] = {'setForeground': QColor(1, 1, 1)}  # Black
         self.formats[31] = {'setForeground': QColor(222, 56, 43)}  # Red
@@ -120,15 +133,21 @@ class TerminalFormats(QObject):
         self.formats[35] = {'setForeground': QColor(118, 38, 113)}  # Megenta
         self.formats[36] = {'setForeground': QColor(44, 181, 233)}  # Cyan
         self.formats[37] = {'setForeground': QColor(204, 204, 204)}  # White
-        self.formats[39] = {'setForeground': self.default_color}  # Default foreground color
-        self.formats[90] = {'setForeground': QColor(128, 128, 128)}  # Bright Black
+        # Default foreground color
+        self.formats[39] = {'setForeground': self.default_color}
+        self.formats[90] = {'setForeground': QColor(
+            128, 128, 128)}  # Bright Black
         self.formats[91] = {'setForeground': QColor(255, 0, 0)}  # Bright Red
         self.formats[92] = {'setForeground': QColor(0, 255, 0)}  # Bright Green
-        self.formats[93] = {'setForeground': QColor(255, 255, 0)}  # Bright Yellow
+        self.formats[93] = {'setForeground': QColor(
+            255, 255, 0)}  # Bright Yellow
         self.formats[94] = {'setForeground': QColor(0, 0, 255)}  # Bright Blue
-        self.formats[95] = {'setForeground': QColor(255, 0, 255)}  # Bright Magenta
-        self.formats[96] = {'setForeground': QColor(0, 255, 255)}  # Bright Cyan
-        self.formats[97] = {'setForeground': QColor(255, 255, 255)}  # Bright White
+        self.formats[95] = {'setForeground': QColor(
+            255, 0, 255)}  # Bright Magenta
+        self.formats[96] = {'setForeground': QColor(
+            0, 255, 255)}  # Bright Cyan
+        self.formats[97] = {'setForeground': QColor(
+            255, 255, 255)}  # Bright White
         # background colors
         self.formats[40] = {'setBackground': QColor(1, 1, 1)}  # Black
         self.formats[41] = {'setBackground': QColor(222, 56, 43)}  # Red
@@ -138,15 +157,22 @@ class TerminalFormats(QObject):
         self.formats[45] = {'setBackground': QColor(118, 38, 113)}  # Megenta
         self.formats[46] = {'setBackground': QColor(44, 181, 233)}  # Cyan
         self.formats[47] = {'setBackground': QColor(204, 204, 204)}  # White
-        self.formats[49] = {'setBackground': self.default_bg}  # Default background color
-        self.formats[100] = {'setBackground': QColor(128, 128, 128)}  # Bright Black
+        # Default background color
+        self.formats[49] = {'setBackground': self.default_bg}
+        self.formats[100] = {'setBackground': QColor(
+            128, 128, 128)}  # Bright Black
         self.formats[101] = {'setBackground': QColor(255, 0, 0)}  # Bright Red
-        self.formats[102] = {'setBackground': QColor(0, 255, 0)}  # Bright Green
-        self.formats[103] = {'setBackground': QColor(255, 255, 0)}  # Bright Yellow
+        self.formats[102] = {
+            'setBackground': QColor(0, 255, 0)}  # Bright Green
+        self.formats[103] = {'setBackground': QColor(
+            255, 255, 0)}  # Bright Yellow
         self.formats[104] = {'setBackground': QColor(0, 0, 255)}  # Bright Blue
-        self.formats[105] = {'setBackground': QColor(255, 0, 255)}  # Bright Magenta
-        self.formats[106] = {'setBackground': QColor(0, 255, 255)}  # Bright Cyan
-        self.formats[107] = {'setBackground': QColor(255, 255, 255)}  # Bright White
+        self.formats[105] = {'setBackground': QColor(
+            255, 0, 255)}  # Bright Magenta
+        self.formats[106] = {'setBackground': QColor(
+            0, 255, 255)}  # Bright Cyan
+        self.formats[107] = {'setBackground': QColor(
+            255, 255, 255)}  # Bright White
 
     def _update_format(self, fmt, updates={}, font_helper=None):
         for attr, args in updates.items():
@@ -157,7 +183,8 @@ class TerminalFormats(QObject):
                     if font_helper is not None:
                         # call getter method
                         if len(attr) > 1:
-                            getattr(fmt, attr)(getattr(font_helper, attr[0])(attr[1]))
+                            getattr(fmt, attr)(
+                                getattr(font_helper, attr[0])(attr[1]))
                         else:
                             getattr(fmt, attr)(getattr(font_helper, attr[0])())
                 else:
@@ -181,13 +208,14 @@ class TerminalFormats(QObject):
             if code in self.formats:
                 try:
                     font_helper = FormatHelper(current_char_format)
-                    self._update_format(current_char_format, self.formats[code], font_helper=font_helper)
+                    self._update_format(
+                        current_char_format, self.formats[code], font_helper=font_helper)
                 except Exception as err:
-                    rospy.logwarn("Failed update format for ANSI_escape_code %d: %s" % (code, err))
+                    rospy.logwarn(
+                        "Failed update format for ANSI_escape_code %d: %s" % (code, err))
             cidx = match.end()
         cursor.insertText(text[cidx:], current_char_format)
         cursor.movePosition(QTextCursor.End)
         cursor.setCharFormat(current_char_format)
         cursor.endEditBlock()
         return current_char_format
-

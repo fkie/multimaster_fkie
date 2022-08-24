@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import rospy
 from python_qt_binding.QtCore import Signal
 
@@ -84,7 +83,8 @@ class ScreenChannel(ChannelInterface):
 
         :param str grpc_url: the url for grpc-server
         '''
-        self._threads.start_thread("mst_%s" % grpc_url, target=self._multiple_screens, args=(grpc_url,))
+        self._threads.start_thread(
+            "mst_%s" % grpc_url, target=self._multiple_screens, args=(grpc_url,))
 
     def _multiple_screens(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("get multiple screens from %s" % (grpc_url))
@@ -121,7 +121,8 @@ class ScreenChannel(ChannelInterface):
 
         :param str grpc_url: the url for grpc-server
         '''
-        self._threads.start_thread("lds_%s" % grpc_url, target=self._log_dir_size, args=(grpc_url,))
+        self._threads.start_thread(
+            "lds_%s" % grpc_url, target=self._log_dir_size, args=(grpc_url,))
 
     def _log_dir_size(self, grpc_url='grpc://localhost:12321'):
         rospy.logdebug("get log_dir size on %s" % (grpc_url))
@@ -129,7 +130,8 @@ class ScreenChannel(ChannelInterface):
             uri, _ = nmdurl.split(grpc_url)
             sm, channel = self.get_screen_manager(uri)
             log_dir_size = sm.log_dir_size()
-            rospy.logdebug("log_dir size on %s: %s" % (grpc_url, sizeof_fmt(log_dir_size)))
+            rospy.logdebug("log_dir size on %s: %s" %
+                           (grpc_url, sizeof_fmt(log_dir_size)))
             self.log_dir_size_signal.emit(grpc_url, log_dir_size)
         except Exception as e:
             self.error.emit("log_dir_size", "grpc://%s" % uri, "", e)

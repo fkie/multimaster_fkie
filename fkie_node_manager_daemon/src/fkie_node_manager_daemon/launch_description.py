@@ -31,8 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
-
 class LaunchDescription:
 
     def __init__(self, path='', masteruri='', host='', nodes=[], robot_descriptions=[], nodelets={}, associations={}):
@@ -55,8 +53,10 @@ class LaunchDescription:
         self.path = path
         self.masteruri = masteruri
         self.host = host
-        self.nodes = nodes if nodes else []  # create a new array to a void to fill a default one
-        self.robot_descriptions = robot_descriptions if robot_descriptions else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.nodes = nodes if nodes else []
+        # create a new array to a void to fill a default one
+        self.robot_descriptions = robot_descriptions if robot_descriptions else []
         self.nodelets = nodelets if nodelets else {}
         self.associations = associations if associations else {}
 
@@ -87,9 +87,11 @@ class RobotDescription:
         self.machine = machine
         self.robot_name = robot_name
         self.robot_type = robot_type
-        self.robot_images = robot_images if robot_images else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.robot_images = robot_images if robot_images else []
         self.robot_descr = robot_descr
-        self.capabilities = capabilities if capabilities else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.capabilities = capabilities if capabilities else []
 
     def __repr__(self):
         return "<%s[%s], machine=%s, with %d capabilities>" % (self.__class__, self.robot_name, self.machine, len(self.capabilities))
@@ -118,9 +120,11 @@ class Capability:
         self.namespace = namespace
         self.name = name
         self.type = cap_type
-        self.images = images if images else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.images = images if images else []
         self.description = description
-        self.nodes = nodes if nodes else []  # create a new array to a void to fill a default one
+        # create a new array to a void to fill a default one
+        self.nodes = nodes if nodes else []
 
     def __repr__(self):
         return "<%s[%s/%s], with %d nodes>" % (self.__class__, self.namespace, self.name, len(self.nodes))

@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import psutil
 import time
 
@@ -44,10 +43,12 @@ class CpuLoad(SensorInterface):
     def __init__(self, hostname='', interval=5.0, warn_level=0.9):
         self._cpu_load_warn = warn_level
         self._count_processes = 3
-        SensorInterface.__init__(self, hostname, sensorname='CPU Load', interval=interval)
+        SensorInterface.__init__(
+            self, hostname, sensorname='CPU Load', interval=interval)
 
     def reload_parameter(self, settings):
-        self._cpu_load_warn = settings.param('sysmon/CPU/load_warn_level', self._cpu_load_warn)
+        self._cpu_load_warn = settings.param(
+            'sysmon/CPU/load_warn_level', self._cpu_load_warn)
         self._count_processes = settings.param('sysmon/CPU/count_processes', 3)
 
     def check_sensor(self):
@@ -69,16 +70,19 @@ class CpuLoad(SensorInterface):
                 count_warn_cpu += 1
             cpu_percent_total += cpu_percent
         diag_vals.append(KeyValue(key='Max [%]', value=cpu_max_percent))
-        diag_vals.append(KeyValue(key='Avg [%]', value='%.2f' % (cpu_percent_total / len(cpu_percents))))
+        diag_vals.append(KeyValue(key='Avg [%]', value='%.2f' % (
+            cpu_percent_total / len(cpu_percents))))
         if count_warn_cpu > 1:
             diag_level = DiagnosticStatus.WARN
-            diag_msg = 'CPU load of %d cores is >%.0f%%' % (count_warn_cpu, self._cpu_load_warn * 100)
+            diag_msg = 'CPU load of %d cores is >%.0f%%' % (
+                count_warn_cpu, self._cpu_load_warn * 100)
             try:
                 # determine processes with high load
                 processes = []
                 for pi in sorted(psutil.process_iter(attrs=['name', 'cpu_percent']), key=lambda pi: pi.info['cpu_percent'], reverse=True):
                     if pi.info['cpu_percent'] / 100.0 >= warn_level:
-                        phlmsg = '%.2f%% %s [%d]' % (pi.info['cpu_percent'], pi.info['name'], pi.pid)
+                        phlmsg = '%.2f%% %s [%d]' % (
+                            pi.info['cpu_percent'], pi.info['name'], pi.pid)
                         processes.append(phlmsg)
                     if len(processes) >= self._count_processes:
                         break

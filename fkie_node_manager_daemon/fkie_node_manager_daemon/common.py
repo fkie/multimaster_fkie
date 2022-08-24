@@ -43,7 +43,8 @@ INCLUDE_PATTERN = [r"\s*(\$\(find-pkg-share.*?\)[^ \"]*)",
                    r"binfile=\"(.*?)\"",
                    r"\"\s*(pkg:\/\/.*?)\"",
                    r"\"\s*(package:\/\/.*?)\""]
-SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
+SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
+                 '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
 
 try:
     from catkin_pkg.package import parse_package
@@ -96,7 +97,7 @@ class IncludedFile():
         return result
 
 
-def ns_join(ns:Text, name:Text) -> Text:
+def ns_join(ns: Text, name: Text) -> Text:
     """
     Join a namespace and name. If name is unjoinable (i.e. ~private or
     /global) it will be returned without joining
@@ -112,7 +113,7 @@ def ns_join(ns:Text, name:Text) -> Text:
         return name
     if ns == PRIV_NAME:
         return PRIV_NAME + name
-    if not ns: 
+    if not ns:
         return name
     if ns[-1] == SEP:
         return ns + name
@@ -130,20 +131,20 @@ def ns_join(ns:Text, name:Text) -> Text:
 #             return unicode(str(s))
 #     return s
 
-def get_namespace(name:Text, with_sep_suffix:bool=True) -> Text:
+def get_namespace(name: Text, with_sep_suffix: bool = True) -> Text:
     """
     Get the namespace of name. The namespace is returned with a
     trailing slash in order to favor easy concatenation and easier use
     within the global context.
-        
+
     :param str name: name to return the namespace of. Must be a legal
         name. NOTE: an empty name will return the global namespace.
     :return str: Namespace of name. For example, '/wg/node1' returns '/wg/'. The
         global namespace is '/'. 
     :rtype: str
     :raise ValueError: if name is invalid
-    """    
-    if name is None: 
+    """
+    if name is None:
         raise ValueError('name')
     if not name:
         return SEP
@@ -153,17 +154,17 @@ def get_namespace(name:Text, with_sep_suffix:bool=True) -> Text:
     return name[:name.rfind(SEP)+offset] or SEP
 
 
-def get_cwd(cwd:Text, binary:Text='') -> Text:
+def get_cwd(cwd: Text, binary: Text = '') -> Text:
     result = ''
     if cwd == 'node':
         result = os.path.dirname(binary)
     elif cwd == 'cwd':
         result = os.getcwd()
-    #elif cwd == 'ros-root':
+    # elif cwd == 'ros-root':
     #    result = rospkg.get_ros_root()
-    #else:
+    # else:
     #    result = rospkg.get_ros_home()
-    if result and  not os.path.exists(result):
+    if result and not os.path.exists(result):
         try:
             os.makedirs(result)
         except OSError:
@@ -172,7 +173,7 @@ def get_cwd(cwd:Text, binary:Text='') -> Text:
     return result
 
 
-def sizeof_fmt(num:[float, int], suffix:str='B') -> Text:
+def sizeof_fmt(num: [float, int], suffix: str = 'B') -> Text:
     for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return '%.0f%s%s' % (num, unit, suffix)
@@ -180,7 +181,7 @@ def sizeof_fmt(num:[float, int], suffix:str='B') -> Text:
     return '%.0f%s%s' % (num, 'YiB', suffix)
 
 
-def formated_ts(stamp:float, with_date:bool=True, with_nanosecs:bool=True, tz=None) -> Text:
+def formated_ts(stamp: float, with_date: bool = True, with_nanosecs: bool = True, tz=None) -> Text:
     ts = stamp
     if hasattr(stamp, 'secs'):
         ts = stamp.secs + stamp.secs / 1000000000.
@@ -192,7 +193,7 @@ def formated_ts(stamp:float, with_date:bool=True, with_nanosecs:bool=True, tz=No
     return datetime.fromtimestamp(ts, tz).strftime(str_format)
 
 
-def get_packages(path:[Text, None]) -> Dict[Text,Text]:
+def get_packages(path: [Text, None]) -> Dict[Text, Text]:
     result = {}
     if path is None:
         # we use ament to get the list of all packages
@@ -213,7 +214,7 @@ def get_packages(path:[Text, None]) -> Dict[Text,Text]:
     return result
 
 
-def package_name(path:Text) -> Tuple[Text,Text]:
+def package_name(path: Text) -> Tuple[Text, Text]:
     '''
     The results are cached!
 
@@ -230,7 +231,8 @@ def package_name(path:Text) -> Tuple[Text,Text]:
             fileList = os.listdir(dir_path)
             if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
                 try:
-                    pkg = parse_package(os.path.join(dir_path, os.path.join(dir_path, PACKAGE_FILE)))
+                    pkg = parse_package(os.path.join(
+                        dir_path, os.path.join(dir_path, PACKAGE_FILE)))
                     PACKAGE_CACHE[dir_path] = (pkg.name, dir_path)
                     return (pkg.name, dir_path)
                 except Exception:
@@ -246,16 +248,16 @@ def package_name(path:Text) -> Tuple[Text,Text]:
     return ('', '')
 
 
-def is_package(file_list:List[Text]) -> bool:
+def is_package(file_list: List[Text]) -> bool:
     return CATKIN_SUPPORTED and PACKAGE_FILE in file_list
 
 
-def get_pkg_path(pkg_name:Text) -> Text:
+def get_pkg_path(pkg_name: Text) -> Text:
     ''' :noindex: '''
     from ament_index_python import get_resource
     _, package_path = get_resource('packages', pkg_name)
     return package_path
-    # old style: 
+    # old style:
     global _get_pkg_path_var
     if _get_pkg_path_var is None:
         rp = rospkg.RosPack()
@@ -289,7 +291,7 @@ def get_share_files_path_from_package(package_name, file_name):
     return matching_file_paths
 
 
-def interpret_path(path:Text, *, pwd:Text='.', rosnode:[Node,None]=None) -> Text:
+def interpret_path(path: Text, *, pwd: Text = '.', rosnode: [Node, None] = None) -> Text:
     '''
     Tries to determine the path of included file. The statement of $(find-pkg-share 'package') will be resolved.
 
@@ -301,7 +303,8 @@ def interpret_path(path:Text, *, pwd:Text='.', rosnode:[Node,None]=None) -> Text
     '''
     result = path.strip()
     # try replace package name by package path
-    pkg_pattern = re.compile(r"\$\(find-pkg-share (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
+    pkg_pattern = re.compile(
+        r"\$\(find-pkg-share (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
     for groups in pkg_pattern.finditer(path):
         for index in range(groups.lastindex):
             pkg_name = groups.groups()[index]
@@ -312,9 +315,11 @@ def interpret_path(path:Text, *, pwd:Text='.', rosnode:[Node,None]=None) -> Text
                 path_suffix = path[groups.end():].rstrip("'")
                 #package_share_directory = pkg
                 if path_suffix.startswith('/'):
-                    matching_file_paths = get_share_files_path_from_package(pkg_name, path_suffix.strip(os.path.sep))
+                    matching_file_paths = get_share_files_path_from_package(
+                        pkg_name, path_suffix.strip(os.path.sep))
                     if rosnode is not None:
-                        rosnode.get_logger().debug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (path_suffix.strip(os.path.sep), matching_file_paths))
+                        rosnode.get_logger().debug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (
+                            path_suffix.strip(os.path.sep), matching_file_paths))
                     if len(matching_file_paths) > 0:
                         # if more then one launch file is found, take the first one
                         return matching_file_paths[0]
@@ -324,13 +329,15 @@ def interpret_path(path:Text, *, pwd:Text='.', rosnode:[Node,None]=None) -> Text
                     if not os.path.exists(full_path):
                         # we try to find the specific path in share
                         try:
-                            paths = get_share_files_path_from_package(pkg_name, path_suffix.strip(os.path.sep))
+                            paths = get_share_files_path_from_package(
+                                pkg_name, path_suffix.strip(os.path.sep))
                             if paths:
                                 return paths[0]
                         except Exception:
                             import traceback
                             if rosnode is not None:
-                                rosnode.get_logger().warn("search in share space failed: %s" % traceback.format_exc())
+                                rosnode.get_logger().warn("search in share space failed: %s" %
+                                                          traceback.format_exc())
                     return full_path
                 else:
                     return "%s%s" % (os.path.normpath(pkg), os.path.sep)
@@ -339,12 +346,13 @@ def interpret_path(path:Text, *, pwd:Text='.', rosnode:[Node,None]=None) -> Text
     return os.path.normpath(os.path.join(pwd, result))
 
 
-def replace_paths(text:Text, pwd:Text='.'):
+def replace_paths(text: Text, pwd: Text = '.'):
     '''
     Like meth:interpret_path(), but replaces all matches in the text and retain other text.
     '''
     result = text
-    path_pattern = re.compile(r"(\$\(find-pkg-share .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
+    path_pattern = re.compile(
+        r"(\$\(find-pkg-share .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
     for groups in path_pattern.finditer(text):
         for index in range(groups.lastindex):
             path = groups.groups()[index]
@@ -354,7 +362,7 @@ def replace_paths(text:Text, pwd:Text='.'):
     return result
 
 
-def get_internal_args(content:Text, path:Text=None, only_default:bool=False, rosnode:[Node,None]=None):
+def get_internal_args(content: Text, path: Text = None, only_default: bool = False, rosnode: [Node, None] = None):
     '''
     Load the content with xml parser, search for arg-nodes.
     :return: a dictionary with detected arguments
@@ -363,7 +371,8 @@ def get_internal_args(content:Text, path:Text=None, only_default:bool=False, ros
     new_content = content
     try:
         resolve_args_intern = {}
-        xml_nodes = minidom.parseString(new_content).getElementsByTagName('launch')
+        xml_nodes = minidom.parseString(
+            new_content).getElementsByTagName('launch')
         for node in xml_nodes:
             for child in node.childNodes:
                 if child.localName == 'arg' and child.hasAttributes():
@@ -388,7 +397,7 @@ def get_internal_args(content:Text, path:Text=None, only_default:bool=False, ros
     return resolve_args_intern
 
 
-def replace_internal_args(content:Text, resolve_args:Dict[Text,Text]={}, path:Text=None, rosnode:[Node,None]=None):
+def replace_internal_args(content: Text, resolve_args: Dict[Text, Text] = {}, path: Text = None, rosnode: [Node, None] = None):
     '''
     Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
     :return: True if something was replaced, new content and detected arguments
@@ -424,7 +433,7 @@ def get_arg_names(value):
     return result
 
 
-def replace_arg(value, resolve_args:Dict[Text,Text]):
+def replace_arg(value, resolve_args: Dict[Text, Text]):
     # test for if statement
     result = value
     re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
@@ -434,10 +443,11 @@ def replace_arg(value, resolve_args:Dict[Text,Text]):
     return result
 
 
-def __get_include_args(content:Text, resolve_args:Dict[Text,Text], rosnode:[Node,None]=None):
+def __get_include_args(content: Text, resolve_args: Dict[Text, Text], rosnode: [Node, None] = None):
     included_files = []
     try:
-        xml_nodes = minidom.parseString(content).getElementsByTagName('include')
+        xml_nodes = minidom.parseString(
+            content).getElementsByTagName('include')
         for node in xml_nodes:
             if node.nodeType == node.ELEMENT_NODE and node.hasAttributes():
                 filename = ''
@@ -475,16 +485,16 @@ def __get_include_args(content:Text, resolve_args:Dict[Text,Text], rosnode:[Node
     return included_files
 
 
-def find_included_files(string:Text,
+def find_included_files(string: Text,
                         *,
-                        recursive:bool=True,
-                        unique:bool=False,
-                        include_pattern:List[Text]=INCLUDE_PATTERN,
-                        search_in_ext:List[Text]=SEARCH_IN_EXT,
-                        resolve_args:Dict[Text,Text]={},
-                        unique_files:List[Text]=[],
-                        rec_depth:int=0,
-                        rosnode:[Node,None]=None):
+                        recursive: bool = True,
+                        unique: bool = False,
+                        include_pattern: List[Text] = INCLUDE_PATTERN,
+                        search_in_ext: List[Text] = SEARCH_IN_EXT,
+                        resolve_args: Dict[Text, Text] = {},
+                        unique_files: List[Text] = [],
+                        rec_depth: int = 0,
+                        rosnode: [Node, None] = None):
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
@@ -519,15 +529,18 @@ def find_included_files(string:Text,
             match = comment_pattern.search(content)
             while match is not None:
                 count_nl = content[match.start():match.end()].count('\n')
-                content = content[:match.start()] + '\n' * count_nl + content[match.end():]
+                content = content[:match.start()] + '\n' * \
+                    count_nl + content[match.end():]
                 match = comment_pattern.search(content, match.start())
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     resolve_args_intern = {}
     if (string.endswith('.launch') or string.find('.launch.') > 0):
-        _replaced, content_resolved, resolve_args_intern = replace_internal_args(content, resolve_args=resolve_args, path=string)
+        _replaced, content_resolved, resolve_args_intern = replace_internal_args(
+            content, resolve_args=resolve_args, path=string)
         # intern args use only internal
-        inc_files_forward_args = __get_include_args(content_resolved, resolve_args)
+        inc_files_forward_args = __get_include_args(
+            content_resolved, resolve_args)
     my_unique_files = unique_files
     if not unique_files:
         my_unique_files = list()
@@ -550,7 +563,8 @@ def find_included_files(string:Text,
                         # try to resolve path
                         filename = replace_arg(filename, resolve_args_all)
                         filename = replace_arg(filename, resolve_args_intern)
-                        filename = interpret_path(filename, pwd=pwd, rosnode=rosnode)
+                        filename = interpret_path(
+                            filename, pwd=pwd, rosnode=rosnode)
                     except Exception as err:
                         if rosnode:
                             rosnode.get_logger().warn("Interpret file failed: %s" % err)
@@ -558,11 +572,13 @@ def find_included_files(string:Text,
                         filename = ''
                     exists = os.path.isfile(filename)
                     if filename:
-                        publish = not unique or (unique and filename not in my_unique_files)
+                        publish = not unique or (
+                            unique and filename not in my_unique_files)
                         if publish:
                             my_unique_files.append(filename)
                             # transform found position to line number
-                            position = content.count("\n", 0, groups.start()) + 1
+                            position = content.count(
+                                "\n", 0, groups.start()) + 1
                             yield IncludedFile(string, position, filename, exists, rawname, rec_depth, forward_args)
                     # for recursive search
                     if exists:
@@ -571,14 +587,18 @@ def find_included_files(string:Text,
                                 ext = os.path.splitext(filename)
                                 if ext[1] in search_in_ext:
                                     for res_item in find_included_files(filename, recursive=recursive, unique=False, include_pattern=include_pattern, search_in_ext=search_in_ext, resolve_args=resolve_args_all, rec_depth=rec_depth+1):
-                                        publish = not unique or (unique and res_item.inc_path not in my_unique_files)
+                                        publish = not unique or (
+                                            unique and res_item.inc_path not in my_unique_files)
                                         if publish:
-                                            my_unique_files.append(res_item.inc_path)
+                                            my_unique_files.append(
+                                                res_item.inc_path)
                                             yield res_item
                             except Exception as e:
                                 if rosnode:
-                                    rosnode.get_logger().warn("Error while recursive search for include pattern in %s: %s" % (filename, e))
+                                    rosnode.get_logger().warn(
+                                        "Error while recursive search for include pattern in %s: %s" % (filename, e))
                 except Exception as e:
                     import traceback
                     if rosnode:
-                        rosnode.get_logger().warn("Error while parse %s for include pattern: %s" % (content_info, traceback.format_exc()))
+                        rosnode.get_logger().warn("Error while parse %s for include pattern: %s" %
+                                                  (content_info, traceback.format_exc()))

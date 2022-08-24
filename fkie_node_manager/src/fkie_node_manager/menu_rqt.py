@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import Signal
 from python_qt_binding.QtGui import QKeySequence
 try:
@@ -57,7 +56,8 @@ class MenuRqt(QMenu):
         QMenu.__init__(self)
         self.button = menu_button
         try:
-            rqt_icon_path = roslib.packages.find_resource('rqt_gui', 'rqt.png').pop()
+            rqt_icon_path = roslib.packages.find_resource(
+                'rqt_gui', 'rqt.png').pop()
             menu_button.setText('')
             menu_button.setIcon(QIcon(rqt_icon_path))
             # creates a default config menu
@@ -113,19 +113,24 @@ class MenuRqt(QMenu):
             import traceback
             print(traceback.format_exc())
             menu_button.setEnabled(False)
-            menu_button.setToolTip('rqt_gui not found! Please install rqt to use its plugins!')
+            menu_button.setToolTip(
+                'rqt_gui not found! Please install rqt to use its plugins!')
 
     def on_show_console_clicked(self):
-        self.start_rqt_plugin_signal.emit('Console', 'rqt_console.console.Console')
+        self.start_rqt_plugin_signal.emit(
+            'Console', 'rqt_console.console.Console')
 
     def on_show_logger_level_clicked(self):
-        self.start_rqt_plugin_signal.emit('Logger Level', 'rqt_logger_level.logger_level.LoggerLevel')
+        self.start_rqt_plugin_signal.emit(
+            'Logger Level', 'rqt_logger_level.logger_level.LoggerLevel')
 
     def on_show_tf_tree_clicked(self):
-        self.start_rqt_plugin_signal.emit('TF Tree', 'rqt_tf_tree.tf_tree.RosTfTree')
+        self.start_rqt_plugin_signal.emit(
+            'TF Tree', 'rqt_tf_tree.tf_tree.RosTfTree')
 
     def on_show_ros_graph_clicked(self):
-        self.start_rqt_plugin_signal.emit('Ros Graph', 'rqt_graph.ros_graph.RosGraph')
+        self.start_rqt_plugin_signal.emit(
+            'Ros Graph', 'rqt_graph.ros_graph.RosGraph')
 
     def on_start_rosbag_clicked(self):
         self.start_rqt_plugin_signal.emit('rosbag record', '')

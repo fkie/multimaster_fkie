@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import getpass
 import os
 import rospy
@@ -52,7 +51,8 @@ class MonitorServicer(mgrpc.MonitorServiceServicer):
         self._monitor.stop()
 
     def GetSystemDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_system_diagnostics(request.level, request.timestamp)
+        rosmsg = self._monitor.get_system_diagnostics(
+            request.level, request.timestamp)
         return grpc_msg(rosmsg)
 
     def GetSystemWarnings(self, request, context):
@@ -60,7 +60,8 @@ class MonitorServicer(mgrpc.MonitorServiceServicer):
         return grpc_msg(rosmsg)
 
     def GetDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_diagnostics(request.level, request.timestamp)
+        rosmsg = self._monitor.get_diagnostics(
+            request.level, request.timestamp)
         return grpc_msg(rosmsg)
 
     def GetWarnings(self, request, context):

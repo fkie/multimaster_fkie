@@ -32,7 +32,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 import argparse
 import os
 import rospy
@@ -297,15 +296,20 @@ def init_globals(masteruri):
 def init_arg_parser():
     global __version__
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", action="version", version="%s %s" % ("%(prog)s", __version__))
-    parser.add_argument("-f", "--file", nargs=1, help="loads the given file as default on start")
+    parser.add_argument("--version", action="version",
+                        version="%s %s" % ("%(prog)s", __version__))
+    parser.add_argument("-f", "--file", nargs=1,
+                        help="loads the given file as default on start")
     parser.add_argument("-m", "--muri", nargs=1, default='', help="starts ROS master with given URI, usefull on hosts "
                                                                   "with multiple interfaces. ROS_HOSTNAME will be set "
                                                                   "to the host of this URI, but only if it is not an IP.")
-    parser.add_argument("-p", "--port", nargs='?', default=22622, type=int, help="port for local monitoring (default: 22622)")
+    parser.add_argument("-p", "--port", nargs='?', default=22622,
+                        type=int, help="port for local monitoring (default: 22622)")
     group = parser.add_argument_group('echo')
-    group.add_argument("--echo", nargs=2, help="starts an echo dialog instead of node manager", metavar=('name', 'type'))
-    group.add_argument("--hz", action="store_true", help="shows only the Hz value instead of topic content in echo dialog")
+    group.add_argument(
+        "--echo", nargs=2, help="starts an echo dialog instead of node manager", metavar=('name', 'type'))
+    group.add_argument("--hz", action="store_true",
+                       help="shows only the Hz value instead of topic content in echo dialog")
     group.add_argument("--ssh", action="store_true", help="connects via SSH")
 
     return parser
@@ -336,7 +340,8 @@ def init_main_window(prog_name, masteruri, launch_files=[], port=22622):
     # setup the loglevel
     log_level = rospy.DEBUG
     try:
-        log_level = getattr(rospy, rospy.get_param('/%s/log_level' % prog_name, "INFO"))
+        log_level = getattr(rospy, rospy.get_param(
+            '/%s/log_level' % prog_name, "INFO"))
     except Exception as err:
         print("Error while set the log level: %s\n->INFO level will be used!" % err)
     rospy.init_node(prog_name, anonymous=False, log_level=log_level)
@@ -392,7 +397,8 @@ def main(name):
                                           parsed_args.echo[1], parsed_args.hz,
                                           parsed_args.ssh)
         else:
-            _MAIN_FORM = init_main_window(name, masteruri, parsed_args.file, parsed_args.port)
+            _MAIN_FORM = init_main_window(
+                name, masteruri, parsed_args.file, parsed_args.port)
         thread = threading.Thread(target=rospy.spin)
         thread.daemon = True
         thread.start()

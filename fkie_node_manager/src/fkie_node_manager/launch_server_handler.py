@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QObject, Signal
 import random
 import socket
@@ -160,7 +159,8 @@ class LaunchServerUpdateThread(QObject, threading.Thread):
             import traceback
 #      print traceback.print_exc()
             formatted_lines = traceback.format_exc(1).splitlines()
-            rospy.logwarn("Connection to launch server @ %s failed:\n\t%s", str(self._launch_serveruri), formatted_lines[-1])
+            rospy.logwarn("Connection to launch server @ %s failed:\n\t%s", str(
+                self._launch_serveruri), formatted_lines[-1])
             # 'print "request failed", self._monitoruri
             self.error_signal.emit(self._launch_serveruri, formatted_lines[-1])
         finally:

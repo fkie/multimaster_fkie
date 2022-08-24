@@ -47,28 +47,36 @@ class RosStateServicer(CrossbarBaseSession):
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self._endpoints = {}  # uri : Endpoint
         self._rosstate = None  # DiscoveredState
-        self.topic_name_state = '%s/%s/rosstate' % (nmd.settings.NM_DISCOVERY_NAMESPACE, nmd.settings.NM_DISCOVERY_NAME)
-        self.topic_name_endpoint = '%s/daemons' % (nmd.settings.NM_DISCOVERY_NAMESPACE)
+        self.topic_name_state = '%s/%s/rosstate' % (
+            nmd.settings.NM_DISCOVERY_NAMESPACE, nmd.settings.NM_DISCOVERY_NAME)
+        self.topic_name_endpoint = '%s/daemons' % (
+            nmd.settings.NM_DISCOVERY_NAMESPACE)
         qos_profile = QoSProfile(depth=100,
-            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-            # history=QoSHistoryPolicy.KEEP_LAST,
-            reliability=QoSReliabilityPolicy.RELIABLE)
-        nmd.rosnode.get_logger().info('listen for discovered items on %s' % self.topic_name_state)
-        self.sub_discovered_state = nmd.rosnode.create_subscription(DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_profile)
-        nmd.rosnode.get_logger().info('listen for endpoint items on %s' % self.topic_name_endpoint)
-        self.sub_endpoints = nmd.rosnode.create_subscription(Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_profile)
+                                 durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                 # history=QoSHistoryPolicy.KEEP_LAST,
+                                 reliability=QoSReliabilityPolicy.RELIABLE)
+        nmd.rosnode.get_logger().info('listen for discovered items on %s' %
+                                      self.topic_name_state)
+        self.sub_discovered_state = nmd.rosnode.create_subscription(
+            DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_profile)
+        nmd.rosnode.get_logger().info('listen for endpoint items on %s' %
+                                      self.topic_name_endpoint)
+        self.sub_endpoints = nmd.rosnode.create_subscription(
+            Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_profile)
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
         for uri, endpoint in endpoints.items():
-            provider = RosProvider(name=endpoint.ros_name, host=endpoint.name, port=port_from_uri(endpoint.uri))
+            provider = RosProvider(
+                name=endpoint.ros_name, host=endpoint.name, port=port_from_uri(endpoint.uri))
             result.append(provider)
         return result
 
     def _crossbar_publish_masters(self):
         result = self._endpoints_to_provider(self._endpoints)
         try:
-            self.publish('ros.provider.list', json.dumps(result, cls=SelfEncoder))
+            self.publish('ros.provider.list',
+                         json.dumps(result, cls=SelfEncoder))
         except Exception as cpe:
             pass
 
@@ -88,7 +96,7 @@ class RosStateServicer(CrossbarBaseSession):
             nmd.rosnode.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
 
-    def _on_msg_state(self, msg:DiscoveredState):
+    def _on_msg_state(self, msg: DiscoveredState):
         '''
         The method to handle the received Log messages.
         :param msg: the received message
@@ -101,7 +109,7 @@ class RosStateServicer(CrossbarBaseSession):
         except Exception:
             pass
 
-    def _on_msg_endpoint(self, msg:Endpoint):
+    def _on_msg_endpoint(self, msg: Endpoint):
         '''
         The method to handle the received Log messages.
         :param msg: the received message
@@ -139,22 +147,26 @@ class RosStateServicer(CrossbarBaseSession):
                     if te.name.startswith('rt/'):
                         if te.info == te.INFO_WRITER:
                             print("publisher", self._guid_to_str(te.guid))
-                            publisher[self._guid_to_str(te.guid)] = RosTopic(te.name, te.ttype)
+                            publisher[self._guid_to_str(te.guid)] = RosTopic(
+                                te.name, te.ttype)
                         elif te.info == te.INFO_READER:
                             print("subscriber")
-                            subscriber[self._guid_to_str(te.guid)] = RosTopic(te.name, te.ttype)
+                            subscriber[self._guid_to_str(te.guid)] = RosTopic(
+                                te.name, te.ttype)
                 for rn in rp.node_entities:
                     ros_node = RosNode(self._guid_to_str(rp.guid), rn.name)
                     ros_node.name = os.path.join(rn.ns, rn.name)
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
                         try:
-                            ros_node.publishers.append(publisher[self._guid_to_str(ntp)])
+                            ros_node.publishers.append(
+                                publisher[self._guid_to_str(ntp)])
                         except KeyError:
                             pass
                     for nts in rn.subscriber:
                         try:
-                            ros_node.subscribers.append(subscriber[self._guid_to_str(nts)])
+                            ros_node.subscribers.append(
+                                subscriber[self._guid_to_str(nts)])
                         except KeyError:
                             pass
                     result.append(ros_node)
@@ -181,7 +193,7 @@ class RosStateServicer(CrossbarBaseSession):
 #         self.name = name
 #         self.msgtype = msgtype
 #         self.publisher: List[str] = []
-#         self.subscriber: List[str] = []               
+#         self.subscriber: List[str] = []
         # try:
         #     iffilter = filter_interface
         #     ros_nodes = dict()
@@ -231,4 +243,3 @@ class RosStateServicer(CrossbarBaseSession):
         #     import traceback
         #     print(traceback.format_exc())
         # return result
-
