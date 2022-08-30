@@ -53,6 +53,7 @@ SCREEN = "/usr/bin/screen"
 ''':var SCREEN: Defines the path to screen binary.'''
 SLASH_SEP = '_'
 ''':var SLASH_SEP: this character is used to replace the slashes in ROS-Names.'''
+SCREEN_NAME_MAX_CHARS = 74
 
 
 def create_session_name(node=''):
@@ -68,6 +69,8 @@ def create_session_name(node=''):
         return ''
     result = rospy.names.ns_join('/', node).replace(SLASH_SEP, '%s%s' % (SLASH_SEP, SLASH_SEP))
     result = result.replace('/', SLASH_SEP)
+    if len(result) > SCREEN_NAME_MAX_CHARS:
+        result = '_~%s' % result[len(result)-SCREEN_NAME_MAX_CHARS-2:]
     return result
 
 
@@ -82,6 +85,8 @@ def session_name2node_name(session):
     node_name = session.replace('%s%s' % (SLASH_SEP, SLASH_SEP), '//')
     node_name = node_name.replace(SLASH_SEP, '/')
     node_name = node_name.replace('//', SLASH_SEP)
+    if node_name.startswith('/~'):
+        node_name = node_name[2:]
     return node_name
 
 
@@ -135,7 +140,7 @@ def get_active_screens(nodename=''):
                 if nodename:
                     # put all sessions which starts with '_'
                     if nodepart.startswith('_'):
-                        if nodename == session_name2node_name(nodepart):
+                        if nodepart == create_session_name(nodename):
                             result[screen_name] = nodename
                 else:
                     # only sessions for given node
