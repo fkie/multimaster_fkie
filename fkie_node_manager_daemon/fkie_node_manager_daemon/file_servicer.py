@@ -57,20 +57,10 @@ class FileServicer(fms_grpc.FileServiceServicer):
     FILE_CHUNK_SIZE = 1024
 
     def __init__(self):
-        nmd.rosnode.get_logger().info("Create file manger servicer")
+        nmd.ros_node.get_logger().info("Create file manger servicer")
         fms_grpc.FileServiceServicer.__init__(self)
         self.DIR_CACHE = {}
         self._peers = {}
-
-#     def _terminated(self):
-#         nm.rosnode.get_logger().info("terminated context")
-#
-#     def _register_callback(self, context):
-#         if (context.peer() not in self._peers):
-#             nm.rosnode.get_logger().info("Add callback to peer context @%s" % context.peer())
-#             if context.add_callback(self._terminated):
-#                 pass
-#                 # self._peers[context.peer()] = context
 
     def GetFileContent(self, request, context):
         result = fms.GetFileContentReply()
@@ -239,7 +229,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                     result.error_msg = 'no package found! If no destination path is given, only launch files from packages can be copied!'
                     result.error_file = request.path
             if path_dst:
-                nmd.rosnode.get_logger().debug("Copy '%s' to '%s' [package: '%s'] @ %s (overwrite: %s)" % (
+                nmd.ros_node.get_logger().debug("Copy '%s' to '%s' [package: '%s'] @ %s (overwrite: %s)" % (
                     path_src, path_dst, pkg_name, dest_uri, request.overwrite))
                 with FileIO(path_src, 'r') as outfile:
                     mtime = 0.0 if request.overwrite else os.path.getmtime(
@@ -247,7 +237,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
                     content = outfile.read()
                     # get channel to the remote grpc server
                     channel = remote.open_channel(
-                        dest_uri, rosnode=nmd.rosnode)
+                        dest_uri, rosnode=nmd.ros_node)
                     if channel is not None:
                         # save file on remote server
                         fs = fms_grpc.FileServiceStub(channel)
@@ -368,7 +358,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
         #         import rospkg
         #         substitution_args._rospack = rospkg.RosPack()
         #     except Exception as err:
-        #         nmd.rosnode.get_logger().warn("Cannot reset package cache: %s" % err)
+        #         nmd.ros_node.get_logger().warn("Cannot reset package cache: %s" % err)
         result = fms.ListPackagesReply()
         try:
             ret = get_packages(None)
@@ -427,7 +417,7 @@ class FileServicer(fms_grpc.FileServiceServicer):
         result = fms.ReturnStatus()
         try:
             if self._is_in_ros_root(request.path):
-                nmd.rosnode.get_logger().debug("Delete '%s'" % (request.path))
+                nmd.ros_node.get_logger().debug("Delete '%s'" % (request.path))
                 if os.path.isfile(request.path):
                     os.remove(request.path)
                     result.code = OK

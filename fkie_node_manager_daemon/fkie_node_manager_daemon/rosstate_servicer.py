@@ -43,7 +43,7 @@ from .url import port_from_uri
 class RosStateServicer(CrossbarBaseSession):
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = NMD_DEFAULT_PORT, test_env=False):
-        nmd.rosnode.get_logger().info("Create rosstate servicer")
+        nmd.ros_node.get_logger().info("Create ros_state servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self._endpoints = {}  # uri : Endpoint
         self._rosstate = None  # DiscoveredState
@@ -55,13 +55,13 @@ class RosStateServicer(CrossbarBaseSession):
                                  durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                  # history=QoSHistoryPolicy.KEEP_LAST,
                                  reliability=QoSReliabilityPolicy.RELIABLE)
-        nmd.rosnode.get_logger().info('listen for discovered items on %s' %
-                                      self.topic_name_state)
-        self.sub_discovered_state = nmd.rosnode.create_subscription(
+        nmd.ros_node.get_logger().info('listen for discovered items on %s' %
+                                       self.topic_name_state)
+        self.sub_discovered_state = nmd.ros_node.create_subscription(
             DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_profile)
-        nmd.rosnode.get_logger().info('listen for endpoint items on %s' %
-                                      self.topic_name_endpoint)
-        self.sub_endpoints = nmd.rosnode.create_subscription(
+        nmd.ros_node.get_logger().info('listen for endpoint items on %s' %
+                                       self.topic_name_endpoint)
+        self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_profile)
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
@@ -82,7 +82,7 @@ class RosStateServicer(CrossbarBaseSession):
 
     def get_publisher_count(self):
         if hasattr(self, 'topic_name_endpoint') and self.topic_name_endpoint is not None:
-            return nmd.rosnode.count_publishers(self.topic_name_endpoint)
+            return nmd.ros_node.count_publishers(self.topic_name_endpoint)
         return -1
 
     def stop(self):
@@ -90,10 +90,10 @@ class RosStateServicer(CrossbarBaseSession):
         Unregister the subscribed topic
         '''
         if hasattr(self, 'sub_discovered_state') and self.sub_discovered_state is not None:
-            nmd.rosnode.destroy_subscription(self.sub_discovered_state)
+            nmd.ros_node.destroy_subscription(self.sub_discovered_state)
             del self.sub_discovered_state
         if hasattr(self, 'sub_endpoints') and self.sub_endpoints is not None:
-            nmd.rosnode.destroy_subscription(self.sub_endpoints)
+            nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
 
     def _on_msg_state(self, msg: DiscoveredState):
@@ -102,8 +102,8 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_multimaster_msgs.DiscoveredState<XXX>
         '''
-        nmd.rosnode.get_logger().info('new message on %s' % self.topic_name_state)
-        self._rosstate = msg
+        nmd.ros_node.get_logger().info('new message on %s' % self.topic_name_state)
+        self._ros_state = msg
         try:
             self.publish('ros.system.changed', "")
         except Exception:
@@ -115,7 +115,7 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_multimaster_msgs.Endpoint<XXX>
         '''
-        nmd.rosnode.get_logger().info('new message on %s' % self.topic_name_endpoint)
+        nmd.ros_node.get_logger().info('new message on %s' % self.topic_name_endpoint)
         if msg.on_shutdown:
             if msg.uri in self._endpoints:
                 del self._endpoints[msg.uri]
@@ -124,20 +124,20 @@ class RosStateServicer(CrossbarBaseSession):
         self._crossbar_publish_masters()
 
     @wamp.register('ros.provider.get_list')
-    def getProviderList(self) -> str:
-        nmd.rosnode.get_logger().info('Request to [ros.provider.get_list]')
+    def crossbar_get_provider_list(self) -> str:
+        nmd.ros_node.get_logger().info('Request to [ros.provider.get_list]')
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     @wamp.register('ros.nodes.get_list')
-    def getNodeList(self) -> str:
-        nmd.rosnode.get_logger().info('Request to [ros.nodes.get_list]')
-        node_list: List[RosNode] = self.toCrossbar()
+    def crossbar_get_node_list(self) -> str:
+        nmd.ros_node.get_logger().info('Request to [ros.nodes.get_list]')
+        node_list: List[RosNode] = self.to_crossbar()
         return json.dumps(node_list, cls=SelfEncoder)
 
     def _guid_to_str(self, guid):
         return '.'.join('{:02X}'.format(c) for c in guid.data.tolist())
 
-    def toCrossbar(self) -> List[RosNode]:
+    def to_crossbar(self) -> List[RosNode]:
         result = []
         if self._rosstate is not None:
             publisher = {}

@@ -53,7 +53,7 @@ from .common import get_cwd, get_namespace, package_name, interpret_path, ns_joi
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 from .url import nmduri as url_nmduri
-import fkie_node_manager_daemon as nm
+import fkie_node_manager_daemon as nmd
 
 STARTED_BINARIES = dict()
 ''':var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries.'''
@@ -80,7 +80,7 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
     # set launch prefix
     prefix = n.launch_prefix if n.launch_prefix is not None else ''
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
-        nm.rosnode.get_logger().info("SCREEN prefix removed before start!")
+        nmd.ros_node.get_logger().info("SCREEN prefix removed before start!")
         prefix = ''
     result.prefix = '%s %s' % (cmd_prefix, prefix) if cmd_prefix else prefix
     result.env = {key: value for key, value in n.env_args}
@@ -118,9 +118,9 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
     for cparam in launchcfg.roscfg.clear_params:
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
-    nm.rosnode.get_logger().debug("set delete parameter:\n  %s" %
+    nmd.ros_node.get_logger().debug("set delete parameter:\n  %s" %
                                   '\n  '.join(result.clear_params))
-    nm.rosnode.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
+    nmd.ros_node.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
         val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
     return result
 
@@ -141,7 +141,7 @@ def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: La
     # set launch prefix
     prefix = perform_substitutions(lc, node._ExecuteProcess__prefix)
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
-        nm.rosnode.get_logger().info("SCREEN prefix removed before start!")
+        nmd.ros_node.get_logger().info("SCREEN prefix removed before start!")
         prefix = ''
     result.prefix = '%s %s' % (cmd_prefix, prefix) if cmd_prefix else prefix
 
@@ -183,7 +183,7 @@ def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: La
                 else:
                     raise RuntimeError(
                         'invalid normalized parameters {}'.format(repr(params)))
-    nm.rosnode.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
+    nmd.ros_node.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
         val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
 
     # Prepare the ros_specific_arguments list and add it to the context so that the
@@ -265,7 +265,7 @@ def run_node(startcfg):
             # TODO: check if we have to prepand --ros-args
             if arg.startswith('$(find'):
                 new_arg = interpret_path(arg)
-                nm.rosnode.get_logger().debug("interpret arg '%s' to '%s'" % (arg, new_arg))
+                nmd.ros_node.get_logger().debug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
         print("startcfg", startcfg)
         if not startcfg.cmd:  # it is a node
@@ -301,7 +301,7 @@ def run_node(startcfg):
                 cmd_type = get_executable_path(
                     package_name=startcfg.package, executable_name=startcfg.binary)
             except PackageNotFound as e:
-                nm.rosnode.get_logger().warn("resource not found: %s" % e)
+                nmd.ros_node.get_logger().warn("resource not found: %s" % e)
                 raise exceptions.ResourceNotFound(
                     startcfg.package, "resource not found: %s" % e)
             except MultipleExecutables as e:
@@ -367,19 +367,19 @@ def run_node(startcfg):
         # cmd_str = '%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args))
         cmd_str = ' '.join([screen.get_cmd(
             startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, *args])
-        nm.rosnode.get_logger().info("%s (launch_file: '%s', daemonuri: %s)" %
+        nmd.ros_node.get_logger().info("%s (launch_file: '%s', daemonuri: %s)" %
                                      (cmd_str, startcfg.config_path, startcfg.daemonuri))
-        nm.rosnode.get_logger().debug(
+        nmd.ros_node.get_logger().debug(
             "environment while run node '%s': '%s'" % (cmd_str, new_env))
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
-                        startcfg.fullname, description="Run [%s]%s" % (startcfg.package, startcfg.binary), rosnode=nm.rosnode)
+                        startcfg.fullname, description="Run [%s]%s" % (startcfg.package, startcfg.binary), rosnode=nmd.ros_node)
     else:
         nmduri = startcfg.nmduri
-        nm.rosnode.get_logger().info("remote run node '%s' at '%s'" % (nodename, nmduri))
+        nmd.ros_node.get_logger().info("remote run node '%s' at '%s'" % (nodename, nmduri))
         startcfg.params.update(_params_to_package_path(startcfg.params))
         startcfg.args = _args_to_package_path(startcfg.args)
         # run on a remote machine
-        channel = remote.open_channel(nmduri, rosnode=nm.rosnode)
+        channel = remote.open_channel(nmduri, rosnode=nmd.ros_node)
         if channel is None:
             raise exceptions.StartException(
                 "Unknown launch manager url for host %s to start %s" % (nmduri, startcfg.fullname))
@@ -389,7 +389,7 @@ def run_node(startcfg):
 
 def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container_name: Text, context: LaunchContext):
     # Create a client to load nodes in the target container.
-    client_load_node = nm.rosnode.create_client(
+    client_load_node = nmd.ros_node.create_client(
         composition_interfaces.srv.LoadNode, '%s/_container/load_node' % container_name)
     composable_node_description = node
     request = composition_interfaces.srv.LoadNode.Request()
@@ -434,14 +434,14 @@ def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container
     if not client_load_node.wait_for_service(timeout_sec=1.0):
         error_msg = 'Timeout while wait for container %s to load %s' % (
             container_name, request.plugin_name)
-        nm.rosnode.get_logger().error(error_msg)
-        nm.rosnode.destroy_client(client_load_node)
+        nmd.ros_node.get_logger().error(error_msg)
+        nmd.ros_node.destroy_client(client_load_node)
         raise exceptions.StartException(error_msg)
     print("call client")
     response = client_load_node.call(request)
     print("response received")
     node_name = response.full_node_name if response.full_node_name else request.node_name
-    nm.rosnode.destroy_client(client_load_node)
+    nmd.ros_node.destroy_client(client_load_node)
     if response.success:
         # if node_name is not None:
         #     add_node_name(context, node_name)
@@ -452,7 +452,7 @@ def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container
         #             'there are now at least {} nodes with the name {} created within this '
         #             'launch context'.format(node_name_count, node_name)
         #         )
-        nm.rosnode.get_logger().info("Loaded node '{}' in container '{}'".format(
+        nmd.ros_node.get_logger().info("Loaded node '{}' in container '{}'".format(
             response.full_node_name, container_name
         ))
     else:
@@ -460,7 +460,7 @@ def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container
             node_name, request.plugin_name, container_name,
             response.error_message
         )
-        nm.rosnode.get_logger().error(error_msg)
+        nmd.ros_node.get_logger().error(error_msg)
         raise exceptions.StartException(error_msg)
     print("LOADED")
 
@@ -539,11 +539,11 @@ def _get_respawn_params(node: launch_ros.actions.node.Node) -> {}:
 #         # clear specified parameter namespaces
 #         # #2468 unify clear params to prevent error
 #         for p in clear_params:
-#             param_server_multi.deleteParam(nm.rosnode.get_name(), p)
+#             param_server_multi.deleteParam(nmd.ros_node.get_name(), p)
 #         r = param_server_multi()
 #         for code, msg, _ in r:
 #             if code != 1 and not msg.find("is not set"):
-#                 nm.rosnode.get_logger().warn("Failed to clear parameter: %s", msg)
+#                 nmd.ros_node.get_logger().warn("Failed to clear parameter: %s", msg)
 # #          raise StartException("Failed to clear parameter: %s"%(msg))
 
 #         # multi-call objects are not reusable
@@ -554,9 +554,9 @@ def _get_respawn_params(node: launch_ros.actions.node.Node) -> {}:
 #             # resolve path elements
 #             if isinstance(value, types.StringTypes) and (value.startswith('$')):
 #                 value = interpret_path(value)
-#                 nm.rosnode.get_logger().debug("interpret parameter '%s' to '%s'" % (value, pval))
+#                 nmd.ros_node.get_logger().debug("interpret parameter '%s' to '%s'" % (value, pval))
 #             # add parameter to the multicall
-#             param_server_multi.setParam(nm.rosnode.get_name(), pkey, value)
+#             param_server_multi.setParam(nmd.ros_node.get_name(), pkey, value)
 #             test_ret = _test_value(pkey, value)
 #             if test_ret:
 #                 param_errors.extend(test_ret)
@@ -581,7 +581,7 @@ def _test_value(key, value):
     if value is None:
         msg = "Invalid parameter value of '%s': '%s'" % (key, value)
         result.append(msg)
-        nm.rosnode.get_logger().warn(msg)
+        nmd.ros_node.get_logger().warn(msg)
     elif isinstance(value, list):
         for val in value:
             ret = _test_value(key, val)
@@ -600,7 +600,7 @@ def _abs_to_package_path(path):
     pname, ppath = package_name(path)
     if pname:
         result = path.replace(ppath, '$(find-pkg-share %s)' % pname)
-        nm.rosnode.get_logger().debug("replace abs path '%s' by '%s'" % (path, result))
+        nmd.ros_node.get_logger().debug("replace abs path '%s' by '%s'" % (path, result))
     return result
 
 

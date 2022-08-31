@@ -19,7 +19,6 @@
 
 from datetime import datetime
 import os
-import rclpy
 import signal
 import subprocess
 import time
@@ -30,7 +29,7 @@ import fkie_node_manager_daemon as nmd
 class MonitorServicer():
 
     def __init__(self, settings):
-        nmd.rosnode.get_logger().info("Create monitor servicer")
+        nmd.ros_node.get_logger().info("Create monitor servicer")
         # mgrpc.MonitorServiceServicer.__init__(self)
         self._monitor = Service(settings)
 
@@ -66,7 +65,7 @@ class MonitorServicer():
     def SetTime(self, request, context):
         dtime = datetime.fromtimestamp(request.timestamp)
         args = ['sudo', '-n', '/bin/date', '-s', '%s' % dtime]
-        nmd.rosnode.get_logger().info('Set time: %s' % args)
+        nmd.ros_node.get_logger().info('Set time: %s' % args)
         subp = subprocess.Popen(args, stderr=subprocess.PIPE)
         result_err = ''
         if subp.stderr is not None:

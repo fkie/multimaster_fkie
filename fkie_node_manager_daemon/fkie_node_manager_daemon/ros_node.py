@@ -57,10 +57,10 @@ class RosNodeLauncher(object):
             # os.environ.pop('ROS_DOMAIN_ID')
         rclpy.init(args=remaining_args)
         self.rosnode = rclpy.create_node(self.name, namespace='/_node_manager')
-        nmd.rosnode = self.rosnode
+        nmd.ros_node = self.rosnode
         # set loglevel to DEBUG
-        nmd.rosnode.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
-        # nmd.rosnode.declare_parameter('force_insecure', value=False, descriptor=ParameterDescriptor(description='Ignore security options and use insecure channel'), ignore_override = False)
+        nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+        # nmd.ros_node.declare_parameter('force_insecure', value=False, descriptor=ParameterDescriptor(description='Ignore security options and use insecure channel'), ignore_override = False)
         # start server and load launch files provided by arguments
         self.server = Server(
             self.rosnode, default_domain_id=self.ros_domain_id)

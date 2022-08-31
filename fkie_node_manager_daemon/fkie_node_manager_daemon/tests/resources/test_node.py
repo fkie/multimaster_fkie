@@ -17,7 +17,7 @@ try:
 except Exception:
     # on load error the process will be killed to notify user in node_manager
     # about error
-    nm.rosnode.get_logger().warn("%s", traceback.format_exc())
+    nmd.ros_node.get_logger().warn("%s", traceback.format_exc())
     sys.stdout.write(traceback.format_exc())
     sys.stdout.flush()
     os.kill(os.getpid(), signal.SIGKILL)

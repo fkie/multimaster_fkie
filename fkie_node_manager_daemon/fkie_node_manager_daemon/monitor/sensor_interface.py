@@ -33,7 +33,7 @@ class SensorInterface(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, hostname: str = '', sensorname: str = 'noname', interval: float = 1.0):
-        nmd.rosnode.get_logger().info("Loading monitor service: %s" % type(self).__name__)
+        nmd.ros_node.get_logger().info("Loading monitor service: %s" % type(self).__name__)
         self.hostname = hostname
         self.mutex = threading.RLock()
         self._interval = interval

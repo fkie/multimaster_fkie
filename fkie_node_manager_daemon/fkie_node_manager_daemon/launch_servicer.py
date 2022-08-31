@@ -112,7 +112,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
     '''
 
     def __init__(self, ros_domain_id=-1):
-        nmd.rosnode.get_logger().info("Create launch servicer")
+        nmd.ros_node.get_logger().info("Create launch servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
         self.__launch_context = LaunchContext(argv=sys.argv[1:])
         self.__launch_context._set_asyncio_loop(asyncio.get_event_loop())
@@ -123,11 +123,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
 
     def _terminated(self):
-        nmd.rosnode.get_logger().info("terminated launch context")
+        nmd.ros_node.get_logger().info("terminated launch context")
 
     def _register_callback(self, context):
         if (context.peer() not in self._peers):
-            nmd.rosnode.get_logger().info("Add callback to peer context @%s" % context.peer())
+            nmd.ros_node.get_logger().info("Add callback to peer context @%s" % context.peer())
             if context.add_callback(self._terminated):
                 self._peers[context.peer()] = context
 
@@ -152,14 +152,14 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         launch_config = LaunchConfig(path)
         loaded, res_argv = launch_config.load([])
         if loaded:
-            nmd.rosnode.get_logger().debug("loaded %s\n  used args: %s" % (path, res_argv))
+            nmd.ros_node.get_logger().debug("loaded %s\n  used args: %s" % (path, res_argv))
             self._loaded_files[CfgId(path, '')] = launch_config
             if autostart:
                 start_thread = threading.Thread(
                     target=self._autostart_nodes_threaded, args=(launch_config,))
                 start_thread.start()
         else:
-            nmd.rosnode.get_logger().warn("load %s failed!" % (path))
+            nmd.ros_node.get_logger().warn("load %s failed!" % (path))
 
     def start_node(self, node_name):
         global IS_RUNNING
@@ -183,12 +183,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             try:
                 if self._get_start_exclude(cfg, node_fullname):
                     # skip autostart
-                    nmd.rosnode.get_logger().debug(
+                    nmd.ros_node.get_logger().debug(
                         "%s is in exclude list, skip autostart" % node_fullname)
                     continue
                 self._autostart_node(node_fullname, cfg)
             except Exception as err:
-                nmd.rosnode.get_logger().warn("Error while start %s: %s" % (node_fullname, err))
+                nmd.ros_node.get_logger().warn("Error while start %s: %s" % (node_fullname, err))
 
     def _autostart_node(self, node_name, cfg):
         global IS_RUNNING
@@ -248,7 +248,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             if topic:
                 import rosgraph
                 if rosgraph.names.is_private(topic):
-                    nmd.rosnode.get_logger().warn(
+                    nmd.ros_node.get_logger().warn(
                         'Private for autostart required topic `%s` is ignored!' % topic)
                     topic = ''
                 elif not rosgraph.names.is_global(topic):
@@ -272,7 +272,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         '''
         result = lmsg.LoadLaunchReply()
         launchfile = request.path
-        nmd.rosnode.get_logger().debug("Loading launch file: %s (package: %s, launch: %s), daemonuri: %s, args: %s" %
+        nmd.ros_node.get_logger().debug("Loading launch file: %s (package: %s, launch: %s), daemonuri: %s, args: %s" %
                                        (launchfile, request.package, request.launch, request.daemonuri, request.args))
         if not launchfile:
             # determine path from package name and launch name
@@ -293,7 +293,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                             request.launch, request.package)
                         for mp in paths:
                             result.path.append(mp)
-                        nmd.rosnode.get_logger().debug("..load aborted, MULTIPLE_LAUNCHES")
+                        nmd.ros_node.get_logger().debug("..load aborted, MULTIPLE_LAUNCHES")
                         return result
                 else:
                     launchfile = paths[0]
@@ -301,7 +301,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 result.status.code = FILE_NOT_FOUND
                 result.status.error_msg = "Package %s not found: %s" % (
                     request.package, rnf)
-                nmd.rosnode.get_logger().debug("..load aborted, FILE_NOT_FOUND")
+                nmd.ros_node.get_logger().debug("..load aborted, FILE_NOT_FOUND")
                 return result
         result.path.append(launchfile)
         # it is already loaded?
@@ -309,7 +309,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             result.status.code = ALREADY_OPEN
             result.status.error_msg = "Launch file %s already loaded!" % (
                 launchfile)
-            nmd.rosnode.get_logger().debug("..load aborted, ALREADY_OPEN")
+            nmd.ros_node.get_logger().debug("..load aborted, ALREADY_OPEN")
             return result
         # load launch configuration
         try:
@@ -326,7 +326,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     if arg.name not in provided_args:
                         result.args.extend(req_args)
                         result.status.code = PARAMS_REQUIRED
-                        nmd.rosnode.get_logger().debug("..load aborted, PARAMS_REQUIRED")
+                        nmd.ros_node.get_logger().debug("..load aborted, PARAMS_REQUIRED")
                         return result
             # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
             launch_arguments = [(arg.name, arg.value) for arg in request.args]
@@ -338,13 +338,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             #result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(
                 launchfile, request.daemonuri)] = launch_config
-            nmd.rosnode.get_logger().debug("..load complete!")
+            nmd.ros_node.get_logger().debug("..load complete!")
         except Exception as e:
             import traceback
             print(traceback.format_exc())
             err_text = "%s loading failed!" % launchfile
             err_details = "%s: %s" % (err_text, e)
-            nmd.rosnode.get_logger().warn("Loading launch file: %s" % err_details)
+            nmd.ros_node.get_logger().warn("Loading launch file: %s" % err_details)
             result.status.code = ERROR
             result.status.error_msg = err_details
             return result
@@ -355,7 +355,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         result = lmsg.LoadLaunchReply()
         result.path.append(request.path)
         cfgid = CfgId(request.path, request.daemonuri)
-        nmd.rosnode.get_logger().debug("reload launch file: %s, daemonuri: %s" %
+        nmd.ros_node.get_logger().debug("reload launch file: %s, daemonuri: %s" %
                                        (request.path, request.daemonuri))
         if cfgid in self._loaded_files:
             try:
@@ -402,7 +402,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 print(traceback.format_exc())
                 err_text = "%s loading failed!" % request.path
                 err_details = "%s: %s" % (err_text, e)
-                nmd.rosnode.get_logger().warn("Loading launch file: %s" % err_details)
+                nmd.ros_node.get_logger().warn("Loading launch file: %s" % err_details)
                 result.status.code = ERROR
                 result.status.error_msg = err_details
                 return result
@@ -422,7 +422,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, e)
-                nmd.rosnode.get_logger().warn("Unloading launch file: %s" % err_details)
+                nmd.ros_node.get_logger().warn("Unloading launch file: %s" % err_details)
                 result.status.code = ERROR
                 result.status.error_msg = err_details
                 return result
@@ -505,11 +505,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
     def StartNode(self, request_iterator, context):
         for request in request_iterator:
             try:
-                nmd.rosnode.get_logger().debug('Start node %s' % request.name)
+                nmd.ros_node.get_logger().debug('Start node %s' % request.name)
                 result = lmsg.StartNodeReply(name=request.name)
                 launch_configs = []
                 if request.opt_launch:
-                    nmd.rosnode.get_logger().debug('Use provided launch file=%s; daemonuri=%s;' %
+                    nmd.ros_node.get_logger().debug('Use provided launch file=%s; daemonuri=%s;' %
                                                    (request.opt_launch, request.daemonuri))
                     cfgid = CfgId(request.opt_launch, request.daemonuri)
                     if cfgid in self._loaded_files:
@@ -520,7 +520,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     for cfgid, launchcfg in self._loaded_files.items():
                         n = launchcfg.get_node(request.name)
                         if n is not None:
-                            nmd.rosnode.get_logger().debug('Found launch file=%s;' % (launchcfg.filename))
+                            nmd.ros_node.get_logger().debug('Found launch file=%s;' % (launchcfg.filename))
                             launch_configs.append(launchcfg)
                 if not launch_configs:
                     result.status.code = NODE_NOT_FOUND
@@ -540,7 +540,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                             # load plugin in container
                             container_name = launch_configs[0].get_name_from_node(
                                 n.composable_container)
-                            nmd.rosnode.get_logger().debug('Load node=%s; as plugin into container=%s;' %
+                            nmd.ros_node.get_logger().debug('Load node=%s; as plugin into container=%s;' %
                                                            (request.name, container_name))
                             launcher.run_composed_node(
                                 n.node, container_name=container_name, context=launch_configs[0].context)
@@ -548,7 +548,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                             startcfg = launcher.from_node(
                                 n.node, launchcfg=launch_configs[0], executable=request.opt_binary, loglevel=request.loglevel, logformat=request.logformat, cmd_prefix=request.cmd_prefix)
                             launcher.run_node(startcfg)
-                            nmd.rosnode.get_logger().debug('Node=%s; start finished' % (request.name))
+                            nmd.ros_node.get_logger().debug('Node=%s; start finished' % (request.name))
                         result.status.code = OK
                     yield result
                 except exceptions.BinarySelectionRequest as bsr:
@@ -616,7 +616,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                         resolve_args.update(lcfg.resolve_dict)
                         break
             # replay each file
-            for inc_file in find_included_files(request.path, recursive=request.recursive, unique=request.unique, include_pattern=pattern, search_in_ext=search_in_ext, resolve_args=resolve_args, rosnode=nmd.rosnode):
+            for inc_file in find_included_files(request.path, recursive=request.recursive, unique=request.unique, include_pattern=pattern, search_in_ext=search_in_ext, resolve_args=resolve_args, rosnode=nmd.ros_node):
                 reply = lmsg.IncludedFilesReply()
                 reply.root_path = inc_file.path_or_str
                 reply.linenr = inc_file.line_number
@@ -631,7 +631,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                 # return each file one by one
                 yield reply
         except Exception:
-            nmd.rosnode.get_logger().warn("Can't get include files for %s: %s" %
+            nmd.ros_node.get_logger().warn("Can't get include files for %s: %s" %
                                           (request.path, traceback.format_exc()))
 
     def InterpretPath(self, request, context):
@@ -677,7 +677,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
                     already_in.append(incf)
             return result
         except Exception:
-            nmd.rosnode.get_logger().warn(traceback.format_exc())
+            nmd.ros_node.get_logger().warn(traceback.format_exc())
 
     def GetChangedBinaries(self, request, context):
         result = lmsg.MtimeNodes()

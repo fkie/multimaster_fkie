@@ -584,7 +584,7 @@ class LaunchConfig(object):
                 if param.endswith('/robots'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 5:
-                            nm.rosnode.get_logger().warn(
+                            nmd.ros_node.get_logger().warn(
                                 "WRONG format, expected: ['host', 'type', 'name', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
@@ -612,7 +612,7 @@ class LaunchConfig(object):
                 if param.endswith('capabilities'):
                     if isinstance(p.value, list):
                         if len(p.value) > 0 and len(p.value[0]) != 4:
-                            nm.rosnode.get_logger().warn(
+                            nmd.ros_node.get_logger().warn(
                                 "WRONG format, expected: ['name', 'type', 'images', 'description'] -> ignore; param: %s" % param)
                         else:
                             for entry in p.value:
@@ -687,7 +687,7 @@ class LaunchConfig(object):
             nodename = self.get_name_from_node(item.node)
             if (nodename == name):
                 return item
-        nmd.rosnode.get_logger().debug("Node '%s' NOT found" % name)
+        nmd.ros_node.get_logger().debug("Node '%s' NOT found" % name)
         return None
 
     @classmethod
@@ -701,7 +701,7 @@ class LaunchConfig(object):
             if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
                 result = ''
             if result:
-                nmd.rosnode.get_logger().debug("Nodename '%s' from name" % result)
+                nmd.ros_node.get_logger().debug("Nodename '%s' from name" % result)
         if not result and hasattr(node, 'node_name') and node.node_name:
             if isinstance(node.node_name, str):
                 result = node.node_name
@@ -710,7 +710,7 @@ class LaunchConfig(object):
             if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
                 result = ''
             if result:
-                nmd.rosnode.get_logger().debug("Nodename '%s' from node_name" % result)
+                nmd.ros_node.get_logger().debug("Nodename '%s' from node_name" % result)
         if not result and hasattr(node, '_Node__executable'):
             # use executable
             if isinstance(node._Node__executable, str):
@@ -718,7 +718,7 @@ class LaunchConfig(object):
             else:
                 result = SEP.join([n.text for n in node._Node__executable])
             if result:
-                nmd.rosnode.get_logger().debug("Nodename '%s' from _Node__executable" % result)
+                nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__executable" % result)
         if not result and hasattr(node, '_Node__node_executable'):
             # use node_executable; before foxy
             if isinstance(node._Node__node_executable, str):
@@ -727,11 +727,11 @@ class LaunchConfig(object):
                 result = SEP.join(
                     [n.text for n in node._Node__node_executable])
             if result:
-                nmd.rosnode.get_logger().debug("Nodename '%s' from _Node__node_executable" % result)
+                nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__node_executable" % result)
         if not result and hasattr(node, 'cmd'):
             result = cls.cmd_to_name(node.cmd)
             if result:
-                nmd.rosnode.get_logger().debug("Nodename '%s' from cmd" % result)
+                nmd.ros_node.get_logger().debug("Nodename '%s' from cmd" % result)
         if result:
             if not result.startswith(SEP) and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
                 ns = node.expanded_node_namespace if hasattr(
@@ -740,7 +740,7 @@ class LaunchConfig(object):
                     ns = SEP
                 result = ns_join(ns, result)
         else:
-            nmd.rosnode.get_logger().debug("No name for node found: %s %s" %
+            nmd.ros_node.get_logger().debug("No name for node found: %s %s" %
                                            (type(node), dir(node)))
             # print("describe", node.describe(), dir(node.describe()), str(node.describe()))
             # print("'cmd'", " ".join([str(n) for n in node.cmd]))

@@ -127,7 +127,7 @@ class Settings:
             else:
                 result = value
         except Exception as exc:
-            nmd.rosnode.get_logger().debug("Cant't get parameter '%s', full parameter path: '%s'; use default value: %s" %
+            nmd.ros_node.get_logger().debug("Cant't get parameter '%s', full parameter path: '%s'; use default value: %s" %
                                            (exc, param_name, default_value))
         return result
 
@@ -173,7 +173,7 @@ class Settings:
             if changed:
                 self.save()
         except Exception as exc:
-            nmd.rosnode.get_logger().debug(
+            nmd.ros_node.get_logger().debug(
                 "Cant't set parameter '%s', full parameter path: '%s'" % (exc, param_name))
 
     def reload(self):
@@ -187,14 +187,14 @@ class Settings:
                     result = ruamel.yaml.load(
                         stream, Loader=ruamel.yaml.Loader)
                     if result is None:
-                        nmd.rosnode.get_logger().info('reset configuration file %s' % self.filename)
+                        nmd.ros_node.get_logger().info('reset configuration file %s' % self.filename)
                         self._cfg = self.default()
                         self.save()
                     else:
-                        nmd.rosnode.get_logger().info('loaded configuration from %s' % self.filename)
+                        nmd.ros_node.get_logger().info('loaded configuration from %s' % self.filename)
                         self._cfg = result
             except (ruamel.yaml.YAMLError, IOError) as exc:
-                nmd.rosnode.get_logger().info('%s: use default configuration!' % exc)
+                nmd.ros_node.get_logger().info('%s: use default configuration!' % exc)
                 self._cfg = self.default()
             self._notify_reload_callbacks()
 
@@ -206,9 +206,9 @@ class Settings:
             try:
                 ruamel.yaml.dump(self._cfg, stream,
                                  Dumper=ruamel.yaml.RoundTripDumper)
-                nmd.rosnode.get_logger().debug("Configuration saved to '%s'" % self.filename)
+                nmd.ros_node.get_logger().debug("Configuration saved to '%s'" % self.filename)
             except ruamel.yaml.YAMLError as exc:
-                nmd.rosnode.get_logger().warn(
+                nmd.ros_node.get_logger().warn(
                     "Cant't save configuration to '%s': %s" % (self.filename, exc))
 
     def yaml(self, _nslist=[]):
@@ -232,10 +232,10 @@ class Settings:
                 data, Loader=ruamel.yaml.Loader), self._cfg)
             do_reset = self.param('global/reset', False)
             if do_reset:
-                nmd.rosnode.get_logger().info("Reset configuration requested!")
+                nmd.ros_node.get_logger().info("Reset configuration requested!")
                 self._cfg = self.default()
             else:
-                nmd.rosnode.get_logger().debug("new configuration applied, save now.")
+                nmd.ros_node.get_logger().debug("new configuration applied, save now.")
             self.save()
             self._notify_reload_callbacks()
 

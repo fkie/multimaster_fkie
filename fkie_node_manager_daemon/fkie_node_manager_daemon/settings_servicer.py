@@ -26,9 +26,9 @@ from .settings import Settings
 class SettingsServicer():
 
     def __init__(self):
-        nmd.rosnode.get_logger().info("Create settings servicer")
+        nmd.ros_node.get_logger().info("Create settings servicer")
         self.settings = Settings(version=version.detect_version(
-            nmd.rosnode, 'fkie_node_manager_daemon')[0])
+            nmd.ros_node, 'fkie_node_manager_daemon')[0])
 
     def GetConfig(self, request, context):
         pass

@@ -77,7 +77,7 @@ class Server:
         self.pub_endpoint = rosnode.create_publisher(
             Endpoint, 'daemons', qos_profile=qos_profile)
         self.rosname = ns_join(
-            nmd.rosnode.get_namespace(), nmd.rosnode.get_name())
+            nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
 
     def __del__(self):
         self.crossbar_loop.stop()
@@ -89,10 +89,10 @@ class Server:
     def start(self, uri: Text, displayed_name: Text = '') -> bool:
         if displayed_name:
             self.name = displayed_name
-        nmd.rosnode.get_logger().info("Connect to crossbar server on %s" % uri)
+        nmd.ros_node.get_logger().info("Connect to crossbar server on %s" % uri)
         # self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
         port = self.crossbar_port
-        # security.init_keys(nmd.rosnode)
+        # security.init_keys(nmd.ros_node)
         # # create credentials
         # has_credentials = security.has_keys()
         # if has_credentials:
@@ -101,17 +101,17 @@ class Server:
         #         server_credentials = grpc.ssl_server_credentials((security.get_keys(),), root_certificates=security.get_ca_cert(), require_client_auth=True)
         #         port = self.server.add_secure_port(uri, server_credentials)
         #         while port == 0 and rclpy.ok():
-        #             nmd.rosnode.get_logger().warn("can not add secure channel to '%s', try again..." % uri)
+        #             nmd.ros_node.get_logger().warn("can not add secure channel to '%s', try again..." % uri)
         #             time.sleep(2.)
         #             port = self.server.add_secure_port(uri, server_credentials)
         #     except Exception as err:
-        #         nmd.rosnode.get_logger().error('Error while create secure channel: %s' % err)
+        #         nmd.ros_node.get_logger().error('Error while create secure channel: %s' % err)
         #         return False
         # elif not security.is_strict_mode():
         #     # create insecure channel
         #     port = self.server.add_insecure_port(uri)
         #     while port == 0 and rclpy.ok():
-        #         nmd.rosnode.get_logger().warn("can not add insecure channel to '%s', try again..." % uri)
+        #         nmd.ros_node.get_logger().warn("can not add insecure channel to '%s', try again..." % uri)
         #         time.sleep(2.)
         #         port = self.server.add_insecure_port(uri)
         # else:
@@ -124,7 +124,7 @@ class Server:
         # stgrpc.add_SettingsServiceServicer_to_server(self.settings_servicer, self.server)
         # vgrpc.add_VersionServiceServicer_to_server(VersionServicer(), self.server)
         # self.server.start()
-        # nmd.rosnode.get_logger().info("Server at '%s' started using %s channel!" % (uri, 'secure' if has_credentials else 'insecure'))
+        # nmd.ros_node.get_logger().info("Server at '%s' started using %s channel!" % (uri, 'secure' if has_credentials else 'insecure'))
         # else:
         # return False
         # update name if port is not a default one
@@ -158,12 +158,12 @@ class Server:
         #self.launch_servicer.load_launch_file(interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
-        nmd.rosnode.get_logger().info("Service request to load and start %s" % request.path)
+        nmd.ros_node.get_logger().info("Service request to load and start %s" % request.path)
         #self.launch_servicer.load_launch_file(interpret_path(request.path), True)
         return LoadLaunch.Response()
 
     def _rosservice_load_launch(self, request):
-        nmd.rosnode.get_logger().info("Service request to load %s" % request.path)
+        nmd.ros_node.get_logger().info("Service request to load %s" % request.path)
         self.launch_servicer.load_launch_file(
             interpret_path(request.path), False)
         return LoadLaunch.Response()

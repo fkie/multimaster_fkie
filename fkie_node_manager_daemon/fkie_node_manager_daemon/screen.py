@@ -110,7 +110,7 @@ def get_active_screens(nodename=''):
     output = str(ps.stdout.read(), 'utf-8')
     if output:
         if time.time() - starttime > 1.0:
-            nmd.rosnode.get_logger().warn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" %
+            nmd.ros_node.get_logger().warn("'%s -ls' took too long (%.3f sec)! Fix your network configuration!" %
                                           (SCREEN, time.time() - starttime))
         splits = output.splitlines()
         for item in splits:

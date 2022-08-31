@@ -28,7 +28,7 @@ from .ros_node import RosNodeLauncher
 #     pass
 
 # the rosnode is assigned in :class:RosNodeLauncher while init
-rosnode = None
+ros_node = None
 
 
 def main():

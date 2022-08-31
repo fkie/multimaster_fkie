@@ -81,10 +81,10 @@ class Service:
             'global/use_diagnostics_agg', False)
         self._sub_diag = None
         if self.use_diagnostics_agg:
-            self._sub_diag = nmd.rosnode.create_subscription(
+            self._sub_diag = nmd.ros_node.create_subscription(
                 DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
         else:
-            self._sub_diag = nmd.rosnode.create_subscription(
+            self._sub_diag = nmd.ros_node.create_subscription(
                 DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
         hostname = get_host_name()
 
@@ -102,13 +102,13 @@ class Service:
         value = settings.param('global/use_diagnostics_agg', False)
         if value != self.use_diagnostics_agg:
             if self._sub_diag is not None:
-                nmd.rosnode.destroy_subscription(self._sub_diag)
+                nmd.ros_node.destroy_subscription(self._sub_diag)
                 self._sub_diag = None
             if value:
-                self._sub_diag = nmd.rosnode.create_subscription(
+                self._sub_diag = nmd.ros_node.create_subscription(
                     DiagnosticArray, '/diagnostics_agg', self._callback_diagnostics, 100)
             else:
-                self._sub_diag = nmd.rosnode.create_subscription(
+                self._sub_diag = nmd.ros_node.create_subscription(
                     DiagnosticArray, '/diagnostics', self._callback_diagnostics, 100)
             self.use_diagnostics_agg = value
 
@@ -157,5 +157,5 @@ class Service:
                 sensor.cancel_timer()
             # destroy subscription to avoid runtime warnings
             if self._sub_diag is not None:
-                nmd.rosnode.destroy_subscription(self._sub_diag)
+                nmd.ros_node.destroy_subscription(self._sub_diag)
                 self._sub_diag = None

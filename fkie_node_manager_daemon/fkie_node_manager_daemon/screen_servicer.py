@@ -28,7 +28,7 @@ from . import screen
 class ScreenServicer(sgrpc.ScreenServiceServicer):
 
     def __init__(self):
-        nmd.rosnode.get_logger().info("Create screen servicer")
+        nmd.ros_node.get_logger().info("Create screen servicer")
         sgrpc.ScreenServiceServicer.__init__(self)
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
 

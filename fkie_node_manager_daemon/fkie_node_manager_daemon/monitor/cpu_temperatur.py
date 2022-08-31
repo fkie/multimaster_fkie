@@ -68,6 +68,6 @@ class CpuTemperatur(SensorInterface):
         except Exception as error:
             import traceback
             print(traceback.format_exc())
-            nmd.rosnode.get_logger().warn(
+            nmd.ros_node.get_logger().warn(
                 "Sensor temperatures are not checked because of error: %s" % error)
             self._interval = 0
