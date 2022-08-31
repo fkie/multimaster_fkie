@@ -46,7 +46,7 @@ class RosStateServicer(CrossbarBaseSession):
         nmd.ros_node.get_logger().info("Create ros_state servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self._endpoints = {}  # uri : Endpoint
-        self._rosstate = None  # DiscoveredState
+        self._ros_state = None  # DiscoveredState
         self.topic_name_state = '%s/%s/rosstate' % (
             nmd.settings.NM_DISCOVERY_NAMESPACE, nmd.settings.NM_DISCOVERY_NAME)
         self.topic_name_endpoint = '%s/daemons' % (
@@ -139,34 +139,41 @@ class RosStateServicer(CrossbarBaseSession):
 
     def to_crossbar(self) -> List[RosNode]:
         result = []
-        if self._rosstate is not None:
-            publisher = {}
-            subscriber = {}
-            for rp in self._rosstate.participants:
+        if self._ros_state is not None:
+            topic_by_id = {}
+            topic_objs = {}
+            service_by_id = {}
+            service_objs = {}
+            for rp in self._ros_state.participants:
                 for te in rp.topic_entities:
+                    t_guid = self._guid_to_str(te.guid)
                     if te.name.startswith('rt/'):
-                        if te.info == te.INFO_WRITER:
-                            print("publisher", self._guid_to_str(te.guid))
-                            publisher[self._guid_to_str(te.guid)] = RosTopic(
-                                te.name, te.ttype)
-                        elif te.info == te.INFO_READER:
-                            print("subscriber")
-                            subscriber[self._guid_to_str(te.guid)] = RosTopic(
-                                te.name, te.ttype)
+                        if (te.name[2:], te.ttype) not in topic_objs:
+                            tp = RosTopic(te.name[2:], te.ttype)
+                            topic_objs[(te.name[2:], te.ttype)] = tp
+                            topic_by_id[t_guid] = tp
+                        else:
+                            #topic_objs[(te.name[2:], te.ttype)].guids.append(t_guid)
+                            topic_by_id[t_guid] = topic_objs[(te.name[2:], te.ttype)]
+                    elif te.name.startswith('rr/'):
+                        pass
                 for rn in rp.node_entities:
-                    ros_node = RosNode(self._guid_to_str(rp.guid), rn.name)
+                    n_guid = self._guid_to_str(rp.guid)
+                    ros_node = RosNode(n_guid, rn.name)
                     ros_node.name = os.path.join(rn.ns, rn.name)
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
                         try:
-                            ros_node.publishers.append(
-                                publisher[self._guid_to_str(ntp)])
+                            tp = topic_by_id[self._guid_to_str(ntp)]
+                            tp.publisher.append(n_guid)
+                            ros_node.publishers.append(tp)
                         except KeyError:
                             pass
                     for nts in rn.subscriber:
                         try:
-                            ros_node.subscribers.append(
-                                subscriber[self._guid_to_str(nts)])
+                            ts = topic_by_id[self._guid_to_str(nts)]
+                            ts.subscriber.append(n_guid)
+                            ros_node.subscribers.append(ts)
                         except KeyError:
                             pass
                     result.append(ros_node)
