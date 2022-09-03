@@ -61,16 +61,23 @@ class ROS1Logger:
             self._rospy.logfatal(f'{message}')
 
 
+ros2_node = None  # Global node required for ROS2 logging
+
+
 class ROS2Logger:
     '''
     Logger class compatible with ROS 2 using rclpy
     '''
 
-    def __init__(self) -> None:
-        self._rclpy = __import__('rclpy')
-        self._logger = self._rclpy.logging.get_logger("log")
-
     def log(self, level: LoggingLevel, message: str) -> None:
+        if ros2_node is not None:
+            self._logger = ros2_node.get_logger()
+
+        if(self._logger is None):
+            self._logger = GenericLogger()
+            self._logger.log(
+                LoggingLevel.WARN, "ROS Logger not available, default to generic logger")
+
         if level == LoggingLevel.DEBUG:
             self._logger.debug(f'{message}')
         if level == LoggingLevel.INFO:
@@ -138,6 +145,11 @@ class Log:
         logger.log(LoggingLevel.FATAL, Log._get_string_args(args))
 
     @staticmethod
+    def set_ros2_global_node(node) -> None:
+        global ros2_node
+        ros2_node = node
+
+    @staticmethod
     def _clear_text(text: str) -> str:
         if text is None:
             return ""
@@ -162,6 +174,6 @@ class Log:
 
         details = ""
         for arg in args:
-            details += f' {Log._clear_text(arg)} '
+            details += f' {Log._clear_text(args[0][0])} '
 
         return details
