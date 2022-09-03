@@ -1,6 +1,7 @@
 import json
 import os
 from typing import List, Dict, Union
+import re
 
 SEP = '/'
 try:
@@ -57,12 +58,33 @@ class RosService:
 
 
 class RosParameter:
-    def __init__(self, name: str, value: Union[float, bool, str, List, Dict]) -> None:
+    '''
+    Models a ROS parameter object
+    '''
+
+    def __init__(self, name: str, value: Union[float, bool, str, List, Dict], type: str = None) -> None:
         self.name = name
         self.value = value
+        self.type = type
 
-    def __str__(self):
-        return json.dumps(dict(self), ensure_ascii=False)
+        if self.type is None:
+            self.type = self.get_type()
+
+    def get_type(self):
+        '''
+        Return object type as string: for instance, from [<class 'int'>]  to "int"
+        '''
+        if(self.type is not None):
+            return self.type
+
+        # Try to infer type based on value
+        return re.findall("'(.*)'", str(type(self.value)))[0]
+
+    def __str__(self) -> str:
+        return f'{self.name}: {self.value} ({self.type})'
+
+    def __repr__(self):
+        return f'{self.name}: {self.value} ({self.type})'
 
 
 class RosNode:

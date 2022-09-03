@@ -59,6 +59,7 @@ from .monitor_servicer import MonitorServicer
 from .screen_servicer import ScreenServicer
 from .settings_servicer import SettingsServicer
 from .version_servicer import VersionServicer
+from .parameter_servicer import ParameterServicer
 
 
 class GrpcServer:
@@ -79,6 +80,9 @@ class GrpcServer:
             self.settings_servicer.settings)
         self.launch_servicer = LaunchServicer(
             self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        self.parameter_servicer = ParameterServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+
         rospy.Service('~start_launch', LoadLaunch,
                       self._rosservice_start_launch)
         rospy.Service('~load_launch', LoadLaunch, self._rosservice_load_launch)
@@ -90,6 +94,7 @@ class GrpcServer:
         self.launch_servicer = None
         self.monitor_servicer = None
         self.settings_servicer = None
+        self.parameter_servicer = None
 
     def _update_grpc_parameter(self, settings):
         old_verbosity = self._grpc_verbosity
@@ -124,6 +129,8 @@ class GrpcServer:
             self.settings_servicer.settings)
         self.launch_servicer = LaunchServicer(
             self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        self.parameter_servicer = ParameterServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.start(self._launch_url)
 
     def start(self, url='[::]:12311'):
