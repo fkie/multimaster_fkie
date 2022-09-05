@@ -25,12 +25,14 @@ import sys
 import traceback
 
 import rclpy
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rcl_interfaces.msg import ParameterDescriptor
 from fkie_node_manager_daemon.url import nmdport
 from fkie_node_manager_daemon.host import ros_host_suffix
 from fkie_node_manager_daemon.server import Server
 from fkie_node_manager_daemon.screen import test_screen
 import fkie_node_manager_daemon as nmd
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 class RosNodeLauncher(object):
@@ -57,9 +59,17 @@ class RosNodeLauncher(object):
             # os.environ.pop('ROS_DOMAIN_ID')
         rclpy.init(args=remaining_args)
         self.rosnode = rclpy.create_node(self.name, namespace='/_node_manager')
+
+        self.executor = MultiThreadedExecutor(num_threads=3)
+        self.executor.add_node(self.rosnode)
+
         nmd.ros_node = self.rosnode
         # set loglevel to DEBUG
         nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+
+        # get a reference to the global node for logging
+        Log.set_ros2_logging_node(self.rosnode)
+
         # nmd.ros_node.declare_parameter('force_insecure', value=False, descriptor=ParameterDescriptor(description='Ignore security options and use insecure channel'), ignore_override = False)
         # start server and load launch files provided by arguments
         self.server = Server(
@@ -72,7 +82,8 @@ class RosNodeLauncher(object):
     def spin(self):
         try:
             if self.success_start:
-                rclpy.spin(self.rosnode)
+                self.executor.spin()
+                # rclpy.spin(self.rosnode)
         except KeyboardInterrupt:
             pass
         except Exception:
@@ -87,6 +98,7 @@ class RosNodeLauncher(object):
         print('shutdown gRPC server')
         self.server.shutdown()
         print('shutdown rclpy')
+        self.executor.shutdown()
         rclpy.shutdown()
         print('bye!')
 
