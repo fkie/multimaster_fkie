@@ -61,7 +61,7 @@ class ROS1Logger:
             self._rospy.logfatal(f'{message}')
 
 
-ros2_node = None  # Global node required for ROS2 logging
+ros2_logging_node = None  # Global node required for ROS2 logging
 
 
 class ROS2Logger:
@@ -70,8 +70,8 @@ class ROS2Logger:
     '''
 
     def log(self, level: LoggingLevel, message: str) -> None:
-        if ros2_node is not None:
-            self._logger = ros2_node.get_logger()
+        if ros2_logging_node is not None:
+            self._logger = ros2_logging_node.get_logger()
 
         if(self._logger is None):
             self._logger = GenericLogger()
@@ -145,9 +145,9 @@ class Log:
         logger.log(LoggingLevel.FATAL, Log._get_string_args(args))
 
     @staticmethod
-    def set_ros2_global_node(node) -> None:
-        global ros2_node
-        ros2_node = node
+    def set_ros2_logging_node(node) -> None:
+        global ros2_logging_node
+        ros2_logging_node = node
 
     @staticmethod
     def _clear_text(text: str) -> str:
@@ -174,6 +174,7 @@ class Log:
 
         details = ""
         for arg in args:
-            details += f' {Log._clear_text(args[0][0])} '
+            for a in arg:
+                details += f' {Log._clear_text(a)} '
 
         return details
