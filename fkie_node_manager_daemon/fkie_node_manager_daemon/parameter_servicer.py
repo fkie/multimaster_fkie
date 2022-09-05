@@ -8,18 +8,19 @@ from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.parameters.ros1_parameters import ROS1Parameters
+from fkie_multimaster_msgs.parameters.ros2_parameters import ROS2Parameters
+import fkie_node_manager_daemon as nmd
 
 
 class ParameterServicer(CrossbarBaseSession):
     '''
-    Interface for ROS1 parameters (using parameter server)
+    Interface for ROS2 parameters
     '''
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False) -> None:
         Log.info("Create ROS2 parameter servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
-        self._handler = ROS1Parameters()
+        self._handler = ROS2Parameters(nmd.ros_node)
 
     @wamp.register('ros.parameters.get_list')
     def getParameterList(self):

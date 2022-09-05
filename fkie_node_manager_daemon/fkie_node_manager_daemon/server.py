@@ -43,6 +43,7 @@ from .rosstate_servicer import RosStateServicer
 from .settings_servicer import SettingsServicer
 from .url import nmduri, nmdport
 #from .version_servicer import VersionServicer
+from .parameter_servicer import ParameterServicer
 
 
 class Server:
@@ -63,6 +64,9 @@ class Server:
             self.settings_servicer.settings)
         self.rosstate_servicer = RosStateServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        self.parameter_servicer = ParameterServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+
         # self.launch_servicer = LaunchServicer(ros_domain_id=self.ros_domain_id, self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         #self.launch_servicer = LaunchServicer(ros_domain_id=self.ros_domain_id)
         rosnode.create_service(LoadLaunch, '~/start_launch',
@@ -85,6 +89,7 @@ class Server:
         self.monitor_servicer = None
         self.settings_servicer = None
         self.rosstate_servicer = None
+        self.parameter_servicer = None
 
     def start(self, uri: Text, displayed_name: Text = '') -> bool:
         if displayed_name:
