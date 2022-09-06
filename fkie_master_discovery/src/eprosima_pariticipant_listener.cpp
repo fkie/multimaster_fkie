@@ -98,6 +98,15 @@ fkie_multimaster_msgs::msg::Guid guid_to_msg(const eprosima::fastrtps::rtps::GUI
     return result;
 }
 
+/**
+ * Get a value from a environment variable
+ */
+std::string getEnvironmentVariable(std::string const &key)
+{
+    char *val = getenv(key.c_str());
+    return val == NULL ? std::string("") : std::string(val);
+}
+
 class CustomParticipantListener : public rclcpp::Node,
                                   public eprosima::fastrtps::ParticipantListener,
                                   public eprosima::fastrtps::SubscriberListener
@@ -118,6 +127,7 @@ public:
         infoUpdatedSkipped_ = 0;
         eprosima::fastrtps::ParticipantAttributes participant_attr;
         std::string full_name = this->get_node_base_interface()->get_fully_qualified_name();
+        RCLCPP_INFO(get_logger(), "Node Name: %s", node_name.c_str());
         RCLCPP_INFO(get_logger(), "create eProsima participant: %s", full_name.c_str());
         participant_attr.rtps.setName(full_name.erase(0, 1).c_str());
         participant_ = eprosima::fastrtps::Domain::createParticipant(participant_attr, this);
@@ -594,8 +604,9 @@ int main(int argc, char *argv[])
     rclcpp::init(argc, argv);
     char hostname_chars[HOST_NAME_MAX];
     gethostname(hostname_chars, HOST_NAME_MAX);
-    std::string hostname = std::string("discovery_") + std::string(hostname_chars);
-    auto listener = std::make_shared<CustomParticipantListener>(hostname, "/_node_manager");
+    std::string ros_distro = getEnvironmentVariable("ROS_DISTRO");
+    std::string node_name = "discovery_" + ros_distro + "_" + std::string(hostname_chars);
+    auto listener = std::make_shared<CustomParticipantListener>(node_name, "/_node_manager");
     rclcpp::spin(listener);
     listener->shutdown();
     rclcpp::shutdown();

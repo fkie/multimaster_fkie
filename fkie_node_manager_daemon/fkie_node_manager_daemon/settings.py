@@ -30,7 +30,7 @@ NM_NAMESPACE = '/%s' % NM_NS
 NM_DAEMON_NAMESPACE = '/%s' % NM_NS
 NM_DISCOVERY_NAMESPACE = '/%s' % NM_NS
 NM_DAEMON_NAME = 'daemon_%s' % ros_host_suffix()
-NM_DISCOVERY_NAME = 'discovery_%s' % ros_host_suffix()
+NM_DISCOVERY_NAME = f'discovery_{os.environ["ROS_DISTRO"]}_{ros_host_suffix()}'
 
 
 GRPC_TIMEOUT = 15.0
@@ -128,7 +128,7 @@ class Settings:
                 result = value
         except Exception as exc:
             nmd.ros_node.get_logger().debug("Cant't get parameter '%s', full parameter path: '%s'; use default value: %s" %
-                                           (exc, param_name, default_value))
+                                            (exc, param_name, default_value))
         return result
 
     def set_param(self, param_name, value, tag=':value'):
