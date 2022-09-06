@@ -30,7 +30,8 @@ from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosProvider
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
-
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
+from fkie_multimaster_msgs.logging.logging import Log
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import DiscoveredState
 from fkie_multimaster_msgs.msg import Endpoint
@@ -133,6 +134,12 @@ class RosStateServicer(CrossbarBaseSession):
         nmd.ros_node.get_logger().info('Request to [ros.nodes.get_list]')
         node_list: List[RosNode] = self.to_crossbar()
         return json.dumps(node_list, cls=SelfEncoder)
+
+    @wamp.register('ros.launch.get_list')
+    def getList(self) -> List[LaunchContent]:
+        Log.debug('Request to [ros.launch.get_list] TO BE IMPLEMENTED')
+        reply = []
+        return json.dumps(reply, cls=SelfEncoder)
 
     def _guid_to_str(self, guid):
         return '.'.join('{:02X}'.format(c) for c in guid.data.tolist())
