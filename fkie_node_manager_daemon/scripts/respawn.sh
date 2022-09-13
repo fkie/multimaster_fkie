@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# linebuffer() sets the output buffering to line by line,
+# so we will see each line as soon as it is output.
+if which stdbuf >/dev/null 2>&1; then
+	function linebuffer() {
+		stdbuf -i0 -oL -eL "$@"
+	}
+else
+	function linebuffer() {
+		"$@"
+	}
+fi
+
+# Ensure sane default values for unset RESPAWN_* variables
+: ${RESPAWN_MIN_RUNTIME:=120}
+: ${RESPAWN_MAX:=0}
+: ${RESPAWN_DELAY:=1}
+
+let respawn_counter=0
+exec 3>&1
+while true; do
+	if [ ${RESPAWN_MAX} -gt 0 ]; then
+		let respawn_counter++
+	fi
+	last_launch=$(date +%s)
+	# Launch process and simultaneously monitor output
+	# for "shutdown request" line
+	echo "##RESPAWN## $" "$@" >&2
+	linebuffer "$@" 2>&1 | linebuffer tee /dev/fd/3 | linebuffer grep -i "shutdown request" >/dev/null
+	# Store exit code of all processes in the pipeline above
+	result=("${PIPESTATUS[@]}")
+	# Get exit code of launched process
+	exitcode="${result[0]}"
+	# If "shutdown request" was printed (grep exit code 0), do not respawn
+	[ "${result[2]}" -eq 0 ] && exitcode=0
+	# Terminate loop on successful exit
+	[ "$exitcode" -eq 0 ] && exit 0
+	echo "##RESPAWN## Process died with non-zero exit code" >&2
+	# Check how long the process ran before terminating
+	# and reset counter if necessary
+	let runtime=$(date +%s)-$last_launch
+	if [ $runtime -gt ${RESPAWN_MIN_RUNTIME} ]; then
+		let respawn_counter=0
+	fi
+	# Stop respawning if too many failures occured
+	if [ $respawn_counter -ge ${RESPAWN_MAX} -a ${RESPAWN_MAX} -gt 0 ]; then
+		echo "##RESPAWN## Failure counter reached ${RESPAWN_MAX}; aborting" >&2
+		exit 1
+	fi
+	# Prevent CPU burn-in on instantly-crashing processes
+	if [ $runtime -lt ${RESPAWN_DELAY} ]; then
+		let cooldown=${RESPAWN_DELAY}-$runtime
+		echo "##RESPAWN## Delaying restart for $cooldown more seconds" >&2
+		sleep $cooldown
+	fi
+done
