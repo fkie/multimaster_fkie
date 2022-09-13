@@ -69,15 +69,18 @@ class ROS2Logger:
     Logger class compatible with ROS 2 using rclpy
     '''
 
+    def __init__(self) -> None:
+        # generic logger as fallback
+        self._generic_logger = GenericLogger()
+
     def log(self, level: LoggingLevel, message: str) -> None:
+        self._logger = None
+
         if ros2_logging_node is not None:
             self._logger = ros2_logging_node.get_logger()
 
-        if(self._logger is None):
-            self._logger = GenericLogger()
-            self._logger.log(
-                LoggingLevel.WARN, "ROS Logger not available, default to generic logger")
-
+        if self._logger is None:
+            self._logger = self._generic_logger
         if level == LoggingLevel.DEBUG:
             self._logger.debug(f'{message}')
         if level == LoggingLevel.INFO:
@@ -107,11 +110,26 @@ class GenericLogger:
         if level == LoggingLevel.FATAL:
             print(f'[FATAL] {message}')
 
+    def debug(self, message: str) -> None:
+        print(f'[DEBUG] {message}')
+
+    def info(self, message: str) -> None:
+        print(f'[INFO] {message}')
+
+    def warn(self, message: str) -> None:
+        print(f'[WARN] {message}')
+
+    def error(self, message: str) -> None:
+        print(f'[ERROR] {message}')
+
+    def fatal(self, message: str) -> None:
+        print(f'[FATAL] {message}')
+
 
 ROS_VERSION = get_ros_version()
 logger = None
 
-if(ROS_VERSION == 1):
+if (ROS_VERSION == 1):
     logger = ROS1Logger()
 elif (ROS_VERSION == 2):
     logger = ROS2Logger()
