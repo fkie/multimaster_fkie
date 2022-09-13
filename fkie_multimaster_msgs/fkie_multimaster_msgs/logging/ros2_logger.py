@@ -1,5 +1,7 @@
 from .generic_logger import GenericLogger, LoggingLevel
 
+ros2_logging_node = None  # Global node required for ROS2 logging
+
 
 class ROS2Logger:
     '''
@@ -13,12 +15,14 @@ class ROS2Logger:
     def log(self, level: LoggingLevel, message: str) -> None:
         self._logger = None
 
-        global ros2_logging_node
+        # use the logger from the global ROS 2 node (if available)
         if ros2_logging_node is not None:
             self._logger = ros2_logging_node.get_logger()
 
+        # use generic logger if invalid ROS 2 logger
         if self._logger is None:
             self._logger = self._generic_logger
+
         if level == LoggingLevel.DEBUG:
             self._logger.debug(f'{message}')
         if level == LoggingLevel.INFO:

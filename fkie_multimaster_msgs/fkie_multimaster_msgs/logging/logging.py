@@ -3,7 +3,7 @@ import json
 from json import JSONEncoder
 from .generic_logger import GenericLogger, LoggingLevel
 from .ros1_logger import ROS1Logger
-from .ros2_logger import ROS2Logger
+from .ros2_logger import ROS2Logger, ros2_logging_node
 
 
 class LoggingEncoder(JSONEncoder):
@@ -32,9 +32,6 @@ def get_ros_version() -> int:
 
     # invalid ROS
     return -1
-
-
-ros2_logging_node = None  # Global node required for ROS2 logging
 
 
 ROS_VERSION = get_ros_version()
