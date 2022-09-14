@@ -43,7 +43,7 @@ from fkie_multimaster_msgs.logging.logging import Log
 GRPC_TIMEOUT = 15.0
 ''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
 
-RESPAWN_SCRIPT = 'rosrun fkie_node_manager respawn'
+RESPAWN_SCRIPT = 'rosrun fkie_node_manager_daemon respawn'
 ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
 LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get(

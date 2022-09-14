@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 import argparse
+from typing import List
 
 from fkie_multimaster_msgs.logging.logging import Log
 
@@ -36,49 +37,56 @@ def parse_arguments():
         description='Start nodes remotely using the host ROS configuration',
         epilog="Fraunhofer FKIE 2022")
 
-    parser.add_argument('--node_type',
-                        required=True,
+    parser.add_argument('--name', default=None,
+                        help='The name of the node (with namespace) or script')
+    parser.add_argument('--command', default=None,
+                        help='Generic command to execute')
+    parser.add_argument('--node_type', default=None,
                         help='Type of the node to run')
-    parser.add_argument('--node_name',
-                        required=True,
-                        help='The name of the node (with namespace)')
-    parser.add_argument('--package',
-                        required=True,
-                        help='Package containing the node. If no node_name specified returns the package path or raise an exception, if the package was not found.')
-    parser.add_argument('--node_respawn',
-                        default=None,
+    parser.add_argument('--package', default=None,
+                        help='Package containing the node. If no name specified returns the package path or raise an exception, if the package was not found.')
+    parser.add_argument('--respawn', default=None, action='store_true',
                         help='respawn the node, if it terminate unexpectedly')
-    parser.add_argument('--show_screen_log',
-                        default=None,
+    parser.add_argument('--show_screen_log', default=None,
                         help='Shows the screen log of the given node')
-    parser.add_argument('--tail_screen_log',
-                        default=None,
+    parser.add_argument('--tail_screen_log', default=None,
                         help='Tail the screen log of the given node')
-    parser.add_argument('--show_ros_log',
-                        default=None,
+    parser.add_argument('--show_ros_log', default=None,
                         help='Shows the ros log of the given node')
-    parser.add_argument('--ros_log_path',
-                        default=None,
+    parser.add_argument('--ros_log_path', default=None,
                         help='request for the path of the ros logs')
-    parser.add_argument('--ros_logs',
-                        default=None,
+    parser.add_argument('--ros_logs', default=None,
                         help='request for the list of available log nodes')
-    parser.add_argument('--delete_logs',
-                        default=None,
+    parser.add_argument('--delete_logs', default=None,
                         help='Delete the log files of the given node')
-    parser.add_argument('--prefix',
-                        default="",
+    parser.add_argument('--prefix', default="",
                         help='Prefix used to run a node')
-    parser.add_argument('--pidkill',
-                        default=None,
+    parser.add_argument('--pidkill', default=None,
                         help='kill the process with given pid')
-    parser.add_argument('--masteruri',
-                        default=None,
+    parser.add_argument('--masteruri', default=None,
                         help='the ROS MASTER URI for started node')
 
     args, additional_args = parser.parse_known_args()
 
-    Log.info("remote_node.py", "\nArguments: \n", args, "\n\nAdditional Arguments:\n", additional_args, "\n")
+    argumentsStr = "\n"
+    argumentsStr += f'  name: {args.name}\n' if args.name is not None else ""
+    argumentsStr += f'  command: {args.command}\n' if args.command is not None else ""
+    argumentsStr += f'  node_type: {args.node_type}\n' if args.node_type is not None else ""
+    argumentsStr += f'  package: {args.package}\n' if args.package is not None else ""
+    argumentsStr += f'  respawn: {args.respawn}\n' if args.respawn is not None else ""
+    argumentsStr += f'  show_screen_log: {args.show_screen_log}\n' if args.show_screen_log is not None else ""
+    argumentsStr += f'  tail_screen_log: {args.tail_screen_log}\n' if args.tail_screen_log is not None else ""
+    argumentsStr += f'  show_ros_log: {args.show_ros_log}\n' if args.show_ros_log is not None else ""
+    argumentsStr += f'  ros_log_path: {args.ros_log_path}\n' if args.ros_log_path is not None else ""
+    argumentsStr += f'  ros_logs: {args.ros_logs}\n' if args.ros_logs is not None else ""
+    argumentsStr += f'  delete_logs: {args.delete_logs}\n' if args.delete_logs is not None else ""
+    argumentsStr += f'  prefix: {args.prefix}\n' if len(
+        args.prefix) > 0 else ""
+    argumentsStr += f'  pidkill: {args.pidkill}\n' if args.pidkill is not None else ""
+    argumentsStr += f'  masteruri: {args.masteruri}\n' if args.masteruri is not None else ""
+
+    Log.info("[remote_node.py] Starting Remote script", "\nArguments:", argumentsStr,
+             "\nAdditional Arguments:\n", additional_args, "\n")
 
     return parser, args, additional_args
 
@@ -117,7 +125,7 @@ def remove_src_binary(cmdlist):
     return result
 
 
-def run_ROS1_node(package, executable, name, args, prefix='', respawn=False, masteruri=None, loglevel=''):
+def run_ROS1_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, masteruri=None, loglevel=''):
     '''
     Runs a ROS1 node. Starts a roscore if needed.
     '''
@@ -145,12 +153,11 @@ def run_ROS1_node(package, executable, name, args, prefix='', respawn=False, mas
 
     # create string for node parameter. Set arguments with spaces into "'".
     cmd = remove_src_binary(cmd)
-    node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
-
-    Log.info(screen.get_cmd(name), node_params)
+    node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
+        ' ') > -1 else a for a in args[1:])
 
     cmd_args = [screen.get_cmd(name),
-                RESPAWN_SCRIPT if respawn else '', prefix, cmd[0], node_params]
+                RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd[0], node_params]
     Log.info('run on remote host:', ' '.join(cmd_args))
 
     # determine the current working path
@@ -179,20 +186,33 @@ def run_ROS1_node(package, executable, name, args, prefix='', respawn=False, mas
             'Multiple executables were found! The first one was started! Executables:\n%s', str(cmd))
 
 
-def run_ROS2_node(package, executable, name, args, prefix='', respawn=False):
+def run_ROS2_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False):
     '''
     Runs a ROS2 node
     '''
 
     cmd = f'ros2 run {package} {executable} --ros-args --remap __name:={name}'
-    node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
-
-    Log.info(screen.get_cmd(name), node_params)
+    node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
+        ' ') > -1 else a for a in args[1:])
 
     cmd_args = [screen.get_cmd(name),
-                RESPAWN_SCRIPT if respawn else '', prefix, cmd, node_params]
+                RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd, node_params]
 
     screen_command = ' '.join(cmd_args)
+
+    Log.info('run on remote host:', screen_command)
+    subprocess.Popen(shlex.split(screen_command), env=dict(os.environ))
+
+
+def run_command(name: str, command: str, additional_args: List[str], respawn=False):
+    '''
+    Runs a command remotely
+    '''
+    cmd_args = [screen.get_cmd(name),
+                RESPAWN_SCRIPT if respawn is not None else '', "", command]
+
+    screen_command = ' '.join(cmd_args)
+    screen_command += ' ' + ' '.join(additional_args)
 
     Log.info('run on remote host:', screen_command)
     subprocess.Popen(shlex.split(screen_command), env=dict(os.environ))
@@ -203,6 +223,10 @@ def main(argv=sys.argv):
 
     try:
         print_help = True
+        if args.command:
+            run_command(args.name, args.command,
+                        additional_args, args.respawn)
+            return
 
         if args.show_screen_log:
             logfile = screen.get_logfile(node=args.show_screen_log)
@@ -256,13 +280,13 @@ def main(argv=sys.argv):
                 os.remove(roslog)
             print_help = False
 
-        elif args.node_type and args.package and args.node_name:
+        elif args.node_type and args.package and args.name:
             if os.environ['ROS_VERSION'] == "1":
-                run_ROS1_node(args.package, args.node_type, args.node_name,
-                              additional_args, args.prefix, args.node_respawn, args.masteruri)
+                run_ROS1_node(args.package, args.node_type, args.name,
+                              additional_args, args.prefix, args.respawn, args.masteruri)
             elif os.environ['ROS_VERSION'] == "2":
-                run_ROS2_node(args.package, args.node_type, args.node_name,
-                              additional_args, args.prefix, args.node_respawn)
+                run_ROS2_node(args.package, args.node_type, args.name,
+                              additional_args, args.prefix, args.respawn)
             else:
                 Log.error(f'Invalid ROS Version: {os.environ["ROS_VERSION"]}')
 

@@ -36,7 +36,7 @@ NM_DISCOVERY_NAME = f'discovery_{os.environ["ROS_DISTRO"]}_{ros_host_suffix()}'
 GRPC_TIMEOUT = 15.0
 ''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
 
-RESPAWN_SCRIPT = 'ros2 run fkie_node_manager respawn'
+RESPAWN_SCRIPT = 'ros2 run fkie_node_manager_daemon respawn'
 ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
 LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get(
