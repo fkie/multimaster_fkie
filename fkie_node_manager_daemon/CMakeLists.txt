@@ -10,11 +10,6 @@ endif()
 find_package(ament_cmake QUIET)
 
 if(ament_cmake_FOUND)
-    install(PROGRAMS
-        scripts/remote_node.py
-        scripts/respawn
-        DESTINATION lib/${PROJECT_NAME})
-
 elseif(CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
     # python -m grpc_tools.protoc -Iprotos --python_out=./src/fkie_node_manager_daemon/. --grpc_python_out=./src/fkie_node_manager_daemon/. protos/launch_manager.proto
     # python -m grpc_tools.protoc -Iprotos --python_out=./src/fkie_node_manager_daemon/. --grpc_python_out=./src/fkie_node_manager_daemon/. protos/launch_manager_client.proto

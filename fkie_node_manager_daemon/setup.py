@@ -9,7 +9,7 @@ if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
     d = generate_distutils_setup(
         # don't do this unless you want a globally visible script
         scripts=['nodes/node_manager_daemon'],
-        packages=[package_name, '%s.monitor' % package_name],
+        packages=[package_name, f'{package_name}.monitor'],
         package_dir={'': 'src'}
     )
 
@@ -86,16 +86,14 @@ else:
     setup(
         name=package_name,
         version=strip_dirty_vers(get_version()[0]),
-        packages=[package_name, package_name +
-                  '.monitor', package_name + '.tests'],
+        packages=[package_name, f'{package_name}.monitor', f'{package_name}.tests'],
         cmdclass={'build_py': BuildPyCommand},
         data_files=[
-            ('share/ament_index/resource_index/packages',
-             ['resource/' + package_name]),
-            ('share/' + package_name, ['package.xml']),
-            ('share/' + package_name + '/launch',
-             ['launch/autostart.launch.xml']),
-            ('share/' + package_name + '/resources', resource_files),
+            ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
+            (f'share/{package_name}', ['package.xml']),
+            (f'share/{package_name}/launch', ['launch/autostart.launch.xml']),
+            (f'share/{package_name}/resources', resource_files),
+            (f'lib/{package_name}', ['scripts/remote_node.py', 'scripts/respawn'])
         ],
         install_requires=['setuptools', 'ruamel.yaml', 'launch-xml'],
         zip_safe=True,
