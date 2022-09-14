@@ -1415,6 +1415,13 @@ class MasterInfo(object):
                 ros_node.pid = node.pid
                 ros_node.location = 'local' if node.isLocal else 'remote'
 
+                # Include namespace in name
+                if "/" not in ros_node.name:
+                    if ros_node.namespace == "/":
+                        ros_node.name = f'/{ros_node.name}'
+                    else:
+                        ros_node.name = f'{ros_node.namespace}/{ros_node.name}'
+
                 # Add active screens for a given node
                 screens = screen.get_active_screens(name)
                 for session_name, _ in screens.items():

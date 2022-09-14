@@ -18,8 +18,8 @@ def get_namespace(name):
     :rtype: str
     '''
     result = os.path.dirname(name)
-    if not result.endswith(SEP):
-        result += SEP
+    # if not result.endswith(SEP):
+    #     result += SEP
     return result
 
 
