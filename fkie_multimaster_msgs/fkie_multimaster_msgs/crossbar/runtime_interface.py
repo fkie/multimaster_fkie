@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 from typing import List, Dict, Union
 import re
 
@@ -116,7 +117,16 @@ class RosProvider:
     '''
 
     def __init__(self, name: str, host: str, port: int, masteruri: str = '') -> None:
-        self.name = name
+        # Add ROS and system information
+        self.ros_version = os.environ['ROS_VERSION']
+        self.ros_distro = os.environ['ROS_DISTRO']
+        self.ros_domain_id = os.environ['ROS_DOMAIN_ID']
+        self.platform = f'{platform.system()}'
+        self.platform_details = f'{platform.version()} {platform.machine()}'
+
+        # add distro to name, to prevent collisions when ROS1 and ROS2
+        # run simultaneously on the same host
+        self.name = f'{name} [{self.ros_distro}]'
         self.host = host
         self.port = port
         self.type = 'crossbar-wamp'
