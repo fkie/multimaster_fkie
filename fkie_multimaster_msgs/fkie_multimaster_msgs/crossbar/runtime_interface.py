@@ -3,6 +3,7 @@ import os
 import platform
 from typing import List, Dict, Union
 import re
+from fkie_multimaster_msgs.logging.logging import Log
 
 SEP = '/'
 try:
@@ -75,7 +76,7 @@ class RosParameter:
         '''
         Return object type as string: for instance, from [<class 'int'>]  to "int"
         '''
-        if(self.type is not None):
+        if (self.type is not None):
             return self.type
 
         # Try to infer type based on value
@@ -118,11 +119,15 @@ class RosProvider:
 
     def __init__(self, name: str, host: str, port: int, masteruri: str = '') -> None:
         # Add ROS and system information
-        self.ros_version = os.environ['ROS_VERSION']
-        self.ros_distro = os.environ['ROS_DISTRO']
-        self.ros_domain_id = os.environ['ROS_DOMAIN_ID']
-        self.platform = f'{platform.system()}'
-        self.platform_details = f'{platform.version()} {platform.machine()}'
+        try:
+            self.ros_version = os.environ['ROS_VERSION'] if 'ROS_VERSION' in os.environ else ''
+            self.ros_distro = os.environ['ROS_DISTRO'] if 'ROS_DISTRO' in os.environ else ''
+            self.ros_domain_id = os.environ['ROS_DOMAIN_ID'] if 'ROS_DOMAIN_ID' in os.environ else ''
+            self.platform = f'{platform.system()}'
+            self.platform_details = f'{platform.version()} {platform.machine()}'
+        except:
+            import traceback
+            Log.error(f'Error when initializing new provider [{name}]: {traceback.format_exc()}')
 
         # add distro to name, to prevent collisions when ROS1 and ROS2
         # run simultaneously on the same host
