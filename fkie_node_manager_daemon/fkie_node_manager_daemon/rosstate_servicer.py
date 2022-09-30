@@ -1,3 +1,4 @@
+
 # ROS 2 Node Manager
 # Graphical interface to manage the running and configured ROS 2 nodes on different hosts.
 #
@@ -30,6 +31,7 @@ from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosProvider
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
 from fkie_multimaster_msgs.logging.logging import Log
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
@@ -144,6 +146,32 @@ class RosStateServicer(CrossbarBaseSession):
     def _guid_to_str(self, guid):
         return '.'.join('{:02X}'.format(c) for c in guid.data.tolist())
 
+    def get_type(self, dds_type: str) -> str:
+        result = dds_type
+        if result:
+            result = result.replace('::', '/')
+            result = result.replace('/dds_', '')
+            # result = result.replace('/msg/dds_', '')
+            # result = result.replace('/srv/dds_', '')
+            result = result.rstrip('_')
+        return result
+
+    def get_service_type(self, dds_service_type: str) -> str:
+        result = dds_service_type
+        for suffix in ['_Response_', '_Request_']:
+            if result[-len(suffix):] == suffix:
+                result = result[:-len(suffix)+1]
+                break
+        return self.get_type(result)
+
+    def get_service_name(self, dds_service_name: str) -> str:
+        result = dds_service_name
+        for suffix in ['Reply', 'Request']:
+            if result[-len(suffix):] == suffix:
+                result = result[:-len(suffix)]
+                break
+        return self.get_type(result)
+
     def to_crossbar(self) -> List[RosNode]:
         result = []
         if self._ros_state is not None:
@@ -160,100 +188,50 @@ class RosStateServicer(CrossbarBaseSession):
                             topic_objs[(te.name[2:], te.ttype)] = tp
                             topic_by_id[t_guid] = tp
                         else:
-                            #topic_objs[(te.name[2:], te.ttype)].guids.append(t_guid)
-                            topic_by_id[t_guid] = topic_objs[(te.name[2:], te.ttype)]
-                    elif te.name.startswith('rr/'):
-                        pass
+                            topic_by_id[t_guid] = topic_objs[(
+                                te.name[2:], te.ttype)]
+                    elif te.name[:2] in ['rr', 'rq', 'rs']:
+                        srv_type = self.get_service_type(te.ttype)
+                        # TODO: distinction between Reply/Request? Currently it is removed.
+                        srv_name = self.get_service_name(te.name[2:])
+                        if (srv_name, srv_type) not in service_objs:
+                            srv = RosService(srv_name, srv_type)
+                            service_objs[(srv_name, srv_type)] = srv
+                            service_by_id[t_guid] = srv
+                        else:
+                            service_by_id[t_guid] = service_objs[(
+                                srv_name, srv_type)]
+
                 for rn in rp.node_entities:
                     n_guid = self._guid_to_str(rp.guid)
                     ros_node = RosNode(n_guid, rn.name)
                     ros_node.name = os.path.join(rn.ns, rn.name)
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
+                        gid = self._guid_to_str(ntp)
                         try:
-                            tp = topic_by_id[self._guid_to_str(ntp)]
+                            tp = topic_by_id[gid]
                             tp.publisher.append(n_guid)
                             ros_node.publishers.append(tp)
                         except KeyError:
-                            pass
+                            try:
+                                srv = service_by_id[gid]
+                                srv.provider.append(n_guid)
+                                ros_node.services.append(srv)
+                            except KeyError:
+                                pass
                     for nts in rn.subscriber:
+                        gid = self._guid_to_str(nts)
                         try:
-                            ts = topic_by_id[self._guid_to_str(nts)]
+                            ts = topic_by_id[gid]
                             ts.subscriber.append(n_guid)
                             ros_node.subscribers.append(ts)
                         except KeyError:
-                            pass
+                            try:
+                                srv = service_by_id[gid]
+                                srv.provider.append(n_guid)
+                                ros_node.services.append(srv)
+                            except KeyError:
+                                pass
                     result.append(ros_node)
-        return result
-
-#  class RosNode:
-#     def __init__(self, id: str, name: str) -> None:
-#         self.id = id
-#         self.name = get_node_name(name)
-#         self.namespace = get_namespace(name)
-#         self.status = 'running'
-#         self.pid = -1
-#         self.node_API_URI = ''
-#         self.masteruri = ''
-#         self.location = 'local'
-#         self.publishers: List[RosTopic] = []
-#         self.subscribers: List[RosTopic] = []
-#         self.services: List[RosService] = []
-#         self.screens: List[str] = []
-#         self.parameters: List[RosParameter] = []
-
-# class RosTopic:
-#     def __init__(self, name: str, msgtype: str) -> None:
-#         self.name = name
-#         self.msgtype = msgtype
-#         self.publisher: List[str] = []
-#         self.subscriber: List[str] = []
-        # try:
-        #     iffilter = filter_interface
-        #     ros_nodes = dict()
-        #     # filter the topics
-        #     for name, topic in self.topics.items():
-        #         ros_topic = RosTopic(name, topic.type)
-        #         for n in topic.publisherNodes:
-        #             if not iffilter.is_ignored_publisher(n, name, topic.type):
-        #                 ros_topic.publisher.append(n)
-        #                 node = ros_nodes.get(n, RosNode(n, n))
-        #                 node.publishers.append(ros_topic)
-        #                 ros_nodes[n] = node
-        #         for n in topic.subscriberNodes:
-        #             if not iffilter.is_ignored_subscriber(n, name, topic.type):
-        #                 ros_topic.subscriber.append(n)
-        #                 node = ros_nodes.get(n, RosNode(n, n))
-        #                 node.subscribers.append(ros_topic)
-        #                 ros_nodes[n] = node
-        #     # filter the services
-        #     for name, service in self.services.items():
-        #         ros_service = RosService(name, service.type)
-        #         for sp in service.serviceProvider:
-        #             if not iffilter.is_ignored_service(sp, name):
-        #                 ros_service.provider.append(sp)
-        #                 node = ros_nodes.get(sp, RosNode(sp, sp))
-        #                 node.services.append(ros_service)
-        #                 ros_nodes[sp] = node
-        #         ros_service.service_API_URI = service.uri
-        #         ros_service.masteruri = service.masteruri
-        #         ros_service.location = 'local' if service.isLocal else 'remote'
-
-        #     result = []
-        #     # creates the nodes list
-        #     for name, node in self.nodes.items():
-        #         ros_node = ros_nodes.get(name, RosNode(name, name))
-        #         ros_node.node_API_URI = node.uri
-        #         ros_node.masteruri = node.masteruri
-        #         ros_node.pid = node.pid
-        #         ros_node.location = 'local' if node.isLocal else 'remote'
-
-        #         # Add active screens for a given node
-        #         screens = screen.get_active_screens(name)
-        #         for session_name, _ in screens.items():
-        #             ros_node.screens.append(session_name)
-        #         result.append(ros_node)
-        # except Exception:
-        #     import traceback
-        #     print(traceback.format_exc())
-        # return result
+            return result
