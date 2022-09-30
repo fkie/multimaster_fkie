@@ -997,7 +997,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
             # search for loaded file and get the arguments
-            resolve_args = {arg.name: arg.value for arg in request.include_args}
+            resolve_args = {
+                arg.name: arg.value for arg in request.include_args}
             if not resolve_args:
                 for cfgid, lcfg in self._loaded_files.items():
                     if cfgid.path == request.path:
@@ -1014,8 +1015,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 if reply.exists:
                     reply.size = os.path.getsize(reply.path)
                 reply.rec_depth = inc_file.rec_depth
-                reply.args.extend(lmsg.Argument(name=name, value=value)
-                                  for name, value in inc_file.args.items())
+                reply.include_args.extend(lmsg.Argument(name=name, value=value)
+                                          for name, value in inc_file.args.items())
                 # return each file one by one
                 yield reply
         except Exception:
