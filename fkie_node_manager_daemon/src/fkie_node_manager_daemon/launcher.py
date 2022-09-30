@@ -192,6 +192,7 @@ def run_node(startcfg):
     '''
     hostname = startcfg.hostname
     nodename = roslib.names.ns_join(startcfg.namespace, startcfg.name)
+    binary = ''
     if not hostname or host.is_local(hostname, wait=True):
         # run on local host
         # interpret arguments with path elements
@@ -236,6 +237,7 @@ def run_node(startcfg):
         try:
             global STARTED_BINARIES
             STARTED_BINARIES[nodename] = (cmd_type, os.path.getmtime(cmd_type))
+            binary = cmd_type
         except Exception:
             pass
         cwd = get_cwd(startcfg.cwd, cmd_type)
@@ -308,6 +310,7 @@ def run_node(startcfg):
                 "Unknown launch manager url for host %s to start %s" % (host, startcfg.fullname))
         lm = LaunchStub(channel)
         lm.start_standalone_node(startcfg)
+    return binary
 
 
 def changed_binaries(nodes):

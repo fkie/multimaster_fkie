@@ -24,11 +24,13 @@
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-psutil</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-rospkg</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-ruamel.yaml</depend>
+  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-watchdog</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-grpc-tools</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-grpcio</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-rospkg</depend>
   <depend condition="$ROS_PYTHON_VERSION == 3">python3-psutil</depend>
   <depend condition="$ROS_PYTHON_VERSION == 3">python3-ruamel.yaml</depend>
+  <depend condition="$ROS_PYTHON_VERSION == 3">python3-watchdog</depend>
 
   <depend condition="$ROS_VERSION == 2">launch</depend>
   <depend condition="$ROS_VERSION == 2">launch_xml</depend>

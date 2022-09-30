@@ -269,7 +269,6 @@ def interpret_path(path, pwd='.'):
     for groups in pkg_pattern.finditer(path):
         for index in range(groups.lastindex):
             pkg_name = groups.groups()[index]
-            print("PKGNAME", pkg_name)
             if pkg_name:
                 pkg = get_pkg_path(pkg_name)
                 Log.debug(

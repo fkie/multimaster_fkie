@@ -47,6 +47,9 @@ import asyncio
 from autobahn import wamp
 
 from typing import List
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler
+from watchdog.events import FileSystemEvent
 
 from fkie_master_discovery.common import masteruri_from_master
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
@@ -140,7 +143,7 @@ class CfgId(object):
         return False
 
 
-class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
+class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEventHandler):
     '''
     Handles GRPC-requests defined in `launch.proto`.
     '''
@@ -149,10 +152,16 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         Log.info("Create launch manger servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
+        LoggingEventHandler.__init__(self)
+        self._watchdog_observer = Observer()
+        self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch
+        self._included_files = []
+        self._included_dirs = []
         self._is_running = True
         self._peers = {}
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
         self._monitor_servicer = monitor_servicer
+        self._watchdog_observer.start()
 
     def _terminated(self):
         Log.info("terminated launch context")
@@ -169,6 +178,15 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         '''
         global IS_RUNNING
         IS_RUNNING = False
+        self._watchdog_observer.stop()
+
+    def on_any_event(self, event: FileSystemEvent):
+        if event.src_path in self._included_files:
+            change_event = {event.event_type: event.src_path}
+            Log.debug("observed change %s on %s" %
+                     (event.event_type, event.src_path))
+            self.publish('ros.path.changed', json.dumps(
+                change_event, cls=SelfEncoder))
 
     def load_launch_file(self, path, autostart=False):
         '''
@@ -292,6 +310,66 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             pass
         return topic
 
+    def _add_file_to_observe(self, path):
+        directory = os.path.dirname(path)
+        Log.debug('observe path: %s' % path)
+        if directory not in self._observed_dirs:
+            Log.debug('add directory to observer: %s' % directory)
+            watch = self._watchdog_observer.schedule(self, directory)
+            self._observed_dirs[directory] = watch
+        self._included_files.append(path)
+        self._included_dirs.append(directory)
+
+    def _remove_file_from_observe(self, path):
+        Log.debug('stop observe path: %s' % str(path))
+        try:
+            directory = os.path.dirname(path)
+            self._included_files.remove(path)
+            self._included_dirs.remove(directory)
+            if directory not in self._included_dirs:
+                if directory in self._observed_dirs:
+                    Log.debug('remove directory from observer: %s' % directory)
+                    self._watchdog_observer.unschedule(
+                        self._observed_dirs[directory])
+                    del self._observed_dirs[directory]
+        except ValueError:
+            pass
+
+    def _add_launch_to_observer(self, path):
+        try:
+            self._add_file_to_observe(path)
+            pattern = INCLUDE_PATTERN
+            search_in_ext = SEARCH_IN_EXT
+            # search for loaded file and get the arguments
+            resolve_args = {}
+            for cfg_id, cfg in self._loaded_files.items():
+                if cfg_id.path == path:
+                    resolve_args.update(cfg.resolve_dict)
+                    break
+            # replay each file
+            for inc_file in find_included_files(path, True, True, pattern, search_in_ext, resolve_args):
+                if inc_file.exists:
+                    self._add_file_to_observe(inc_file.inc_path)
+        except Exception as e:
+            Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
+
+    def _remove_launch_from_observer(self, path):
+        try:
+            self._remove_file_from_observe(path)
+            pattern = INCLUDE_PATTERN
+            search_in_ext = SEARCH_IN_EXT
+            # search for loaded file and get the arguments
+            resolve_args = {}
+            for cfg_id, cfg in self._loaded_files.items():
+                if cfg_id.path == path:
+                    resolve_args.update(cfg.resolve_dict)
+                    break
+            # replay each file
+            for inc_file in find_included_files(path, True, True, pattern, search_in_ext, resolve_args):
+                self._remove_file_from_observe(inc_file.inc_path)
+        except Exception as e:
+            Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
+
     def GetLoadedFiles(self, request, context):
         Log.debug('GetLoadedFiles request:\n%s' % str(request))
         # self._register_callback(context)
@@ -378,6 +456,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             try:
                 self.publish('ros.launch.changed',
                              json.dumps({}, cls=SelfEncoder))
+                self._add_launch_to_observer(launchfile)
             except Exception as cpe:
                 pass
         except Exception as e:
@@ -482,6 +561,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             try:
                 self.publish('ros.launch.changed',
                              json.dumps({}, cls=SelfEncoder))
+                self._add_launch_to_observer(launchfile)
             except Exception as cpe:
                 pass
         except Exception as e:
@@ -503,6 +583,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                   request.path, request.masteruri)
         if cfgid in self._loaded_files:
             try:
+                self._remove_launch_from_observer(request.path)
                 cfg = self._loaded_files[cfgid]
                 stored_roscfg = cfg.roscfg
                 argv = cfg.argv
@@ -551,10 +632,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 try:
                     self.publish('ros.launch.changed',
                                  json.dumps({}, cls=SelfEncoder))
+                    self._add_launch_to_observer(request.path)
                 except Exception as cpe:
                     pass
             except Exception as e:
                 print(traceback.format_exc())
+                self._add_launch_to_observer(request.path)
                 err_text = "%s loading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
                 Log.warn("Loading launch file: %s", err_details)
@@ -573,6 +656,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         cfgid = CfgId(request.path, request.masteruri)
         if cfgid in self._loaded_files:
             try:
+                self._remove_launch_from_observer(request.path)
                 del self._loaded_files[cfgid]
                 result.status.code = OK
 
@@ -609,6 +693,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
         cfgid = CfgId(request.path, request.masteruri)
         if cfgid in self._loaded_files:
             try:
+                self._remove_launch_from_observer(request.path)
                 del self._loaded_files[cfgid]
                 result.status.code = 'OK'
 
@@ -829,7 +914,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                     result.launch.append(launch_configs[0].filename)
                     startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel,
                                                             logformat=request.logformat, reload_global_param=request.reload_global_param, cmd_prefix=request.cmd_prefix)
-                    launcher.run_node(startcfg)
+                    binary = launcher.run_node(startcfg)
+                    if binary:
+                        self._add_file_to_observe(binary)
                     result.status.code = OK
                     yield result
                 except exceptions.BinarySelectionRequest as bsr:
@@ -893,7 +980,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
                 result.launch_files.append(launch_configs[0].filename)
                 startcfg = launcher.create_start_config(request.name, launch_configs[0], request.opt_binary, masteruri=request.masteruri, loglevel=request.loglevel,
                                                         logformat=request.logformat, reload_global_param=request.reload_global_param, cmd_prefix=request.cmd_prefix)
-                launcher.run_node(startcfg)
+                binary = launcher.run_node(startcfg)
+                if binary:
+                    self._add_file_to_observe(binary)
                 result.status.code = 'OK'
             except exceptions.BinarySelectionRequest as bsr:
                 result.status.code = 'MULTIPLE_BINARIES'
