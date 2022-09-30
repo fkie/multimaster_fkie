@@ -997,7 +997,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession):
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
             # search for loaded file and get the arguments
-            resolve_args = {arg.name: arg.value for arg in request.args}
+            resolve_args = {arg.name: arg.value for arg in request.include_args}
             if not resolve_args:
                 for cfgid, lcfg in self._loaded_files.items():
                     if cfgid.path == request.path:
