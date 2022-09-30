@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 from fkie_node_manager_daemon.host import get_host_name
 
 
-NMD_DEFAULT_PORT = 11911
+NMD_DEFAULT_PORT = 11811
 ''':var NMD_DEFAULT_PORT: default port of node manager daemon.'''
 
 
