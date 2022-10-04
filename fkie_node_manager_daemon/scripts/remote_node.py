@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import psutil
 import shlex
 import socket
 import subprocess
@@ -65,6 +66,8 @@ def parse_arguments():
                         help='kill the process with given pid')
     parser.add_argument('--masteruri', default=None,
                         help='the ROS MASTER URI for started node')
+    parser.add_argument('--force', default=None, action='store_false',
+                        help='Force command even if a process with the same name is running')
 
     args, additional_args = parser.parse_known_args()
 
@@ -84,11 +87,38 @@ def parse_arguments():
         args.prefix) > 0 else ""
     argumentsStr += f'  pidkill: {args.pidkill}\n' if args.pidkill is not None else ""
     argumentsStr += f'  masteruri: {args.masteruri}\n' if args.masteruri is not None else ""
+    argumentsStr += f'  force: {args.force}\n' if args.force is not None else ""
 
     Log.info("[remote_node.py] Starting Remote script", "\nArguments:", argumentsStr,
              "\nAdditional Arguments:\n", additional_args, "\n")
 
     return parser, args, additional_args
+
+
+def find_process_by_name(name: str):
+    "Return a list of processes matching 'name'. Ignores self node."
+    ls = []
+    self_name = psutil.Process().name()
+    for p in psutil.process_iter(["name", "exe", "cmdline"]):
+        # ignore self node
+        if self_name in p.info['name']:
+            continue
+
+        if name in p.info['name']:
+            ls.append(p)
+            continue
+
+        if p.info['exe'] and name in os.path.basename(p.info['exe']):
+            ls.append(p)
+            continue
+
+        if p.info['cmdline']:
+            for cl in p.info['cmdline']:
+                # validate self name also in arguments
+                if name in cl and self_name not in cl:
+                    ls.append(p)
+                    continue
+    return ls
 
 
 def getCwdArg(arg, argv):
@@ -154,9 +184,12 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
     # create string for node parameter. Set arguments with spaces into "'".
     cmd = remove_src_binary(cmd)
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
-        ' ') > -1 else a for a in args[1:])
+        ' ') > -1 else a for a in args)
 
-    cmd_args = [screen.get_cmd(name),
+    # get namespace if given
+    arg_ns = getCwdArg('__ns', args)
+
+    cmd_args = [screen.get_cmd(node=name, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd[0], node_params]
     Log.info('run on remote host:', ' '.join(cmd_args))
 
@@ -195,7 +228,10 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args[1:])
 
-    cmd_args = [screen.get_cmd(name),
+    # get namespace if given
+    arg_ns = getCwdArg('__ns', args)
+
+    cmd_args = [screen.get_cmd(node=name, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd, node_params]
 
     screen_command = ' '.join(cmd_args)
@@ -208,7 +244,10 @@ def run_command(name: str, command: str, additional_args: List[str], respawn=Fal
     '''
     Runs a command remotely
     '''
-    cmd_args = [screen.get_cmd(name),
+    # get namespace if given
+    arg_ns = getCwdArg('__ns', additional_args)
+
+    cmd_args = [screen.get_cmd(node=name, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', "", command]
 
     screen_command = ' '.join(cmd_args)
@@ -220,6 +259,15 @@ def run_command(name: str, command: str, additional_args: List[str], respawn=Fal
 
 def main(argv=sys.argv):
     parser, args, additional_args = parse_arguments()
+
+    running_processes = find_process_by_name(args.name)
+    if len(running_processes) > 0:
+        Log.warn(
+            f'A process with the same name [{args.name}] is already running.',
+            'Skipping command because [force] is disable' if not args.force else "")
+
+        if not args.force:
+            return
 
     try:
         print_help = True
