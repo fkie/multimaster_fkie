@@ -36,6 +36,7 @@ import os
 import rospy
 import shutil
 import glob
+import re
 
 import json
 import asyncio
@@ -484,7 +485,16 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         Log.info('Request to [ros.path.get_log_paths] for %s' % nodes)
         result = []
         for node in nodes:
-            screen_log = get_logfile(node=node, for_new_screen=True)
+            namespace = None
+            node_name = node
+
+            namespace_search = re.search('/(.*)/', node)
+            if namespace_search is not None:
+                namespace = namespace_search.group(1)
+                node_name = node.replace(f'/{namespace}', '')
+
+            screen_log = get_logfile(
+                node=node_name, for_new_screen=True, namespace=namespace)
             ros_log = get_ros_logfile(node)
             log_path_item = LogPathItem(node,
                                         screen_log=screen_log,

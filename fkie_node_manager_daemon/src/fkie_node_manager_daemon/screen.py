@@ -55,7 +55,7 @@ SLASH_SEP = '_'
 ''':var SLASH_SEP: this character is used to replace the slashes in ROS-Names.'''
 
 
-def create_session_name(node=''):
+def create_session_name(node: str = '', namespace: str = '/') -> str:
     '''
     Creates a name for the screen session. All slash separators are replaced by `SLASH_SEP`
     and all `SLASH_SEP` are replaced by double `SLASH_SEP`.
@@ -66,8 +66,12 @@ def create_session_name(node=''):
     '''
     if node is None:
         return ''
+
+    if namespace is None:
+        namespace = '/'
+
     result = rospy.names.ns_join(
-        '/', node).replace(SLASH_SEP, '%s%s' % (SLASH_SEP, SLASH_SEP))
+        namespace, node).replace(SLASH_SEP, '%s%s' % (SLASH_SEP, SLASH_SEP))
     result = result.replace('/', SLASH_SEP)
     return result
 
@@ -167,7 +171,7 @@ def test_screen():
         sf.write('logfile flush 0')
 
 
-def get_logfile(session=None, node=None, for_new_screen=False):
+def get_logfile(session: str = None, node: str = None, for_new_screen: bool = False, namespace: str = '/') -> str:
     '''
     Generates a log file name of the ROS log.
 
@@ -182,7 +186,7 @@ def get_logfile(session=None, node=None, for_new_screen=False):
         if os.path.exists(path):
             return path
     if node is not None:
-        path = "%s%s.log" % (LOG_PATH, create_session_name(node))
+        path = "%s%s.log" % (LOG_PATH, create_session_name(node, namespace))
         if os.path.exists(path) or for_new_screen:
             return path
     return get_ros_logfile(node)
@@ -221,7 +225,7 @@ def get_ros_logfile(node):
     return logfile
 
 
-def get_pidfile(session=None, node=None):
+def get_pidfile(session: str = None, node: str = None, namespace: str = "/") -> str:
     '''
     Generates a PID file name for the screen session.
 
@@ -232,11 +236,11 @@ def get_pidfile(session=None, node=None):
     if session is not None:
         return "%s%s.pid" % (LOG_PATH, session)
     elif node is not None:
-        return "%s%s.pid" % (LOG_PATH, create_session_name(node))
+        return "%s%s.pid" % (LOG_PATH, create_session_name(node, namespace))
     return "%s%s.pid" % (LOG_PATH, 'unknown')
 
 
-def get_cmd(node, env=[], keys=[]):
+def get_cmd(node: str, env=[], keys=[], namespace: str = '/') -> str:
     '''
     Return the command prefix to start the given node
     in a screen terminal.
@@ -256,7 +260,7 @@ def get_cmd(node, env=[], keys=[]):
     cfg_opt = ''
     if os.path.exists(cfg_file):
         cfg_opt = '-c %s' % cfg_file
-    return '%s %s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, cfg_opt, get_logfile(node=node, for_new_screen=True), shell, create_session_name(node=node))
+    return '%s %s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, cfg_opt, get_logfile(node=node, for_new_screen=True, namespace=namespace), shell, create_session_name(node=node, namespace=namespace))
 
 
 def rosclean():
