@@ -17,95 +17,77 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
+from autobahn import wamp
+import json
 import os
 import signal
-import fkie_node_manager_daemon.grpc_proto.screen_pb2_grpc as sgrpc
-import fkie_node_manager_daemon.grpc_proto.screen_pb2 as smsg
+import threading
+import time
+from typing import Dict, List
+from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
+from fkie_multimaster_msgs.logging.logging import Log
 import fkie_node_manager_daemon as nmd
 from . import screen
 
 
-class ScreenServicer(sgrpc.ScreenServiceServicer):
+class ScreenServicer(CrossbarBaseSession):
 
-    def __init__(self):
-        nmd.ros_node.get_logger().info("Create screen servicer")
-        sgrpc.ScreenServiceServicer.__init__(self)
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
+        Log.info("Create ROS2 screen servicer")
+        CrossbarBaseSession.__init__(self, loop, realm, port)
+        self._is_running = True
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
+        self._multiple_screen_check_force_after = 10
+        self._multiple_screen_do_check = True
+        self._multiple_screen_thread = threading.Thread(
+            target=self._check_multiple_screens, daemon=True)
+        self._multiple_screen_thread.start()
 
     def stop(self):
-        global IS_RUNNING
-        IS_RUNNING = False
+        self._is_running = False
 
-    def GetScreens(self, request, context):
-        screens = screen.get_active_screens(request.node)
-        reply = smsg.Screens()
-        screen_objs = []
-        for session_name, node_name in screens.items():
-            screen_objs.append(smsg.Screen(name=session_name, node=node_name))
-        reply.screens.extend(screen_objs)
-        return reply
-
-    def GetAllScreens(self, request, context):
-        screens = screen.get_active_screens()
-        reply = smsg.Screens()
-        screen_objs = []
-        for session_name, node_name in screens.items():
-            screen_objs.append(smsg.Screen(name=session_name, node=node_name))
-        reply.screens.extend(screen_objs)
-        return reply
-
-    def GetMultipleScreens(self, request, context):
-        screens = screen.get_active_screens()
-        reply = smsg.Screens()
-        screen_objs = []
-        node_names = []
-        added_node_names = []
-        for session_name, node_name in screens.items():
-            if node_name not in node_names:
-                node_names.append(node_name)
-            elif node_name not in added_node_names:
-                screen_objs.append(smsg.Screen(
-                    name=session_name, node=node_name))
-                added_node_names.append(node_name)
-        # TODO currently we add only one session name. Add all!
-        reply.screens.extend(screen_objs)
-        return reply
-
-    def RosClean(self, request, context):
-        screen.rosclean()
-        reply = smsg.Empty()
-        return reply
-
-    def DeleteLog(self, request, context):
-        for nodename in request.nodes:
-            screen.delete_log(nodename)
-        reply = smsg.Empty()
-        return reply
-
-    def GetLogDiskSize(self, request, context):
-        reply = smsg.DirSize()
-        reply.size = screen.log_dir_size()
-        return reply
-
-    def WipeScreens(self, request, context):
-        screen.wipe()
-        reply = smsg.Empty()
-        return reply
-
-    def KillNodes(self, request, context):
-        screens = screen.get_active_screens()
-        reply = smsg.Screens()
-        screen_objs = []
-        for session_name, node_name in screens.items():
-            if node_name in request.nodes:
+    def _check_multiple_screens(self):
+        last_check = 0
+        while self._is_running:
+            if self._multiple_screen_do_check or last_check >= self._multiple_screen_check_force_after:
+                screen.wipe()
+                self._multiple_screen_do_check = False
+                screens = screen.get_active_screens()
+                screen_dict: Dict[str, ScreenRepetitions] = {}
+                for session_name, node_name in screens.items():
+                    if node_name in screen_dict:
+                        screen_dict[node_name].screens.append(session_name)
+                    else:
+                        screen_dict[node_name] = ScreenRepetitions(
+                            name=node_name, screens=[session_name])
+                crossbar_msg: List(ScreenRepetitions) = []
+                for node_name, msg in screen_dict.items():
+                    if len(msg.screens) > 1:
+                        crossbar_msg.append(msg)
                 try:
-                    ss = session_name.split('.')
-                    os.kill(int(ss[0]), signal.SIGKILL)
-                    screen_objs.append(smsg.Screen(
-                        name=session_name, node=node_name))
+                    self.publish('ros.screen.multiple', json.dumps(
+                        crossbar_msg, cls=SelfEncoder))
                 except Exception:
-                    import traceback
-                    print(traceback.format_exc())
-        reply.screens.extend(screen_objs)
-        screen.wipe()
-        return reply
+                    pass
+                last_check = 0
+            else:
+                last_check += 1
+            time.sleep(1.0)
+
+    @wamp.register('ros.screen.kill_node')
+    def kill_node(self, name: str) -> bool:
+        Log.info("Kill node '%s'", name)
+        self._multiple_screen_do_check = True
+        success = False
+        screens = screen.get_active_screens(name)
+        if len(screens.items()) == 0:
+            return json.dumps({'result': success, 'message': 'Node does not have an active screen'}, cls=SelfEncoder)
+
+        for session_name, node_name in screens.items():
+            pid, session_name = screen.split_session_name(session_name)
+            os.kill(pid, signal.SIGKILL)
+            success = True
+        return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)

@@ -124,3 +124,10 @@ def get_active_screens(nodename=''):
                     name = session_name2node_name(nodepart)
                     result[screen_name] = name
     return result
+
+
+def wipe():
+    '''
+    Calls 'screen -wipe' command to clean up SockDir.
+    '''
+    _ps = SupervisedPopen([SCREEN, '-wipe'], stdout=subprocess.PIPE, object_id='screen wipe')

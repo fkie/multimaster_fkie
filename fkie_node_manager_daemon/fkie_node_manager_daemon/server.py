@@ -39,7 +39,7 @@ from .host import get_host_name
 #from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
 from .rosstate_servicer import RosStateServicer
-#from .screen_servicer import ScreenServicer
+from .screen_servicer import ScreenServicer
 from .settings_servicer import SettingsServicer
 from .url import nmduri, nmdport
 #from .version_servicer import VersionServicer
@@ -62,6 +62,8 @@ class Server:
         self.settings_servicer = SettingsServicer()
         self.monitor_servicer = MonitorServicer(
             self.settings_servicer.settings)
+        self.screen_servicer = ScreenServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.rosstate_servicer = RosStateServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.parameter_servicer = ParameterServicer(
@@ -87,6 +89,7 @@ class Server:
         self.crossbar_loop.stop()
         self.launch_servicer = None
         self.monitor_servicer = None
+        self.screen_servicer = None
         self.settings_servicer = None
         self.rosstate_servicer = None
         self.parameter_servicer = None
@@ -153,6 +156,7 @@ class Server:
         endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=get_host_name(
         ), ros_domain_id=self.ros_domain_id, on_shutdown=True, pid=os.getpid())
         self.pub_endpoint.publish(endpoint_msg)
+        self.screen_servicer.stop()
         # self.launch_servicer.stop()
         self.monitor_servicer.stop()
         self.rosstate_servicer.stop()

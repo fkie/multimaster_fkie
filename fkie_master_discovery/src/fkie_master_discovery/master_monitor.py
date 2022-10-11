@@ -1031,6 +1031,7 @@ class MasterMonitor(ApplicationSession):
     def checkMultipleScreens(self):
         while not rospy.is_shutdown():
             if self._multiple_screen_do_check:
+                screen.wipe()
                 self._multiple_screen_do_check = False
                 screens = screen.get_active_screens()
                 screen_dict: Dict[str, ScreenRepetitions] = {}
