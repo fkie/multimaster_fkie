@@ -133,7 +133,7 @@ def wipe():
     '''
     Calls 'screen -wipe' command to clean up SockDir.
     '''
-    _ps = SupervisedPopen([SCREEN, '-wipe'], object_id='screen wipe')
+    _ps = SupervisedPopen([SCREEN, '-wipe'], stdout=subprocess.PIPE, object_id='screen wipe')
 
 
 def test_screen():
