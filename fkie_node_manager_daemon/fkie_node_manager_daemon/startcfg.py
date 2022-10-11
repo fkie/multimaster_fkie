@@ -17,17 +17,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import shlex
-import fkie_node_manager_daemon.grpc_proto.launch_pb2 as lmsg
 from .host import get_hostname
-from .url import nmduri, nmdport
 
 
-STRING = lmsg.Argument.ValueType.Value('STRING')
-INT32 = lmsg.Argument.ValueType.Value('INT32')
-DOUBLE = lmsg.Argument.ValueType.Value('DOUBLE')
-BOOL = lmsg.Argument.ValueType.Value('BOOL')
-LIST = lmsg.Argument.ValueType.Value('LIST')
+STRING = 'STRING'
+INT32 = 'INT32'
+DOUBLE = 'DOUBLE'
+BOOL = 'BOOL'
+LIST = 'LIST'
 
 
 class StartConfig():

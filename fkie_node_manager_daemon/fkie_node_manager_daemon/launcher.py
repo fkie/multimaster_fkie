@@ -48,7 +48,7 @@ from . import screen
 from . import settings
 from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
-from .launch_stub import LaunchStub
+#from .launch_stub import LaunchStub  <- TODO: use crossbar instead
 from .common import get_cwd, get_namespace, package_name, interpret_path, ns_join
 from .supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
@@ -383,8 +383,9 @@ def run_node(startcfg):
         if channel is None:
             raise exceptions.StartException(
                 "Unknown launch manager url for host %s to start %s" % (nmduri, startcfg.fullname))
-        lm = LaunchStub(channel)
-        lm.start_standalone_node(startcfg)
+        # TODO: remote start using crossar
+        #lm = LaunchStub(channel)
+        #lm.start_standalone_node(startcfg)
 
 
 def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container_name: Text, context: LaunchContext):

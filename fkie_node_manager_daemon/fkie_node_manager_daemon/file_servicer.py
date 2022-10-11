@@ -49,6 +49,11 @@ class FileServicer(CrossbarBaseSession):
         # TODO: clear cache after detected change or time?
         self.CB_DIR_CACHE = {}
 
+    def stop(self):
+        '''
+        '''
+        pass
+
     @wamp.register('ros.packages.get_list')
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
         Log.info('Request to [ros.packages.get_list]')

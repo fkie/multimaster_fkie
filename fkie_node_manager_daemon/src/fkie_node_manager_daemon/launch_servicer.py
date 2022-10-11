@@ -470,7 +470,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         return result
 
     @wamp.register('ros.launch.load')
-    def loadLaunch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
+    def load_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
         '''
         Loads launch file by crossbar request
         '''
@@ -679,7 +679,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         return result
 
     @wamp.register('ros.launch.unload')
-    def unloadLaunch(self, request_json: LaunchFile) -> LaunchLoadReply:
+    def unload_launch(self, request_json: LaunchFile) -> LaunchLoadReply:
         Log.debug('Request to [ros.launch.unload]')
 
         # Covert input dictionary into a proper python object
@@ -1157,7 +1157,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             except Exception as err:
                 reply = LaunchInterpretPathReply(
                     text=text, status='ERROR', args=request.args)
-                reply.status.error_msg = utf8(err)
+                reply.status.msg = utf8(err)
                 result.append(reply)
         else:
             reply = LaunchInterpretPathReply(

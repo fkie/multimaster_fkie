@@ -35,10 +35,8 @@ from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.utilities import perform_substitutions
 from launch.utilities import normalize_to_list_of_substitutions
 import launch_ros
-import rclpy
 
-from fkie_node_manager_daemon.grpc_proto.launch_pb2 import Argument  # pylint: disable=no-name-in-module, import-error
-
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
 import fkie_node_manager_daemon as nmd
 
 from .common import SEP
@@ -501,11 +499,11 @@ class LaunchConfig(object):
             arg_match = re.search(r"\$\(\s*arg\s*", value)
 
     @classmethod
-    def get_args(cls, filename: str, provided_args: list) -> List[Argument]:
+    def get_args(cls, filename: str, provided_args: list) -> List[RosParameter]:
         '''
-        :param list(fkie_node_manager_daemon.grpc_proto.launch_pb2.Argument) provided_args: provided args used to set 'value' in returned args
+        :param list(fkie_multimaster_msgs.crossbar.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
         :return: a list with args being used in the roslaunch file.
-        :rtype: list(fkie_node_manager_daemon.grpc_proto.launch_pb2.Argument)
+        :rtype: list(kie_multimaster_msgs.crossbar.runtime_interface.RosParameter)
         '''
         launch_description = get_launch_description_from_any_launch_file(
             filename)
@@ -521,11 +519,11 @@ class LaunchConfig(object):
             if argument_action.default_value is not None:
                 default_str = ' + '.join([token.describe()
                                           for token in argument_action.default_value])
-            arg = Argument(name=argument_action.name,
-                           value=value,
-                           default_value=default_str,
-                           description=argument_action.description,
-                           conditionally_included=argument_action._conditionally_included)
+            arg = RosParameter(name=argument_action.name,
+                               value=value)  # ,
+            # default_value=default_str,
+            # description=argument_action.description,
+            # conditionally_included=argument_action._conditionally_included)
             result.append(arg)
         return result
         # # get only the args in the top launch file
@@ -733,15 +731,13 @@ class LaunchConfig(object):
             if result:
                 nmd.ros_node.get_logger().debug("Nodename '%s' from cmd" % result)
         if result:
-            if not result.startswith(SEP) and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
-                ns = node.expanded_node_namespace if hasattr(
-                    node, 'expanded_node_namespace') else SEP
-                if not ns:
-                    ns = SEP
-                result = ns_join(ns, result)
+            ns = SEP
+            if not result.startswith(SEP) and hasattr(node, 'expanded_node_namespace') and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
+                ns = node.expanded_node_namespace
+            result = ns_join(ns, result)
         else:
             nmd.ros_node.get_logger().debug("No name for node found: %s %s" %
-                                           (type(node), dir(node)))
+                                            (type(node), dir(node)))
             # print("describe", node.describe(), dir(node.describe()), str(node.describe()))
             # print("'cmd'", " ".join([str(n) for n in node.cmd]))
 
