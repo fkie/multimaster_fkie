@@ -35,7 +35,7 @@ import fkie_node_manager_daemon as nmd
 #import fkie_node_manager_daemon.security as security
 from .common import interpret_path, ns_join
 from .host import get_host_name
-#from .file_servicer import FileServicer
+from .file_servicer import FileServicer
 #from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
 from .rosstate_servicer import RosStateServicer
@@ -62,6 +62,8 @@ class Server:
         self.settings_servicer = SettingsServicer()
         self.monitor_servicer = MonitorServicer(
             self.settings_servicer.settings)
+        self.file_servicer = FileServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.screen_servicer = ScreenServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.rosstate_servicer = RosStateServicer(
@@ -158,6 +160,7 @@ class Server:
         self.pub_endpoint.publish(endpoint_msg)
         self.screen_servicer.stop()
         # self.launch_servicer.stop()
+        self.file_servicer.stop()
         self.monitor_servicer.stop()
         self.rosstate_servicer.stop()
         self.rosnode.destroy_publisher(self.pub_endpoint)
