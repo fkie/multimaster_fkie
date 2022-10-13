@@ -979,7 +979,7 @@ class MasterMonitor(ApplicationSession):
         self.crossbar_connected = False
 
     @wamp.register('ros.nodes.get_list')
-    def getNodeList(self) -> str:
+    def get_node_list(self) -> str:
         Log.info('Request to [ros.nodes.get_list]')
         node_list: List[RosNode] = []
         if self.__master_state is not None:
@@ -987,13 +987,13 @@ class MasterMonitor(ApplicationSession):
         return json.dumps(node_list, cls=SelfEncoder)
 
     @wamp.register('ros.system.get_uri')
-    def getSystemURI(self) -> str:
+    def get_system_uri(self) -> str:
         Log.info('Request to [ros.system.get_uri]')
         return f"{self.getMasteruri()} [{self.crossbar_port}]"
 
     @wamp.register('ros.nodes.stop_node')
-    def stopNode(self, name: str) -> bool:
-        Log.info("Stop node '%s'", name)
+    def stop_node(self, name: str) -> bool:
+        Log.info("Request to stop node '%s'", name)
         success = False
         self._multiple_screen_do_check = True
         if self.__master_state is not None:
@@ -1020,6 +1020,51 @@ class MasterMonitor(ApplicationSession):
                 return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
             except Exception as e:
                 msg = "Error while stopping node '%s': %s" % (name, e)
+                Log.warn(msg)
+                import traceback
+                print(traceback.format_exc())
+                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
+            finally:
+                socket.setdefaulttimeout(None)
+        return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
+
+    @wamp.register('ros.nodes.unregister')
+    def unregister_node(self, name: str) -> bool:
+        Log.info(f"Request to unregister node '{name}'")
+        success = False
+        if self.__master_state is not None:
+            try:
+                with self._state_access_lock:
+                    node = self.__master_state.nodes[name]
+                Log.debug(f"  found node: {node.name}")
+                socket.setdefaulttimeout(10)
+                master = xmlrpcclient.ServerProxy(node.masteruri)
+                master_multi = xmlrpcclient.MultiCall(master)
+                for p in node.publishedTopics:
+                    Log.info(
+                        f"unregister publisher '{p}' [{node.name}] from ROS master: {node.masteruri}")
+                    master_multi.unregisterPublisher(node.name, p, node.uri)
+                for t in node.subscribedTopics:
+                    Log.info(
+                        f"unregister subscriber '{t}' [{node.name}] from ROS master: {node.masteruri}")
+                    master_multi.unregisterSubscriber(node.name, t, node.uri)
+                for s in node.services:
+                    Log.info(
+                        f"unregister service '{s}' [{node.name}] from ROS master: {node.masteruri}")
+                    service = self.__master_state.getService(s)
+                    if service is not None:
+                        master_multi.unregisterService(
+                            node.name, s, service.uri)
+                r = master_multi()
+                for code, msg, _ in r:
+                    if code != 1:
+                        Log.warn(f"unregistration failed: {msg}")
+            except KeyError:
+                msg = f"Error while unregistering node: Node '{name}' not found"
+                Log.warn(msg)
+                return json.dumps({'result': success, 'message': msg}, cls=SelfEncoder)
+            except Exception as e:
+                msg = f"Error while stopping node '{name}': {e}"
                 Log.warn(msg)
                 import traceback
                 print(traceback.format_exc())
