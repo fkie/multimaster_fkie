@@ -358,3 +358,51 @@ class LaunchIncludedFile:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LaunchMessageStruct:
+    def __init__(self, msg_type: str, *,
+                 data: Dict = {}) -> None:
+        '''
+        Represend the structure of a ROS message.
+        :param str msg_type: Type of the message.
+        :param dict data: structure of the ROS message as dictionary.
+        '''
+        self.msg_type = msg_type
+        self.data = data
+
+
+class LaunchPublishMessage:
+    def __init__(self, topic_name: str,
+                 msg_type: str, *,
+                 data: Dict = {},
+                 rate: float = 0.0,
+                 once: bool = False,
+                 latched: bool = False,
+                 verbose: bool = False,
+                 use_rostime: bool = False,
+                 substitute_keywords: bool = True) -> None:
+        '''
+        Publisher configuration.
+        :param str topic_name: the ROS topic name.
+        :param str msg_type: Type of the message.
+        :param dict data: structure of the ROS message as dictionary.
+        :param float rate: publishing rate (hz), only if once and latched is False.
+        :param bool once: publish one message and exit.
+        :param bool latched: enable latching.
+        :param bool verbose: print verbose output.
+        :param bool use_rostime: use rostime for time stamps, else walltime is used.
+        :param bool substitute_keywords: When publishing with a rate, performs keyword ('now' or 'auto') substitution for each message.
+        '''
+        self.topic_name = topic_name
+        self.msg_type = msg_type
+        self.data = data
+        self.rate = rate
+        self.once = once
+        self.latched = latched
+        self.verbose = verbose
+        self.use_rostime = use_rostime
+        self.substitute_keywords = substitute_keywords
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)

@@ -77,6 +77,8 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathReply
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchMessageStruct
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchPublishMessage
 from fkie_multimaster_msgs.logging.logging import Log
 
 
@@ -184,7 +186,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         if event.src_path in self._included_files:
             change_event = {event.event_type: event.src_path}
             Log.debug("observed change %s on %s" %
-                     (event.event_type, event.src_path))
+                      (event.event_type, event.src_path))
             self.publish('ros.path.changed', json.dumps(
                 change_event, cls=SelfEncoder))
 
@@ -1075,6 +1077,68 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             Log.warn("Can't get include files for %s: %s" %
                      (request.path, traceback.format_exc()))
         return json.dumps(result, cls=SelfEncoder)
+
+    @wamp.register('ros.launch.get_msg_struct')
+    def get_msg_struct(self, msg_type: str) -> LaunchMessageStruct:
+        Log.debug(
+            f"Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
+        try:
+            result = LaunchMessageStruct(msg_type)
+            import ruamel
+            import genpy
+            from roslib import message
+            msg_class = message.get_message_class(msg_type)()
+            yaml = ruamel.yaml.YAML(typ='safe')
+            result.data = json.dumps(yaml.load(f"{msg_class}"))
+            result.valid = True
+            return json.dumps(result, cls=SelfEncoder)
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
+
+    def _rem_empty_lists(self, param_dict):
+        result = dict()
+        for key, value in param_dict.items():
+            if isinstance(value, dict):
+                result[key] = self._rem_empty_lists(value)
+            elif not (isinstance(value, list) and not value):
+                result[key] = value
+        return result
+
+    @wamp.register('ros.launch.publish_message')
+    def publish_message(self, request_json: LaunchPublishMessage) -> None:
+        try:
+            # Convert input dictionary into a proper python object
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+            Log.debug(
+                f"Request to [ros.launch.publish_message]: msg [{request.msg_type}]")
+            opt_str = ''
+            opt_name_suf = '__latch_'
+            if request.once:
+                opt_str = '-1'
+            elif request.latched:
+                opt_str = '-l'
+            elif request.rate != 0.0:
+                opt_str = f"-r {request.rate}"
+            if request.substitute_keywords:
+                opt_str += ' -s'
+            if request.verbose:
+                opt_str += ' -v'
+            if request.use_rostime:
+                opt_str += ' --use-rostime'
+            # remove empty lists
+            data = json.loads(request.data)
+            topic_params = self._rem_empty_lists(data)
+            pub_cmd = f"pub {request.topic_name} {request.msg_type} \"{topic_params}\" {opt_str}"
+            Log.debug(f"rostopic parameter: {pub_cmd}")
+            startcfg = StartConfig('rostopic', 'rostopic')
+            startcfg.fullname = f"/rostopic_pub/{request.topic_name.rstrip('/')}"
+            startcfg.args = [f"__name:={startcfg.fullname}", pub_cmd]
+            launcher.run_node(startcfg)
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
 
     def GetIncludedFiles(self, request, context):
         Log.debug('GetIncludedFiles request:\n%s' % str(request))
