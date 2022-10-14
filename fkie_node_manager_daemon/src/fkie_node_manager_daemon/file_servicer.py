@@ -473,11 +473,14 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         # fill the input fields
         root_paths = [os.path.normpath(p) for p in os.getenv(
             "ROS_PACKAGE_PATH").split(':')]
+        packages = []
         for p in root_paths:
             ret = self._get_packages(p)
             for name, path in ret.items():
-                package = RosPackage(name=name, path=path)
-                package_list.append(package)
+                if name not in packages:
+                    package = RosPackage(name=name, path=path)
+                    package_list.append(package)
+                    packages.append(name)
         return json.dumps(package_list, cls=SelfEncoder)
 
     @wamp.register('ros.path.get_log_paths')
