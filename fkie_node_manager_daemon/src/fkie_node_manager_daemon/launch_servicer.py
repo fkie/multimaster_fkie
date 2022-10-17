@@ -828,6 +828,10 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host,
                                      nodes=[], parameters=[], nodelets=[], associations=[])
 
+            # Add launch arguments
+            for name, arg in lc.argv2dict(lc.argv).items():
+                reply_lc.args.append(LaunchArgument(name, arg))
+
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
                 reply_lc.nodes.append(node_fullname)
