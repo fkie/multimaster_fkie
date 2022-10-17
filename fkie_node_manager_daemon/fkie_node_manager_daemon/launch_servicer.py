@@ -447,9 +447,12 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 for cn in item.composable_nodes:
                     reply_lc.nodes.append(LaunchConfig.get_name_from_node(cn))
 
-            # Add parameter values
+            # Add launch arguments
             for name, p in lc.launch_arguments:
-                reply_lc.parameters.append(RosParameter(name, p.value))
+                reply_lc.args.append(LaunchArgument(name, p.value))
+            # Add parameter values
+            #for name, p in lc.xxx:
+            #    reply_lc.parameters.append(RosParameter(name, p.value))
             print('nodes', reply_lc.nodes)
             # TODO: add assosiations
 
