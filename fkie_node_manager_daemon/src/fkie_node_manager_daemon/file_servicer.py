@@ -491,10 +491,10 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             namespace = None
             node_name = node
 
-            namespace_search = re.search('/(.*)/', node)
+            namespace_search = re.search('/(.*)/', node_name)
             if namespace_search is not None:
-                namespace = namespace_search.group(1)
-                node_name = node.replace(f'/{namespace}', '')
+                namespace = f'/{namespace_search.group(1)}'
+                node_name = node.replace(f'/{namespace}/', '')
 
             screen_log = get_logfile(
                 node=node_name, for_new_screen=True, namespace=namespace)
