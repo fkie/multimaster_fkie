@@ -23,7 +23,7 @@ import subprocess
 import time
 
 from .settings import LOG_PATH
-from .supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 
 from fkie_node_manager_daemon.common import ns_join
 from fkie_node_manager_daemon.common import SEP as ROS_SEP

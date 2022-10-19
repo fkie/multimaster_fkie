@@ -38,7 +38,7 @@ import threading
 
 import rospy
 
-from fkie_node_manager_daemon.supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import utf8
 from fkie_multimaster_msgs.logging.logging import Log

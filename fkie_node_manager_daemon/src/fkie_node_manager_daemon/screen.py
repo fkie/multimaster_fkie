@@ -41,7 +41,7 @@ import rospkg
 import time
 
 from .settings import LOG_PATH, SETTINGS_PATH
-from .supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_multimaster_msgs.logging.logging import Log
 
 

@@ -9,7 +9,7 @@ if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
     d = generate_distutils_setup(
         # don't do this unless you want a globally visible script
         scripts=[],
-        packages=[package_name, package_name + '.crossbar', package_name + '.logging', package_name + '.parameters'],
+        packages=[package_name, package_name + '.crossbar', package_name + '.logging', package_name + '.parameters', package_name + '.system'],
         package_dir={'': '.'}
     )
 
@@ -78,7 +78,7 @@ else:
     setup(
         name=package_name,
         version=strip_dirty_vers(get_version()[0]),
-        packages=[package_name, package_name + '.crossbar', package_name + '.logging', package_name + '.parameters'],
+        packages=[package_name, package_name + '.crossbar', package_name + '.logging', package_name + '.parameters', package_name + '.system'],
         cmdclass={'build_py': BuildPyCommand},
         data_files=[
             ('share/ament_index/resource_index/packages',

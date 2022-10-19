@@ -77,7 +77,7 @@ from .parameter_list_model import ParameterModel, ParameterNameItem, ParameterVa
 from .progress_queue import ProgressQueue
 from .select_dialog import SelectDialog
 from .service_list_model import ServiceModel, ServiceItem, ServiceGroupItem
-from .supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from .topic_list_model import TopicModel, TopicItem, TopicGroupItem
 import fkie_node_manager as nm
 try:

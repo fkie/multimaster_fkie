@@ -19,9 +19,10 @@
 
 import subprocess
 import threading
+from fkie_multimaster_msgs.logging.logging import Log
 
 
-class SupervisedPopen(object):
+class SupervisedPopen():
     '''
     The class overrides the subprocess.Popen and waits in a thread for its finish.
     If an error is printed out.
@@ -30,7 +31,7 @@ class SupervisedPopen(object):
     def __init__(self, args, bufsize=0, executable=None, stdin=None, stdout=None,
                  stderr=subprocess.PIPE, preexec_fn=None, close_fds=False,
                  shell=False, cwd=None, env=None, universal_newlines=False,
-                 startupinfo=None, creationflags=0, object_id='', description='', rosnode=None):
+                 startupinfo=None, creationflags=0, object_id='', description=''):
         '''
         For arguments see https://docs.python.org/2/library/subprocess.html
         Additional arguments:
@@ -40,14 +41,8 @@ class SupervisedPopen(object):
         '''
         self._args = args
         self._object_id = object_id
-        self._rosnode = rosnode
-        if self._rosnode is not None:
-            self._rosnode.get_logger().debug(
-                "start job [%s]" % self._object_id)
+        Log.debug("start job [%s]" % self._object_id)
         self._description = description
-        if not cwd:
-            # if cwd is an empty string we get an unspecific FileNotFound Exception with '': ''
-            cwd = None
         # wait for process to avoid 'defunct' processes
         self.popen = subprocess.Popen(args=args, bufsize=bufsize, executable=executable, stdin=stdin, stdout=stdout,
                                       stderr=stderr, preexec_fn=preexec_fn, close_fds=close_fds, shell=shell, cwd=cwd, env=env,
@@ -79,9 +74,7 @@ class SupervisedPopen(object):
         result_err = ''
         if self.stderr is not None:
             result_err = self.stderr.read()
-        if self._rosnode is not None:
-            if result_err:
-                self._rosnode.get_logger().warn('%s - %s: %s' %
-                                                (self._object_id, self._description, result_err))
-            self._rosnode.get_logger().debug(
-                "job [%s] finished" % self._object_id)
+        if result_err:
+            Log.warn('%s - %s: %s' %
+                     (self._object_id, self._description, result_err))
+        Log.debug("job [%s] finished" % self._object_id)

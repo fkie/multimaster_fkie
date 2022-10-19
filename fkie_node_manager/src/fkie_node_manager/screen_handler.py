@@ -38,7 +38,7 @@ import sys
 import grpc
 import rospy
 
-from fkie_node_manager_daemon.supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import url

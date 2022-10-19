@@ -50,7 +50,7 @@ from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
 #from .launch_stub import LaunchStub  <- TODO: use crossbar instead
 from .common import get_cwd, get_namespace, package_name, interpret_path, ns_join
-from .supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 from .url import nmduri as url_nmduri
 import fkie_node_manager_daemon as nmd

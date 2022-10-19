@@ -59,7 +59,7 @@ from . import settings
 from .launch_stub import LaunchStub
 from .common import get_cwd, package_name, interpret_path, isstring, utf8
 
-from .supervised_popen import SupervisedPopen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 
 STARTED_BINARIES = dict()
