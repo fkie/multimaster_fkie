@@ -49,11 +49,11 @@ from fkie_master_discovery.common import get_hostname, get_port, masteruri_from_
 from fkie_node_manager_daemon.common import get_cwd
 from fkie_node_manager_daemon import host as nmdhost
 from fkie_node_manager_daemon import launcher
-from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_node_manager_daemon.common import package_name, isstring, utf8
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 
 import fkie_node_manager as nm
 
@@ -467,7 +467,7 @@ class StartHandler(object):
             host = get_hostname(grpc_uri)
             if nm.is_local(host):
                 screenLog = screen.get_logfile(node=nodename)
-                pidFile = screen.get_pidfile(node=nodename)
+                pidFile = screen.get_pid_file(node=nodename)
                 roslog = screen.get_ros_logfile(nodename)
                 if os.path.isfile(screenLog):
                     os.remove(screenLog)

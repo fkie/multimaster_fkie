@@ -68,8 +68,6 @@ from autobahn.wamp.types import ComponentConfig
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from asyncio import coroutine
 
-from . import interface_finder
-from . import screen
 from .common import masteruri_from_ros, get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
@@ -79,6 +77,7 @@ from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
 from fkie_multimaster_msgs.crossbar.server import crossbar_start_server, CROSSBAR_PATH
+from fkie_multimaster_msgs.system import screen
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site

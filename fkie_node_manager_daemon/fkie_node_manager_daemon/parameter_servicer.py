@@ -17,7 +17,7 @@ class ParameterServicer(CrossbarBaseSession):
     Interface for ROS2 parameters
     '''
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11811, test_env=False) -> None:
         Log.info("Create ROS2 parameter servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self._handler = ROS2Parameters(nmd.ros_node)

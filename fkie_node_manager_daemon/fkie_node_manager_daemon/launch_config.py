@@ -37,11 +37,11 @@ from launch.utilities import normalize_to_list_of_substitutions
 import launch_ros
 
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
+from fkie_multimaster_msgs.names import ns_join
 import fkie_node_manager_daemon as nmd
 
 from .common import SEP
 from .common import package_name
-from .common import ns_join
 from .launch_context import LaunchContext
 from .url import nmduri as url_nmduri
 

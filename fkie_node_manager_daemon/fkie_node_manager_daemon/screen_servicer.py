@@ -29,8 +29,8 @@ from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 import fkie_node_manager_daemon as nmd
-from . import screen
 
 
 class ScreenServicer(CrossbarBaseSession):

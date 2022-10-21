@@ -11,9 +11,9 @@ import argparse
 from typing import List
 
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 
 from fkie_node_manager_daemon import host as nmdhost
-from fkie_node_manager_daemon import screen
 
 from fkie_node_manager_daemon.settings import RESPAWN_SCRIPT
 
@@ -318,7 +318,7 @@ def main(argv=sys.argv):
 
         elif args.delete_logs:
             logfile = screen.get_logfile(node=args.delete_logs)
-            pidfile = screen.get_pidfile(node=args.delete_logs)
+            pidfile = screen.get_pid_file(node=args.delete_logs)
             roslog = screen.get_ros_logfile(node=args.delete_logs)
             if os.path.isfile(logfile):
                 os.remove(logfile)

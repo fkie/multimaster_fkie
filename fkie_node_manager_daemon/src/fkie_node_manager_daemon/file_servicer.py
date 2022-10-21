@@ -56,8 +56,8 @@ from fkie_multimaster_msgs.crossbar.file_interface import PathItem
 from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
 from fkie_multimaster_msgs.logging.logging import Log
 
-from .screen import get_logfile
-from .screen import get_ros_logfile
+from fkie_multimaster_msgs.system.screen import get_logfile
+from fkie_multimaster_msgs.system.screen import get_ros_logfile
 
 from typing import List
 

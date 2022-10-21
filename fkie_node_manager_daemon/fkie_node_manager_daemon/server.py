@@ -30,10 +30,11 @@ import asyncio
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import Endpoint
 from fkie_multimaster_msgs.srv import LoadLaunch, Task
+from fkie_multimaster_msgs.names import ns_join
 import fkie_node_manager_daemon as nmd
 
 #import fkie_node_manager_daemon.security as security
-from .common import interpret_path, ns_join
+from .common import interpret_path
 from .host import get_host_name
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer

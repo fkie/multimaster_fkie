@@ -30,7 +30,7 @@ from rcl_interfaces.msg import ParameterDescriptor
 from fkie_node_manager_daemon.url import nmdport
 from fkie_node_manager_daemon.host import ros_host_suffix
 from fkie_node_manager_daemon.server import Server
-from fkie_node_manager_daemon.screen import test_screen
+from fkie_multimaster_msgs.system.screen import test_screen
 import fkie_node_manager_daemon as nmd
 from fkie_multimaster_msgs.logging.logging import Log
 

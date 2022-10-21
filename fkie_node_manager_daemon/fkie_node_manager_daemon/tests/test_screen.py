@@ -21,7 +21,7 @@ import os
 import unittest
 import time
 
-import fkie_node_manager_daemon.screen as screen
+import fkie_multimaster_msgs.system.screen as screen
 
 PKG = 'fkie_node_manager_daemon'
 

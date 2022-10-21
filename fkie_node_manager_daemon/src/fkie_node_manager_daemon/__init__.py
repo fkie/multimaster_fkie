@@ -42,7 +42,7 @@ import rospy
 
 from . import url
 from .server import GrpcServer
-from .screen import test_screen
+from fkie_multimaster_msgs.system.screen import test_screen
 from fkie_multimaster_msgs.logging.logging import Log
 
 
@@ -95,7 +95,7 @@ def start_server(node_name='node_manager_daemon'):
     log_level = rospy.DEBUG
     try:
         log_level = getattr(rospy, rospy.get_param(
-            '/%s/log_level' % node_name, "INFO"))
+            '/%s/log_level' % node_name, "DEBUG"))
     except Exception as e:
         print("Error while set the log level: %s\n->INFO level will be used!" % e)
     rospy.init_node(node_name, log_level=log_level)

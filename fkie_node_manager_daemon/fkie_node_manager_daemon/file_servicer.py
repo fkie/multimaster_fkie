@@ -35,8 +35,8 @@ from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_node_manager_daemon.common import get_packages
 from .common import is_package
-from .screen import get_logfile
-from .screen import get_ros_logfile
+from fkie_multimaster_msgs.system.screen import get_logfile
+from fkie_multimaster_msgs.system.screen import get_ros_logfile
 
 
 class FileServicer(CrossbarBaseSession):

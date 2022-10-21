@@ -39,7 +39,6 @@ import threading
 import rospy
 
 from fkie_node_manager_daemon.common import is_package, utf8
-from fkie_node_manager_daemon import screen
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.editor.yaml_highlighter import YamlHighlighter
 
@@ -52,6 +51,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 import fkie_node_manager as nm
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 
 
 class SyncHighlighter(YamlHighlighter):

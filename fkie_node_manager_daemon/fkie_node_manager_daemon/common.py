@@ -97,29 +97,6 @@ class IncludedFile():
         return result
 
 
-def ns_join(ns: Text, name: Text) -> Text:
-    """
-    Join a namespace and name. If name is unjoinable (i.e. ~private or
-    /global) it will be returned without joining
-
-    :param str ns: namespace ('/' and '~' are both legal). If ns is the empty string, name will be returned.
-    :param str name: a legal name
-    :return: name concatenated to ns, or name if it is unjoinable.
-    :rtype: str
-    """
-    if not name:
-        return name
-    if name[0] == SEP or name[0] == PRIV_NAME:
-        return name
-    if ns == PRIV_NAME:
-        return PRIV_NAME + name
-    if not ns:
-        return name
-    if ns[-1] == SEP:
-        return ns + name
-    return ns + SEP + name
-
-
 # def utf8(s, errors='replace'):
 #     '''
 #     Converts string to unicode.

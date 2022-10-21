@@ -15,7 +15,6 @@ from rosgraph.network import get_local_addresses
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
 from fkie_node_manager_daemon import host as nmdhost
-from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon.common import isstring
 from fkie_node_manager_daemon.settings import RESPAWN_SCRIPT
 try:
@@ -30,6 +29,7 @@ except Exception:
     from fkie_node_manager.reduced_nm import StartException
 
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 
 
 def _get_optparse():
@@ -152,7 +152,7 @@ def main(argv=sys.argv):
             print_help = False
         elif options['delete_logs']:
             logfile = screen.get_logfile(node=options['delete_logs'])
-            pidfile = screen.get_pidfile(node=options['delete_logs'])
+            pidfile = screen.get_pid_file(node=options['delete_logs'])
             roslog = screen.get_ros_logfile(node=options['delete_logs'])
             if os.path.isfile(logfile):
                 os.remove(logfile)

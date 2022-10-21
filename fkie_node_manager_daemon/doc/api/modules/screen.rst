@@ -26,7 +26,7 @@ Helper class for client to call the GRPC-methods of `ScreenServicer`.
 Helper methods to create and handle screen sessions used while launch ROS-nodes.
 For more information about screen, see https://wiki.ubuntuusers.de/Screen/
 
-.. automodule:: fkie_node_manager_daemon.screen
+.. automodule:: fkie_multimaster_msgs.system.screen
    :members:
    :undoc-members:
    :show-inheritance:

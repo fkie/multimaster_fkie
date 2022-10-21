@@ -57,9 +57,9 @@ import ruamel.yaml
 from fkie_master_discovery.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
 from fkie_node_manager_daemon.common import utf8, get_pkg_path
 from fkie_node_manager_daemon.host import get_hostname
-from fkie_node_manager_daemon import screen
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 
 import fkie_node_manager as nm
 

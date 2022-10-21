@@ -57,8 +57,8 @@ from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, isstring
 from fkie_node_manager_daemon.host import get_hostname, get_port
 from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon import url as nmdurl
-from fkie_node_manager_daemon import screen
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 
 from fkie_node_manager_daemon.version import detect_version
 from .common import package_name

@@ -39,11 +39,11 @@ import roslib
 import rospy
 
 from .common import get_hostname
-from . import screen
 from .filter_interface import FilterInterface
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
+from fkie_multimaster_msgs.system import screen
 
 from typing import List, Dict
 
