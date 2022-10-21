@@ -39,7 +39,6 @@ import rospy
 import fkie_node_manager as nm
 
 from fkie_node_manager_daemon.common import interpret_path, replace_paths, utf8
-from fkie_node_manager_daemon.host import get_hostname
 from fkie_multimaster_msgs.logging.logging import Log
 
 try:
