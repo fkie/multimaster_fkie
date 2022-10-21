@@ -114,7 +114,9 @@ def find_process_by_name(name: str):
         if p.info['cmdline']:
             for cl in p.info['cmdline']:
                 # validate self name also in arguments
-                if name in cl and self_name not in cl:
+                # and process is started in a screen.
+                # In other case, own starting process will be added.
+                if name in cl and self_name not in cl and 'screen' in p.info['name']:
                     ls.append(p)
                     continue
     return ls
