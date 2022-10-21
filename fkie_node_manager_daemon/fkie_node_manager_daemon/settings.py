@@ -21,15 +21,10 @@ import os
 import ruamel.yaml
 import threading
 import fkie_node_manager_daemon as nmd
-from .host import ros_host_suffix
+from fkie_multimaster_msgs.system.host import ros_host_suffix
 
-DEFAULT_CROSSBAR_PORT = 12921
 
-NM_NS = '_node_manager'
-NM_NAMESPACE = '/%s' % NM_NS
-NM_DAEMON_NAMESPACE = '/%s' % NM_NS
-NM_DISCOVERY_NAMESPACE = '/%s' % NM_NS
-NM_DAEMON_NAME = 'daemon_%s' % ros_host_suffix()
+NM_DISCOVERY_NAMESPACE = '/_node_manager'
 NM_DISCOVERY_NAME = f'discovery_{os.environ["ROS_DISTRO"]}_{ros_host_suffix()}'
 
 

@@ -31,11 +31,11 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReli
 from fkie_multimaster_msgs.msg import Endpoint
 from fkie_multimaster_msgs.srv import LoadLaunch, Task
 from fkie_multimaster_msgs.names import ns_join
+from fkie_multimaster_msgs.system.host import get_host_name
 import fkie_node_manager_daemon as nmd
 
 #import fkie_node_manager_daemon.security as security
 from .common import interpret_path
-from .host import get_host_name
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer

@@ -10,12 +10,11 @@ import time
 import argparse
 from typing import List
 
+from fkie_multimaster_msgs.defines import LOG_PATH
+from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_multimaster_msgs.system import screen
-
-from fkie_node_manager_daemon import host as nmdhost
-
-from fkie_node_manager_daemon.settings import RESPAWN_SCRIPT
 
 if os.environ['ROS_VERSION'] == "1":
     from fkie_master_discovery.common import masteruri_from_ros
@@ -130,7 +129,7 @@ def getCwdArg(arg, argv):
 
 
 def rosconsole_cfg_file(package, loglevel='INFO'):
-    result = os.path.join(screen.LOG_PATH, '%s.rosconsole.config' % package)
+    result = os.path.join(LOG_PATH, '%s.rosconsole.config' % package)
     with open(result, 'w') as cfg_file:
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')

@@ -56,9 +56,10 @@ import ruamel.yaml
 
 from fkie_master_discovery.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
 from fkie_node_manager_daemon.common import utf8, get_pkg_path
-from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon import url as nmdurl
+from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.host import get_hostname
 from fkie_multimaster_msgs.system import screen
 
 import fkie_node_manager as nm
@@ -1414,10 +1415,10 @@ class MainWindow(QMainWindow):
                     else:
                         args = ['-a']
                     ret = MessageBox.question(self, 'Start rosbag', 'Start rosbag record with %s topics to %s/record_TIMESTAMP?' % (
-                        count_topics, nm.settings().LOG_PATH), buttons=MessageBox.Yes | MessageBox.No)
+                        count_topics, LOG_PATH), buttons=MessageBox.Yes | MessageBox.No)
                     if ret == MessageBox.No:
                         return
-                    args.append("-o %s/record" % nm.settings().LOG_PATH)
+                    args.append("-o %s/record" % LOG_PATH)
                     suffix = "_%d" % int(time.time())
                 node_name = '%s%s_%s%s' % (prefix, name.lower().replace(' ', '_'),
                                            self.currentMaster.master_state.name, suffix)

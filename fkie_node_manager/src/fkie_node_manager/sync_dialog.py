@@ -50,6 +50,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 import fkie_node_manager as nm
+from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
 
@@ -320,8 +321,7 @@ class SyncDialog(QDialog):
     def accept(self):
         if self.textedit.isVisible():
             try:
-                tmp_file = os.path.join(
-                    screen.LOG_PATH, 'tmp_sync_interface.sync')
+                tmp_file = os.path.join(LOG_PATH, 'tmp_sync_interface.sync')
                 with open(tmp_file, 'w+') as f:
                     f.write(self.textedit.toPlainText())
                 from fkie_master_discovery.common import read_interface

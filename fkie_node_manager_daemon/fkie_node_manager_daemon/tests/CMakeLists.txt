@@ -7,9 +7,7 @@
 # Unit tests not needing a running ROS core.
 catkin_add_nosetests(test_common.py)
 catkin_add_nosetests(test_file_servicer.py)
-catkin_add_nosetests(test_host.py)
-catkin_add_nosetests(test_launch_servicer.py)
-catkin_add_nosetests(test_screen.py)
+#catkin_add_nosetests(test_launch_servicer.py)
 catkin_add_nosetests(test_url.py)
 
 # Unit tests using nose, but needing a running ROS core.

@@ -17,7 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .host import get_hostname
+from fkie_multimaster_msgs.system.host import get_hostname
 
 
 STRING = 'STRING'

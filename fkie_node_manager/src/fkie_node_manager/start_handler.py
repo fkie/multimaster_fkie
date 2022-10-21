@@ -47,12 +47,13 @@ except ImportError:
 
 from fkie_master_discovery.common import get_hostname, get_port, masteruri_from_ros
 from fkie_node_manager_daemon.common import get_cwd
-from fkie_node_manager_daemon import host as nmdhost
 from fkie_node_manager_daemon import launcher
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_node_manager_daemon.common import package_name, isstring, utf8
+from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_multimaster_msgs.system import screen
 
 import fkie_node_manager as nm
@@ -227,8 +228,8 @@ class StartHandler(object):
             masteruri = masteruri_from_ros()
         # start roscore, if needed
         try:
-            if not os.path.isdir(screen.LOG_PATH):
-                os.makedirs(screen.LOG_PATH)
+            if not os.path.isdir(LOG_PATH):
+                os.makedirs(LOG_PATH)
             socket.setdefaulttimeout(3)
             master = xmlrpcclient.ServerProxy(masteruri)
             master.getUri(rospy.get_name())
@@ -382,7 +383,7 @@ class StartHandler(object):
             if len(nodes) == 1:
                 return screen.get_logfile(node=nodes[0])
             else:
-                return screen.LOG_PATH
+                return LOG_PATH
         else:
             request = '[]' if len(nodes) != 1 else nodes[0]
             try:

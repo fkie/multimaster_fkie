@@ -53,6 +53,7 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.host import is_local
 
 from . import exceptions
 from . import launcher
@@ -62,7 +63,6 @@ from .common import replace_arg
 from .common import get_share_files_path_from_package
 from .common import INCLUDE_PATTERN, SEARCH_IN_EXT
 from .common import find_included_files
-from .host import is_local
 from .launch_config import LaunchConfig
 from .launch_validator import LaunchValidator
 

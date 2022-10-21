@@ -47,13 +47,15 @@ from . import remote
 from . import settings
 from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
-#from .launch_stub import LaunchStub  <- TODO: use crossbar instead
+# from .launch_stub import LaunchStub  <- TODO: use crossbar instead
 from .common import get_cwd, get_namespace, package_name, interpret_path
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_multimaster_msgs.names import ns_join
 from .startcfg import StartConfig
 from .url import nmduri as url_nmduri
 import fkie_node_manager_daemon as nmd
+from fkie_multimaster_msgs.defines import LOG_PATH
+from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.system import screen
 
 STARTED_BINARIES = dict()
@@ -120,7 +122,7 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
         if cparam.startswith(nodens):
             result.clear_params.append(cparam)
     nmd.ros_node.get_logger().debug("set delete parameter:\n  %s" %
-                                  '\n  '.join(result.clear_params))
+                                    '\n  '.join(result.clear_params))
     nmd.ros_node.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
         val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
     return result
@@ -345,8 +347,7 @@ def run_node(startcfg):
             #     new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
             # if respawn_params['min_runtime'] > 0:
             #     new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
-            cmd_type = "%s %s %s" % (
-                settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
+            cmd_type = "%s %s %s" % (RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
         else:
             cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
         # TODO: check for HOSTNAME
@@ -369,7 +370,7 @@ def run_node(startcfg):
         cmd_str = ' '.join([screen.get_cmd(
             startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, *args])
         nmd.ros_node.get_logger().info("%s (launch_file: '%s', daemonuri: %s)" %
-                                     (cmd_str, startcfg.config_path, startcfg.daemonuri))
+                                       (cmd_str, startcfg.config_path, startcfg.daemonuri))
         nmd.ros_node.get_logger().debug(
             "environment while run node '%s': '%s'" % (cmd_str, new_env))
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
@@ -386,7 +387,7 @@ def run_node(startcfg):
                 "Unknown launch manager url for host %s to start %s" % (nmduri, startcfg.fullname))
         # TODO: remote start using crossar
         #lm = LaunchStub(channel)
-        #lm.start_standalone_node(startcfg)
+        # lm.start_standalone_node(startcfg)
 
 
 def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container_name: Text, context: LaunchContext):
@@ -494,7 +495,7 @@ def changed_binaries(nodes):
 
 
 def _rosconsole_cfg_file(package, loglevel='INFO'):
-    result = os.path.join(settings.LOG_PATH, '%s.rosconsole.config' % package)
+    result = os.path.join(LOG_PATH, '%s.rosconsole.config' % package)
     with open(result, 'w') as cfg_file:
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')

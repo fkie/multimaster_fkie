@@ -33,7 +33,7 @@
 
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from .common import utf8
-from .host import get_hostname
+from fkie_multimaster_msgs.system.host import get_hostname
 from .url import nmduri, nmdport
 
 

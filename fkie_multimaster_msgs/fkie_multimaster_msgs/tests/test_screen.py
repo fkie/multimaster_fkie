@@ -19,11 +19,12 @@
 
 import os
 import unittest
-import time
 
 import fkie_multimaster_msgs.system.screen as screen
+from fkie_multimaster_msgs.system.screen import SCREEN_SLASH_SEP
 
-PKG = 'fkie_node_manager_daemon'
+PKG = 'fkie_multimaster_msgs'
+TEST_NODE_NAME = f'{SCREEN_SLASH_SEP}test{SCREEN_SLASH_SEP}node'
 
 
 class TestScreen(unittest.TestCase):
@@ -39,10 +40,10 @@ class TestScreen(unittest.TestCase):
     def test_create_session_name(self):
         name = screen.create_session_name(None)
         self.assertEqual(
-            name, '', "wrong screen session name from `None`, got: %s, expected: %s" % (name, ''))
+            name, '', f"wrong screen session name from `None`, got: {name}, expected: ''")
         name = screen.create_session_name('/test/node')
         self.assertEqual(
-            name, '_test_node', "wrong screen session name from `/test/node`, got: %s, expected: %s" % (name, '_test_node'))
+            name, TEST_NODE_NAME, f"wrong screen session name from `/test/node`, got: {name}, expected: {TEST_NODE_NAME}")
 
     def test_session_name2node_name(self):
         sname = screen.create_session_name('/test/node')
@@ -53,16 +54,16 @@ class TestScreen(unittest.TestCase):
     def test_split_session_name(self):
         _pid, name = screen.split_session_name(None)
         self.assertEqual(
-            name, '', "wrong screen session name after split from `None`, got: %s, expected: %s" % (name, ''))
-        _pid, name = screen.split_session_name('123._test_node')
-        self.assertEqual(name, '_test_node', "wrong screen session name after split from `123._test_node`, got: %s, expected: %s" % (
-            name, '_test_node'))
-        pid, _name = screen.split_session_name('was._test_node')
+            name, '', f"wrong screen session name after split from `None`, got: {name}, expected: ''")
+        _pid, name = screen.split_session_name(f'123.{TEST_NODE_NAME}')
         self.assertEqual(
-            pid, -1, "wrong pid after screen split session `was._test_node`, got: %d, expected: %d" % (pid, -1))
+            name, TEST_NODE_NAME, f"wrong screen session name after split from `123.{TEST_NODE_NAME}`, got: {name}, expected: {TEST_NODE_NAME}")
+        pid, _name = screen.split_session_name(f'was.{TEST_NODE_NAME}')
+        self.assertEqual(
+            pid, -1, f"wrong pid after screen split session `was.{TEST_NODE_NAME}`, got: {pid}, expected: -1")
         _pid, name = screen.split_session_name('666. ')
         self.assertEqual(
-            name, '', "wrong name after screen split session `666.`, got: %s, expected: %s" % (name, ''))
+            name, '', f"wrong name after screen split session `666.`, got: {name}, expected: ''")
 
     def test_rosclean(self):
         screen.ros_clean()

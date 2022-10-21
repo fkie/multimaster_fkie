@@ -47,10 +47,10 @@ try:
 except ImportError as err:
     sys.stderr.write("Cannot import GetLoggers service definition: %s" % err)
 
-from fkie_node_manager_daemon.host import get_hostname
 from .detachable_tab_dock import DetachableTabDock
 from .screen_widget import ScreenWidget
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.host import get_hostname
 
 
 class ScreenDock(DetachableTabDock):

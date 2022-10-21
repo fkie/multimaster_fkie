@@ -14,9 +14,8 @@ from rosgraph.network import get_local_addresses
 
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
-from fkie_node_manager_daemon import host as nmdhost
 from fkie_node_manager_daemon.common import isstring
-from fkie_node_manager_daemon.settings import RESPAWN_SCRIPT
+
 try:
     from fkie_node_manager import get_ros_home
     from fkie_node_manager import Settings
@@ -28,7 +27,10 @@ except Exception:
     from fkie_node_manager.reduced_nm import StartHandler
     from fkie_node_manager.reduced_nm import StartException
 
+from fkie_multimaster_msgs.defines import LOG_PATH
+from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_multimaster_msgs.system import screen
 
 
@@ -181,7 +183,7 @@ def main(argv=sys.argv):
 
 
 def rosconsole_cfg_file(package, loglevel='INFO'):
-    result = os.path.join(screen.LOG_PATH, '%s.rosconsole.config' % package)
+    result = os.path.join(LOG_PATH, '%s.rosconsole.config' % package)
     with open(result, 'w') as cfg_file:
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')

@@ -22,7 +22,7 @@ import platform
 import socket
 import sys
 from urllib.parse import urlparse
-from fkie_node_manager_daemon.host import get_host_name
+from fkie_multimaster_msgs.system.host import get_host_name
 
 
 NMD_DEFAULT_PORT = 11811

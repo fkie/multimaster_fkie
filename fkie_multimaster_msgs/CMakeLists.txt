@@ -100,4 +100,9 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
     )
 
+    # # Add folders to be run by python nosetests
+    if(CATKIN_ENABLE_TESTING)
+        add_subdirectory(${PROJECT_NAME}/tests)
+    endif()
+
 endif()

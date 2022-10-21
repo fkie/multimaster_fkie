@@ -45,9 +45,9 @@ import fkie_node_manager as nm
 from fkie_master_discovery.common import masteruri_from_master
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import isstring, utf8
-from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon.file_item import FileItem
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.host import get_hostname
 
 
 from .common import package_name

@@ -34,6 +34,9 @@
 
   <member_of_group condition="$ROS_VERSION == 2">rosidl_interface_packages</member_of_group>
 
+  <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">python3-pytest</test_depend>
+
   <export>
     <build_type condition="$ROS_VERSION == 1">catkin</build_type>
     <build_type condition="$ROS_VERSION == 2">ament_cmake</build_type>

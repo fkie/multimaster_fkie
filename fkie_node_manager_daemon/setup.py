@@ -86,7 +86,7 @@ else:
     setup(
         name=package_name,
         version=strip_dirty_vers(get_version()[0]),
-        packages=[package_name, f'{package_name}.monitor', f'{package_name}.tests'],
+        packages=[package_name, f'{package_name}.monitor'],
         cmdclass={'build_py': BuildPyCommand},
         data_files=[
             ('share/ament_index/resource_index/packages', ['resource/' + package_name]),

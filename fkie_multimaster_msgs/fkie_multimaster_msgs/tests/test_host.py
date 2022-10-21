@@ -1,42 +1,29 @@
-# Software License Agreement (BSD License)
+# ROS 2 Node Manager
+# Graphical interface to manage the running and configured ROS 2 nodes on different hosts.
 #
-# Copyright (c) 2012, Fraunhofer FKIE/US, Alexander Tiderko
-# All rights reserved.
+# Author: Alexander Tiderko
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# Copyright 2020 Fraunhofer FKIE
 #
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above
-#    copyright notice, this list of conditions and the following
-#    disclaimer in the documentation and/or other materials provided
-#    with the distribution.
-#  * Neither the name of Fraunhofer nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import os
 import unittest
 import time
 
-import fkie_node_manager_daemon.host as host
+import fkie_multimaster_msgs.system.host as host
 
-PKG = 'fkie_node_manager_daemon'
+PKG = 'fkie_multimaster_msgs'
 
 
 class TestHost(unittest.TestCase):
@@ -55,7 +42,7 @@ class TestHost(unittest.TestCase):
             hostname, None, "Hostname from `None` should be `None`, got: %s, expected: %s" % (hostname, None))
         hostname = host.get_hostname('')
         self.assertEqual(
-            hostname, '', "Hostname from `` should be ``, got: %s, expected: %s" % (hostname, ''))
+            hostname, '', "Hostname from `` should be ``, got: %s, expected: ''" % (hostname))
         name = 'myhost'
         hostname = host.get_hostname('http://%s' % name)
         self.assertEqual(
@@ -77,7 +64,7 @@ class TestHost(unittest.TestCase):
             port, None, "Port from `None` should be `None`, got: %s, expected: %s" % (port, None))
         port = host.get_port('')
         self.assertEqual(
-            port, '', "Port from `` should be ``, got: %s, expected: %s" % (port, ''))
+            port, '', "Port from `` should be ``, got: %s, expected: ''" % (port))
         port = host.get_port('host:21')
         self.assertEqual(
             port, 21, "wrong port from `:21`, got: %s, expected: %d" % (port, 21))
@@ -91,13 +78,13 @@ class TestHost(unittest.TestCase):
     def test_get_ros_hostname(self):
         roshn = host.get_ros_hostname(None)
         self.assertEqual(
-            roshn, '', "ros hostname from `None` should be ``, got: %s, expected: %s" % (roshn, ''))
+            roshn, '', "ros hostname from `None` should be ``, got: %s, expected: ''" % (roshn))
         roshn = host.get_ros_hostname('http://myhost:11311')
         self.assertEqual(
             roshn, 'myhost', "wrong ros hostname from `'http://myhost:11311'`, got: %s, expected: %s" % (roshn, 'myhost'))
         roshn = host.get_ros_hostname('http://192.168.11.5:11311')
         self.assertEqual(
-            roshn, '', "wrong ros hostname from `'http://192.168.11.5:11311'`, got: %s, expected: %s" % (roshn, ''))
+            roshn, '', "wrong ros hostname from `'http://192.168.11.5:11311'`, got: %s, expected: ''" % (roshn))
 
     def test_is_local(self):
         local = host.is_local(None)

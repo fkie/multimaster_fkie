@@ -19,11 +19,14 @@
 
 import os
 import re
+from fkie_multimaster_msgs.system.host import ros_host_suffix
 
 
 SEP = '/'
 PRIV_NAME = '~'
 PACKAGE_FILE = 'package.xml'
+NM_DISCOVERY_NAMESPACE = '/_node_manager'
+NM_DISCOVERY_NAME = f'discovery_{os.environ["ROS_DISTRO"]}_{ros_host_suffix()}'
 EMPTY_PATTERN = re.compile(r'\b', re.I)
 INCLUDE_PATTERN = [r"\s*(\$\(find-pkg-share.*?\)[^ \"]*)",
                    r"file=\"(.*?)\"",
@@ -51,7 +54,14 @@ try:
     import rospy
     SCREEN_SLASH_SEP = '_'
     '''this character is used to replace the slashes in ROS-Names for ROS1 nodes.'''
+    RESPAWN_SCRIPT = 'rosrun fkie_node_manager_daemon respawn'
+    ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 except ImportError:
     import rospkg
     SCREEN_SLASH_SEP = '.'
     '''this character is used to replace the slashes in ROS-Names for ROS2 nodes.'''
+    RESPAWN_SCRIPT = 'ros2 run fkie_node_manager_daemon respawn'
+    ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
+
+GRPC_TIMEOUT = 15.0
+''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''

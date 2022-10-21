@@ -48,6 +48,8 @@ except ImportError:
 from rosgraph.network import get_local_addresses
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
+from fkie_multimaster_msgs.defines import LOG_PATH
+from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
 
@@ -269,8 +271,7 @@ def run_node(startcfg):
                 new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
             if respawn_params['min_runtime'] > 0:
                 new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
-            cmd_type = "%s %s %s" % (
-                settings.RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
+            cmd_type = "%s %s %s" % (RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
         else:
             cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
         # check for masteruri
@@ -340,7 +341,7 @@ def changed_binaries(nodes):
 
 
 def _rosconsole_cfg_file(package, loglevel='INFO'):
-    result = os.path.join(settings.LOG_PATH, '%s.rosconsole.config' % package)
+    result = os.path.join(LOG_PATH, '%s.rosconsole.config' % package)
     with open(result, 'w') as cfg_file:
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')

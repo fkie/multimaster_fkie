@@ -47,6 +47,7 @@ from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_node_manager_daemon import settings as nmd_settings
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.common import get_ros_home
+from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
 
@@ -120,7 +121,7 @@ class Settings(object):
     ''':ivar CFG_PATH: configuration path to store the settings and history'''
     HELP_FILE = os.path.join(PACKAGE_DIR, 'doc/index.rst')
     CURRENT_DIALOG_PATH = os.path.expanduser('~')
-    LOG_PATH = screen.LOG_PATH
+    LOG_PATH = LOG_PATH
     LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
     STARTER_SCRIPT = 'rosrun fkie_node_manager remote_nm.py'
     ''':ivar STARTER_SCRIPT: the script used on remote hosts to start new ROS nodes.'''

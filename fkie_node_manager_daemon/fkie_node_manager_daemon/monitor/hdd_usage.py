@@ -22,7 +22,7 @@ import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from fkie_node_manager_daemon.common import sizeof_fmt
-from fkie_node_manager_daemon.settings import LOG_PATH
+from fkie_multimaster_msgs.defines import LOG_PATH
 from .sensor_interface import SensorInterface
 
 
