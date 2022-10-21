@@ -225,7 +225,7 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     Runs a ROS2 node
     '''
 
-    cmd = f'ros2 run {package} {executable} --ros-args --remap __name:={name}'
+    cmd = f'ros2 run {package} {executable}' # --ros-args --remap __name:={name} <-- already added by GUI
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args[1:])
 
