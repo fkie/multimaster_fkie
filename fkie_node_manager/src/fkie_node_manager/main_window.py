@@ -499,9 +499,7 @@ class MainWindow(QMainWindow):
                             if m.is_local:
                                 self._stop_updating()
                                 self._stop_local_master = m
-                            m.stop_nodes_by_name(m.get_nodes_runningIfLocal(remove_system_nodes=False), True, [rospy.get_name(), '/rosout'])
-                            if not m.is_local:
-                                m.killall_roscore()
+                            m.stop_all_nodes(not m.is_local)
                     except Exception as e:
                         rospy.logwarn("Error while stop nodes on %s: %s" % (uri, utf8(e)))
                 QTimer.singleShot(200, self._test_for_finish)
