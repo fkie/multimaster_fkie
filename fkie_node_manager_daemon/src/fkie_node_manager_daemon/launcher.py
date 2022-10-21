@@ -57,7 +57,6 @@ from fkie_multimaster_msgs.system import screen
 from . import host
 from . import exceptions
 from . import remote
-from . import settings
 from .launch_stub import LaunchStub
 from .common import get_cwd, package_name, interpret_path, isstring, utf8
 

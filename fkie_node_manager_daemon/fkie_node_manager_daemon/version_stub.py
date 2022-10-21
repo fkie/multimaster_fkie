@@ -19,7 +19,7 @@
 
 import fkie_node_manager_daemon.grpc_proto.version_pb2_grpc as vgrpc
 import fkie_node_manager_daemon.grpc_proto.version_pb2 as vmsg
-from . import settings
+from fkie_multimaster_msgs import settings
 
 
 class VersionStub(object):

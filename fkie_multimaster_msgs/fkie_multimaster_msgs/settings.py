@@ -15,28 +15,15 @@
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
 
 import os
 import ruamel.yaml
 import threading
-import fkie_node_manager_daemon as nmd
-from fkie_multimaster_msgs.system.host import ros_host_suffix
 
-
-NM_DISCOVERY_NAMESPACE = '/_node_manager'
-NM_DISCOVERY_NAME = f'discovery_{os.environ["ROS_DISTRO"]}_{ros_host_suffix()}'
-
-
-GRPC_TIMEOUT = 15.0
-''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
-
-RESPAWN_SCRIPT = 'ros2 run fkie_node_manager_daemon respawn'
-''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
-
-LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get(
-    'ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
-''':var LOG_PATH: logging path where all screen configuration and log files are stored.'''
+from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.defines import LOG_PATH
+from fkie_multimaster_msgs.defines import SETTINGS_PATH
+from fkie_multimaster_msgs.defines import GRPC_TIMEOUT
 
 
 class Settings:
@@ -46,8 +33,7 @@ class Settings:
         self.version = version
         self.filename = filename
         if not self.filename:
-            self.filename = os.path.expanduser(
-                '~/.config/ros.fkie/node_manager_daemon.yaml')
+            self.filename = f"{SETTINGS_PATH}node_manager_daemon.yaml"
         cfg_path = os.path.dirname(self.filename)
         if not os.path.isdir(cfg_path):
             os.makedirs(cfg_path)
@@ -69,6 +55,8 @@ class Settings:
                 'grpc_timeout': {':value': 15.0, ':type': 'float', ':min': 0, ':default': 15.0, ':hint': "timeout for connection to remote gRPC-server"},
                 'use_diagnostics_agg': {':value': False, ':hint': "subscribes to '/diagnostics_agg' topic instead of '/diagnostics'"},
                 'reset': {':value': False, ':hint': 'if this flag is set to True the configuration will be reseted'},
+                'grpc_verbosity': {':value': 'INFO', ':alt': ['DEBUG', 'INFO', 'ERROR'], ':hint': 'change gRPC verbosity', ':need_restart': True},
+                'grpc_poll_strategy': {':value': '', ':alt': ['', 'poll', 'epollex', 'epoll1'], ':hint': 'change the strategy if you get warnings. Empty sets to default.', ':need_restart': True}
             },
             'sysmon':
             {
@@ -108,12 +96,9 @@ class Settings:
         result = default_value
         try:
             path = param_name.split('/')
-            # print "  PATH", path
             value = self._cfg
             for item in path:
-                # print "    item", item
                 value = value[item]
-                # print "      ", value
             if isinstance(value, dict):
                 if extract_value and ':value' in value:
                     result = value[':value']
@@ -122,8 +107,7 @@ class Settings:
             else:
                 result = value
         except Exception as exc:
-            nmd.ros_node.get_logger().debug("Cant't get parameter '%s', full parameter path: '%s'; use default value: %s" %
-                                            (exc, param_name, default_value))
+            Log.debug(f"Cant't get parameter '{param_name}': {exc}")
         return result
 
     def set_param(self, param_name, value, tag=':value'):
@@ -149,27 +133,26 @@ class Settings:
                         cfg_item[item] = {}
                         cfg_item = cfg_item[item]
                         changed = True
-            pname = os.path.basename(param_name)
-            if pname in cfg_item:
-                if isinstance(cfg_item[pname], dict):
-                    if self._is_writable(cfg_item[pname]):
-                        changed = cfg_item[pname][val_tag] != value
-                        cfg_item[pname][val_tag] = value
+            base_name = os.path.basename(param_name)
+            if base_name in cfg_item:
+                if isinstance(cfg_item[base_name], dict):
+                    if self._is_writable(cfg_item[base_name]):
+                        changed = cfg_item[base_name][val_tag] != value
+                        cfg_item[base_name][val_tag] = value
                     else:
                         raise Exception(
-                            '%s is a read only parameter!' % param_name)
+                            f"{param_name} is a read only parameter!")
                 else:
-                    changed = cfg_item[pname] != value
-                    cfg_item[pname] = value
+                    changed = cfg_item[base_name] != value
+                    cfg_item[base_name] = value
             else:
                 # create new parameter entry
-                cfg_item[pname] = {val_tag: value}
+                cfg_item[base_name] = {val_tag: value}
                 changed = True
             if changed:
                 self.save()
         except Exception as exc:
-            nmd.ros_node.get_logger().debug(
-                "Cant't set parameter '%s', full parameter path: '%s'" % (exc, param_name))
+            Log.debug("Cant't set parameter '{param_name}': {exc}")
 
     def reload(self):
         '''
@@ -178,18 +161,20 @@ class Settings:
         '''
         with self._mutex:
             try:
+                self._cfg = self.default()
                 with open(self.filename, 'r') as stream:
                     result = ruamel.yaml.load(
                         stream, Loader=ruamel.yaml.Loader)
                     if result is None:
-                        nmd.ros_node.get_logger().info('reset configuration file %s' % self.filename)
-                        self._cfg = self.default()
+                        Log.info('reset configuration file %s' %
+                                 self.filename)
                         self.save()
                     else:
-                        nmd.ros_node.get_logger().info('loaded configuration from %s' % self.filename)
-                        self._cfg = result
+                        Log.info(
+                            'loaded configuration from %s' % self.filename)
+                        self._cfg = self._apply_recursive(result, self._cfg)
             except (ruamel.yaml.YAMLError, IOError) as exc:
-                nmd.ros_node.get_logger().info('%s: use default configuration!' % exc)
+                Log.info(f"{exc}: use default configuration!")
                 self._cfg = self.default()
             self._notify_reload_callbacks()
 
@@ -201,14 +186,14 @@ class Settings:
             try:
                 ruamel.yaml.dump(self._cfg, stream,
                                  Dumper=ruamel.yaml.RoundTripDumper)
-                nmd.ros_node.get_logger().debug("Configuration saved to '%s'" % self.filename)
+                Log.debug(f"Configuration saved to '{self.filename}'")
             except ruamel.yaml.YAMLError as exc:
-                nmd.ros_node.get_logger().warn(
-                    "Cant't save configuration to '%s': %s" % (self.filename, exc))
+                Log.warn(
+                    f"Cant't save configuration to '{self.filename}': {exc}")
 
-    def yaml(self, _nslist=[]):
+    def yaml(self, _ns_list=[]):
         '''
-        :param list nslist: Filter option. Currently not used!
+        :param list ns_list: Filter option. Currently not used!
         :return: Create YAML string representation from configuration dictionary structure.
         :rtype: str
         '''
@@ -227,10 +212,10 @@ class Settings:
                 data, Loader=ruamel.yaml.Loader), self._cfg)
             do_reset = self.param('global/reset', False)
             if do_reset:
-                nmd.ros_node.get_logger().info("Reset configuration requested!")
+                Log.info("Reset configuration requested!")
                 self._cfg = self.default()
             else:
-                nmd.ros_node.get_logger().debug("new configuration applied, save now.")
+                Log.debug("new configuration applied, save now.")
             self.save()
             self._notify_reload_callbacks()
 

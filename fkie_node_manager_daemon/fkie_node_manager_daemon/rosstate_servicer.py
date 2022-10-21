@@ -33,6 +33,8 @@ from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
+from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAME
+from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAMESPACE
 from fkie_multimaster_msgs.logging.logging import Log
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import DiscoveredState
@@ -51,9 +53,9 @@ class RosStateServicer(CrossbarBaseSession):
         self._endpoints = {}  # uri : Endpoint
         self._ros_state = None  # DiscoveredState
         self.topic_name_state = '%s/%s/rosstate' % (
-            nmd.settings.NM_DISCOVERY_NAMESPACE, nmd.settings.NM_DISCOVERY_NAME)
+            NM_DISCOVERY_NAMESPACE, NM_DISCOVERY_NAME)
         self.topic_name_endpoint = '%s/daemons' % (
-            nmd.settings.NM_DISCOVERY_NAMESPACE)
+            NM_DISCOVERY_NAMESPACE)
         qos_profile = QoSProfile(depth=100,
                                  durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                  # history=QoSHistoryPolicy.KEEP_LAST,

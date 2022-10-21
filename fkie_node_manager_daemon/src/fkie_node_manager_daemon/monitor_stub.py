@@ -34,7 +34,7 @@
 from fkie_node_manager_daemon.monitor import ros_msg
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.monitor_pb2 as mmsg
-from . import settings
+from fkie_multimaster_msgs import settings
 
 
 class MonitorStub(object):

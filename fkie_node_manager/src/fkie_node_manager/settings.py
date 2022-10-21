@@ -44,7 +44,7 @@ import rospy
 
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_node_manager_daemon.common import isstring, utf8
-from fkie_node_manager_daemon import settings as nmd_settings
+from fkie_multimaster_msgs import settings as nmd_settings
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.common import get_ros_home
 from fkie_multimaster_msgs.defines import LOG_PATH

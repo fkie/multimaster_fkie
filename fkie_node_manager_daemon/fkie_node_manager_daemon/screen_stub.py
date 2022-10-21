@@ -19,7 +19,7 @@
 
 import fkie_node_manager_daemon.grpc_proto.screen_pb2_grpc as sgrpc
 import fkie_node_manager_daemon.grpc_proto.screen_pb2 as smsg
-from . import settings
+from fkie_multimaster_msgs import settings
 
 
 class ScreenStub(object):

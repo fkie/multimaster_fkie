@@ -44,7 +44,6 @@ import composition_interfaces.srv
 from . import host
 from . import exceptions
 from . import remote
-from . import settings
 from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead

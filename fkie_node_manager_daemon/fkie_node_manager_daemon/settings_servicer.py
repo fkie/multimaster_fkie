@@ -17,10 +17,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from fkie_multimaster_msgs.settings import Settings
 import fkie_node_manager_daemon as nmd
 
 from . import version
-from .settings import Settings
 
 
 class SettingsServicer():

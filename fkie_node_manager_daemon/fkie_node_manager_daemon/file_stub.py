@@ -19,7 +19,7 @@
 
 
 from . import file_item
-from . import settings
+from fkie_multimaster_msgs import settings
 import fkie_node_manager_daemon.grpc_proto.file_pb2_grpc as fgrpc
 import fkie_node_manager_daemon.grpc_proto.file_pb2 as fmsg
 

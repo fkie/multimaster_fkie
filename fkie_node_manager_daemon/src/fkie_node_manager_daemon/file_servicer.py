@@ -46,9 +46,9 @@ import fkie_multimaster_msgs.grpc.file_pb2_grpc as fms_grpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fms
 from . import file_item
 from . import remote
-from . import settings
 from . import url as nmdurl
 from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
+from fkie_multimaster_msgs import settings
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.file_interface import RosPackage

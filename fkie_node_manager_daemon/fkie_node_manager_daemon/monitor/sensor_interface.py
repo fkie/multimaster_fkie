@@ -25,7 +25,7 @@ from typing import Callable
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from fkie_node_manager_daemon.common import formated_ts
-from fkie_node_manager_daemon.settings import Settings
+from fkie_multimaster_msgs.settings import Settings
 import fkie_node_manager_daemon as nmd
 
 

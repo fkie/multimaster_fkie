@@ -32,10 +32,9 @@
 
 
 from . import file_item
-from . import settings
+from fkie_multimaster_msgs import settings
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fgrpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fmsg
-from .common import utf8
 
 OK = fmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = fmsg.ReturnStatus.StatusType.Value('ERROR')

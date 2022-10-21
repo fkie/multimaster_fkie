@@ -22,7 +22,7 @@ from __future__ import division, absolute_import, print_function, unicode_litera
 from fkie_node_manager_daemon.monitor import ros_msg
 import fkie_node_manager_daemon.grpc_proto.monitor_pb2_grpc as mgrpc
 import fkie_node_manager_daemon.grpc_proto.monitor_pb2 as mmsg
-from . import settings
+from fkie_multimaster_msgs import settings
 
 
 class MonitorStub(object):
