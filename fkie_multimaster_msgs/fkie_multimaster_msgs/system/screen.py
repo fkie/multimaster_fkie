@@ -264,7 +264,9 @@ def get_cmd(node: str, env=[], keys=[], namespace: str = '/') -> str:
     cfg_opt = ''
     if os.path.exists(cfg_file):
         cfg_opt = '-c %s' % cfg_file
-    return '%s %s -O -L -Logfile %s -s %s -dmS %s' % (SCREEN, cfg_opt, get_logfile(node=node, for_new_screen=True, namespace=namespace), shell, create_session_name(node=node, namespace=namespace))
+    log_file = get_logfile(node=node, for_new_screen=True, namespace=namespace)
+    session_name = create_session_name(node=node, namespace=namespace)
+    return f'{SCREEN} {cfg_opt} -O -L -Logfile {log_file} -s {shell} -dmS {session_name}'
 
 
 def ros_clean() -> None:

@@ -15,6 +15,7 @@ from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_multimaster_msgs.system import screen
+import fkie_multimaster_msgs.names as names
 
 if os.environ['ROS_VERSION'] == "1":
     from fkie_master_discovery.common import masteruri_from_ros
@@ -94,32 +95,39 @@ def parse_arguments():
     return parser, args, additional_args
 
 
-def find_process_by_name(name: str):
+def find_process_by_name(name: str, command: str, additional_args: List[str]):
     "Return a list of processes matching 'name'. Ignores self node."
-    ls = []
     self_name = psutil.Process().name()
+    arg_ns = f'__ns:={names.namespace(name, with_sep_suffix=False)}'
+    arg_name = f'__name:={names.basename(name)}'
+
     for p in psutil.process_iter(["name", "exe", "cmdline"]):
         # ignore self node
         if self_name in p.info['name']:
             continue
 
-        if name in p.info['name']:
-            ls.append(p)
-            continue
+        cmd_found = False
+        if command is not None:
+            # try to find the command in the name or exe
+            # but it is not enough, we should check the parameter
+            if command == p.info['name']:
+                cmd_found = True
+            elif p.info['exe'] and command in os.path.basename(p.info['exe']):
+                cmd_found = True
 
-        if p.info['exe'] and name in os.path.basename(p.info['exe']):
-            ls.append(p)
-            continue
-
-        if p.info['cmdline']:
-            for cl in p.info['cmdline']:
-                # validate self name also in arguments
-                # and process is started in a screen.
-                # In other case, own starting process will be added.
-                if name in cl and self_name not in cl and 'screen' in p.info['name']:
-                    ls.append(p)
-                    continue
-    return ls
+            if not cmd_found:
+                is_ros = p.info['name'] in ['ros2', 'ros']
+                # for ros nodes we check parameter for the name with namespace
+                if is_ros and arg_name in p.info['cmdline'] and arg_ns in p.info['cmdline']:
+                    return [p]
+            else:
+                # compare all parameter given to the executable
+                command_with_args = command + ' ' + ' '.join(additional_args)
+                if command_with_args == ' '.join(p.info['cmdline']):
+                    return [p]
+                else:
+                    print(command_with_args, " != ", ' '.join(p.info['cmdline']))
+    return []
 
 
 def getCwdArg(arg, argv):
@@ -187,11 +195,13 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args)
 
-    # get namespace if given
-    arg_ns = getCwdArg('__ns', args)
+    # get namespace and basename from name
+    arg_ns = names.namespace(name, with_sep_suffix=False)
+    arg_name = names.basename(name)
 
-    cmd_args = [screen.get_cmd(node=name, namespace=arg_ns),
-                RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd[0], node_params]
+    cmd_args = [screen.get_cmd(node=arg_name, namespace=arg_ns),
+                RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd[0],
+                f'__name:={arg_name}', f'__ns:={arg_ns}', node_params]
     Log.info('run on remote host:', ' '.join(cmd_args))
 
     # determine the current working path
@@ -225,14 +235,15 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     Runs a ROS2 node
     '''
 
-    cmd = f'ros2 run {package} {executable}' # --ros-args --remap __name:={name} <-- already added by GUI
+    # get namespace and basename from name
+    arg_ns = names.namespace(name, with_sep_suffix=False)
+    arg_name = names.basename(name)
+
+    cmd = f'ros2 run {package} {executable} --ros-args -r __name:={arg_name} -r __ns:={arg_ns}'
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args[1:])
 
-    # get namespace if given
-    arg_ns = getCwdArg('__ns', args)
-
-    cmd_args = [screen.get_cmd(node=name, namespace=arg_ns),
+    cmd_args = [screen.get_cmd(node=arg_name, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd, node_params]
 
     screen_command = ' '.join(cmd_args)
@@ -261,7 +272,10 @@ def run_command(name: str, command: str, additional_args: List[str], respawn=Fal
 def main(argv=sys.argv):
     parser, args, additional_args = parse_arguments()
 
-    running_processes = find_process_by_name(args.name)
+    command = args.node_type
+    if args.node_type is None:
+        command = args.command
+    running_processes = find_process_by_name(args.name, command, additional_args)
     if len(running_processes) > 0:
         Log.warn(
             f'A process with the same name [{args.name}] is already running.',

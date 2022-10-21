@@ -44,3 +44,34 @@ def ns_join(ns: Text, name: Text) -> Text:
     if ns[-1] == SEP:
         return ns + name
     return ns + SEP + name
+
+
+def namespace(name: Text, with_sep_suffix: bool = True) -> Text:
+    """
+    Get the namespace of name. The namespace is returned with a
+    trailing slash in order to favor easy concatenation and easier use
+    within the global context.
+
+    :param str name: name to return the namespace of. Must be a legal
+        name. NOTE: an empty name will return the global namespace.
+    :return str: Namespace of name. For example, '/wg/node1' returns '/wg/'. The
+        global namespace is '/'. 
+    :rtype: str
+    :raise ValueError: if name is invalid
+    """
+    if name is None:
+        raise ValueError('name')
+    if not name:
+        return SEP
+    elif name[-1] == SEP:
+        name = name[:-1]
+    offset = 1 if with_sep_suffix else 0
+    return name[:name.rfind(SEP)+offset] or SEP
+
+
+def basename(p):
+    """
+    Returns the final component of a node name
+    """
+    i = p.rfind(SEP) + 1
+    return p[i:]

@@ -58,7 +58,7 @@ try:
     ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 except ImportError:
     import rospkg
-    SCREEN_SLASH_SEP = '.'
+    SCREEN_SLASH_SEP = '_'
     '''this character is used to replace the slashes in ROS-Names for ROS2 nodes.'''
     RESPAWN_SCRIPT = 'ros2 run fkie_node_manager_daemon respawn'
     ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
