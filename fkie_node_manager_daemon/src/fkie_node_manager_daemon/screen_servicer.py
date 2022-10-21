@@ -95,7 +95,7 @@ class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
         return reply
 
     def RosClean(self, request, context):
-        screen.rosclean()
+        screen.ros_clean()
         reply = smsg.Empty()
         return reply
 

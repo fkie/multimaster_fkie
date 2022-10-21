@@ -608,7 +608,7 @@ class StartHandler(object):
 
     def _rosclean_wo(self, grpc_uri, auto_pw_request=False, user=None, pw=None):
         try:
-            nm.nmd().screen.rosclean(grpc_uri)
+            nm.nmd().screen.ros_clean(grpc_uri)
         except Exception as err:
             host = get_hostname(grpc_uri)
             if nm.is_local(host):

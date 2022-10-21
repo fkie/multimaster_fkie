@@ -78,7 +78,7 @@ class TestScreen(unittest.TestCase):
             name, '', "wrong name after screen split session `666.`, got: %s, expected: %s" % (name, ''))
 
     def test_rosclean(self):
-        screen.rosclean()
+        screen.ros_clean()
 
 
 if __name__ == '__main__':
