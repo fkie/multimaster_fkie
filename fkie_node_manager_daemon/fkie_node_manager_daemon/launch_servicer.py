@@ -293,8 +293,11 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                              object_hook=lambda d: SimpleNamespace(**d))
 
         launchfile = request.path
-        Log.debug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (
-            launchfile, request.ros_package, request.launch, request.masteruri, request.host, request.args))
+        daemonuri = ''
+        if hasattr(request, 'masteruri'):
+            daemonuri = request.masteruri
+        Log.debug('Loading launch file: %s (package: %s, launch: %s), daemonuri: %s, host: %s, args: %s' % (
+            launchfile, request.ros_package, request.launch, daemonuri, request.host, request.args))
 
         if not launchfile:
             # determine path from package name and launch name
@@ -327,7 +330,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 return json.dumps(result, cls=SelfEncoder)
         result.paths.append(launchfile)
         # it is already loaded?
-        if (launchfile, request.masteruri) in self._loaded_files.keys():
+        if (launchfile, daemonuri) in self._loaded_files.keys():
             result.status.code = 'ALREADY_OPEN'
             result.status.msg = "Launch file %s already loaded!" % (
                 launchfile)
@@ -382,7 +385,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         return json.dumps(result, cls=SelfEncoder)
 
     @wamp.register('ros.launch.reload')
-    def load_relaunch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
+    def reload_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
         '''
         Reloads launch file by crossbar request
         '''
@@ -393,13 +396,16 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         request = json.loads(json.dumps(request_json),
                              object_hook=lambda d: SimpleNamespace(**d))
 
-        Log.debug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (
-            request.path, request.ros_package, request.launch, request.masteruri, request.host, request.args))
+        daemonuri = ''
+        if hasattr(request, 'masteruri'):
+            daemonuri = request.masteruri
+        Log.debug('Loading launch file: %s (package: %s, launch: %s), daemonuri: %s, host: %s, args: %s' % (
+            request.path, request.ros_package, request.launch, daemonuri, request.host, request.args))
 
         result.path.append(request.path)
-        cfgid = CfgId(request.path, request.masteruri)
-        Log.debug("reload launch file: %s, masteruri: %s",
-                  request.path, request.masteruri)
+        cfgid = CfgId(request.path, daemonuri)
+        Log.debug("reload launch file: %s, daemonuri: %s",
+                  request.path, daemonuri)
         if cfgid in self._loaded_files:
             try:
                 # use argv from already open file
