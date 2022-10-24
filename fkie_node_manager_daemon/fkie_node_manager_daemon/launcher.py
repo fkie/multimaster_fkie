@@ -41,7 +41,6 @@ from ros2run.api import MultipleExecutables
 from ros2run.api import run_executable
 import composition_interfaces.srv
 
-from . import host
 from . import exceptions
 from . import remote
 from .launch_config import LaunchConfig
@@ -55,6 +54,7 @@ from .url import nmduri as url_nmduri
 import fkie_node_manager_daemon as nmd
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
+from fkie_multimaster_msgs.system import host
 from fkie_multimaster_msgs.system import screen
 
 STARTED_BINARIES = dict()
