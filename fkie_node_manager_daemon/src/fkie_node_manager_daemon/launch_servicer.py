@@ -586,6 +586,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         if cfgid in self._loaded_files:
             try:
                 self._remove_launch_from_observer(request.path)
+                # use argv from already open file
                 cfg = self._loaded_files[cfgid]
                 stored_roscfg = cfg.roscfg
                 argv = cfg.argv
@@ -648,6 +649,93 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 return result
         else:
             result.status.code = FILE_NOT_FOUND
+            return result
+        return result
+
+    @wamp.register('ros.launch.reload')
+    def reload_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
+        '''
+        Reloads launch file by crossbar request
+        '''
+        Log.debug('Request to [ros.launch.reload]')
+        result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
+
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+
+        Log.debug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (
+            request.path, request.ros_package, request.launch, request.masteruri, request.host, request.args))
+
+        result.path.append(request.path)
+        cfgid = CfgId(request.path, request.masteruri)
+        Log.debug("reload launch file: %s, masteruri: %s",
+                  request.path, request.masteruri)
+        if cfgid in self._loaded_files:
+            try:
+                self._remove_launch_from_observer(request.path)
+                # use argv from already open file
+                cfg = self._loaded_files[cfgid]
+                stored_roscfg = cfg.roscfg
+                argv = cfg.argv
+                cfg.load(argv)
+                result.status.code = 'OK'
+                # detect files changes
+                if stored_roscfg and cfg.roscfg:
+                    stored_values = [(name, utf8(p.value))
+                                     for name, p in stored_roscfg.params.items()]
+                    new_values = [(name, utf8(p.value))
+                                  for name, p in cfg.roscfg.params.items()]
+                    # detect changes parameter
+                    paramset = set(name for name, _ in (
+                        set(new_values) - set(stored_values)))  # _:=value
+                    # detect new parameter
+                    paramset |= (set(cfg.roscfg.params.keys()) -
+                                 set(stored_roscfg.params.keys()))
+                    # detect removed parameter
+                    paramset |= (set(stored_roscfg.params.keys()) -
+                                 set(cfg.roscfg.params.keys()))
+                    # detect new nodes
+                    stored_nodes = [roslib.names.ns_join(
+                        item.namespace, item.name) for item in stored_roscfg.nodes]
+                    new_nodes = [roslib.names.ns_join(
+                        item.namespace, item.name) for item in cfg.roscfg.nodes]
+                    nodes2start = set(new_nodes) - set(stored_nodes)
+                    # determine the nodes of the changed parameter
+                    for p in paramset:
+                        for n in new_nodes:
+                            if p.startswith(n):
+                                nodes2start.add(n)
+                    # detect changes in the arguments and remap
+                    for n in stored_roscfg.nodes:
+                        for new_n in cfg.roscfg.nodes:
+                            if n.name == new_n.name and n.namespace == new_n.namespace:
+                                if n.args != new_n.args or n.remap_args != new_n.remap_args:
+                                    nodes2start.add(
+                                        roslib.names.ns_join(n.namespace, n.name))
+                    # filter out anonymous nodes
+                    for n in nodes2start:
+                        if not re.search(r"\d{3,6}_\d{10,}", n):
+                            result.changed_nodes.append(n)
+
+                # notify changes to crossbar GUI
+                try:
+                    self.publish('ros.launch.changed',
+                                 json.dumps({}, cls=SelfEncoder))
+                    self._add_launch_to_observer(request.path)
+                except Exception as cpe:
+                    pass
+            except Exception as e:
+                print(traceback.format_exc())
+                self._add_launch_to_observer(request.path)
+                err_text = f"{request.path} loading failed!"
+                err_details = f"{err_text}: {e}"
+                Log.warn("Loading launch file: %s", err_details)
+                result.status.code = 'ERROR'
+                result.status.msg = err_details
+                return result
+        else:
+            result.status.code = 'FILE_NOT_FOUND'
             return result
         return result
 
@@ -819,7 +907,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             yield reply
 
     @wamp.register('ros.launch.get_list')
-    def getList(self) -> List[LaunchContent]:
+    def get_list(self) -> List[LaunchContent]:
         Log.debug('Request to [ros.launch.get_list]')
         requested_files = list(self._loaded_files.keys())
         reply = []
@@ -949,7 +1037,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 yield result
 
     @wamp.register('ros.launch.start_node')
-    def startNode(self, request_json: LaunchNode) -> LaunchNodeReply:
+    def start_node(self, request_json: LaunchNode) -> LaunchNodeReply:
         Log.debug('Request to [ros.launch.start_node]')
 
         # Covert input dictionary into a proper python object
@@ -1037,7 +1125,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         return result
 
     @wamp.register('ros.launch.get_included_files')
-    def getIncludedFiles(self, request_json: LaunchIncludedFilesRequest) -> List[LaunchIncludedFile]:
+    def get_included_files(self, request_json: LaunchIncludedFilesRequest) -> List[LaunchIncludedFile]:
         # Convert input dictionary into a proper python object
         request = json.loads(json.dumps(request_json),
                              object_hook=lambda d: SimpleNamespace(**d))
@@ -1181,7 +1269,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                      (request.path, traceback.format_exc()))
 
     @wamp.register('ros.launch.interpret_path')
-    def interpretPath(self, request_json: LaunchInterpretPathRequest) -> List[LaunchInterpretPathReply]:
+    def interpret_path(self, request_json: LaunchInterpretPathRequest) -> List[LaunchInterpretPathReply]:
         # Covert input dictionary into a proper python object
         request = json.loads(json.dumps(request_json),
                              object_hook=lambda d: SimpleNamespace(**d))

@@ -381,6 +381,59 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         result.status.code = 'OK'
         return json.dumps(result, cls=SelfEncoder)
 
+    @wamp.register('ros.launch.reload')
+    def load_relaunch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
+        '''
+        Reloads launch file by crossbar request
+        '''
+        Log.debug('Request to [ros.launch.reload]')
+        result = LaunchLoadReply(paths=[], args=[], changed_nodes=[])
+
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+
+        Log.debug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (
+            request.path, request.ros_package, request.launch, request.masteruri, request.host, request.args))
+
+        result.path.append(request.path)
+        cfgid = CfgId(request.path, request.masteruri)
+        Log.debug("reload launch file: %s, masteruri: %s",
+                  request.path, request.masteruri)
+        if cfgid in self._loaded_files:
+            try:
+                # use argv from already open file
+                cfg = self._loaded_files[cfgid]
+                launch_config = LaunchConfig(cfg.filename, daemonuri=request.daemonuri, launch_arguments=cfg.launch_arguments)
+                self._loaded_files[cfgid] = launch_config
+                # stored_roscfg = cfg.roscfg
+                # argv = cfg.argv
+                # cfg.load(argv)
+                result.status.code = 'OK'
+                #TODO: added change detection for nodes parameters
+                # notify changes to crossbar GUI
+                try:
+                    self.publish('ros.launch.changed',
+                                 json.dumps({}, cls=SelfEncoder))
+                    self._add_launch_to_observer(request.path)
+                except Exception as cpe:
+                    pass
+            except Exception as e:
+                print(traceback.format_exc())
+                self._add_launch_to_observer(request.path)
+                err_text = f"{request.path} loading failed!"
+                err_details = f"{err_text}: {e}"
+                Log.warn("Loading launch file: %s", err_details)
+                result.status.code = 'ERROR'
+                result.status.msg = err_details
+                return result
+        else:
+            result.status.code = 'FILE_NOT_FOUND'
+            return result
+        return result
+
+
+
     @wamp.register('ros.launch.unload')
     def unload_launch(self, request_json: LaunchFile) -> LaunchLoadReply:
         Log.debug('Request to [ros.launch.unload]')
