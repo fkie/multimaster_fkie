@@ -28,7 +28,7 @@ import fkie_node_manager_daemon as nmd
 from fkie_node_manager_daemon.common import interpret_path
 from fkie_node_manager_daemon.file_item import FileItem
 from fkie_node_manager_daemon.server import GrpcServer
-import fkie_node_manager_daemon.remote as remote
+from fkie_multimaster_msgs.grpc_helper import remote
 import fkie_node_manager_daemon.file_stub as fstub
 import fkie_node_manager_daemon.launch_stub as lstub
 import fkie_node_manager_daemon.exceptions as exceptions

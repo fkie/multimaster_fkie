@@ -19,10 +19,10 @@
 
 import os
 import grpc
-from rclpy.node import Node
 import time
 
-import fkie_node_manager_daemon.security as security
+from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.grpc_helper import security
 
 
 try:
@@ -35,7 +35,7 @@ except Exception:
     pass
 
 
-def open_channel(url, *, rosnode: [Node, None] = None):
+def open_channel(url: str):
     '''
     :param str url: the url to parse or hostname. If hostname the channel should be added before.
     :return: returns gRPC channel for given url.
@@ -43,22 +43,19 @@ def open_channel(url, *, rosnode: [Node, None] = None):
     '''
     starttime = time.time()
     # create credentials
-    security.init_keys(rosnode)
+    security.init_keys()
     if security.has_keys():
         (private_key, certificate_chain) = security.get_keys()
         credentials = grpc.ssl_channel_credentials(root_certificates=security.get_ca_cert(
         ), private_key=private_key, certificate_chain=certificate_chain)
-        if rosnode is not None:
-            rosnode.get_logger().debug("create secure channel to %s" % url)
+        Log.debug("create secure channel to %s" % url)
         options = (('grpc.ssl_target_name_override',
                     security.DEFAULT_COMMON_NAME,),)
         channel = grpc.secure_channel(url, credentials, options=options)
     else:
-        if rosnode is not None:
-            rosnode.get_logger().debug("create insecure channel to %s" % url)
+        Log.debug("create insecure channel to %s" % url)
         channel = grpc.insecure_channel(url)
     if time.time() - starttime > 5.0:
-        if rosnode is not None:
-            rosnode.get_logger().warn("Open insecure gRPC channel took too long (%.3f sec)! Fix your network configuration!" %
-                                      (time.time() - starttime))
+        Log.warn("Open insecure gRPC channel took too long (%.3f sec)! Fix your network configuration!" % (
+            time.time() - starttime))
     return channel

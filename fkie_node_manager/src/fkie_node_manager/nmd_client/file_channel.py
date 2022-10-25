@@ -92,7 +92,7 @@ class FileChannel(ChannelInterface):
             self._cache_path.clear()
 
     def get_file_manager(self, uri='localhost:12321'):
-        channel = self.get_insecure_channel(uri)
+        channel = self.open_channel(uri)
         return fstub.FileStub(channel), channel
 
     def package_name(self, grpc_path):

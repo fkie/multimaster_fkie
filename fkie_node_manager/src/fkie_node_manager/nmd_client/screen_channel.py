@@ -58,7 +58,7 @@ class ScreenChannel(ChannelInterface):
         pass
 
     def get_screen_manager(self, uri='localhost:12321'):
-        channel = self.get_insecure_channel(uri)
+        channel = self.open_channel(uri)
         return sstub.ScreenStub(channel), channel
 
     def get_all_screens(self, grpc_url='grpc://localhost:12321'):

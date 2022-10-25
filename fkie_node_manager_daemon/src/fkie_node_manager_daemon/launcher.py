@@ -56,7 +56,7 @@ from fkie_multimaster_msgs.system import screen
 
 
 from . import exceptions
-from . import remote
+from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_stub import LaunchStub
 from .common import get_cwd, package_name, interpret_path, isstring, utf8
 
@@ -304,7 +304,7 @@ def run_node(startcfg):
         startcfg.params.update(_params_to_package_path(startcfg.params))
         startcfg.args = _args_to_package_path(startcfg.args)
         # run on a remote machine
-        channel = remote.get_insecure_channel(nmduri)
+        channel = remote.open_channel(nmduri)
         if channel is None:
             raise exceptions.StartException(
                 "Unknown launch manager url for host %s to start %s" % (host, startcfg.fullname))

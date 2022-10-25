@@ -33,7 +33,7 @@
 
 from python_qt_binding.QtCore import QObject, Signal
 
-import fkie_node_manager_daemon.remote as remote
+from fkie_multimaster_msgs.grpc_helper import remote
 from .file_channel import FileChannel
 from .launch_channel import LaunchChannel
 from .monitor_channel import MonitorChannel
@@ -75,7 +75,6 @@ class NmdClient(QObject):
         print("clear grpc channels...")
         for channel in self._channels:
             channel.stop()
-        remote.clear_channels()
         print("clear grpc channels...ok")
         self.clear_cache()
         del self._channels[:]

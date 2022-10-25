@@ -42,7 +42,7 @@ from ros2run.api import run_executable
 import composition_interfaces.srv
 
 from . import exceptions
-from . import remote
+from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead

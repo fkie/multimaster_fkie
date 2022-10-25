@@ -52,7 +52,7 @@ class VersionChannel(ChannelInterface):
         pass
 
     def get_version_manager(self, uri='localhost:12321'):
-        channel = self.get_insecure_channel(uri)
+        channel = self.open_channel(uri)
         return vstub.VersionStub(channel), channel
 
     def get_version_threaded(self, grpc_url='grpc://localhost:12321'):

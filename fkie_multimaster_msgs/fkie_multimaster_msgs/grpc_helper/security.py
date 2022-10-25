@@ -17,21 +17,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict
-from typing import List
 from typing import Text
 from typing import Tuple
 
-from datetime import datetime
 import os
-import re
-import sys
 
-from ament_index_python import get_packages_with_prefixes
-from ament_index_python.packages import get_package_share_directory
-from ament_index_python.packages import PackageNotFoundError
-from rclpy.node import Node
-from xml.dom import minidom
+from fkie_multimaster_msgs.logging.logging import Log
 
 
 DEFAULT_COMMON_NAME = '/node_manager'
@@ -49,7 +40,7 @@ _NODE_MANAGER_CERT = None
 # Strict mode: Try to find security files, and if they can’t be found, fail to run the participant.
 # The type of mode desired can be specified by setting the ROS_SECURITY_STRATEGY environment variable to “Enforce” (case-sensitive) for strict mode, and anything else for permissive mode.
 
-def init_keys(rosnode: [Node, None] = None) -> None:
+def init_keys() -> None:
     global _INITIALIZED
     if _INITIALIZED:
         return
@@ -84,14 +75,12 @@ def init_keys(rosnode: [Node, None] = None) -> None:
                         if 'ROS_SECURITY_STRATEGY' in os.environ and os.environ['ROS_SECURITY_STRATEGY'] == 'Enforce':
                             global _STRICT_MODE_ENABLED
                             _STRICT_MODE_ENABLED = True
-                        if rosnode is not None:
-                            rosnode.get_logger().warn('Security keys (cert.pem, key.pem) for node manager in %s not found!' %
-                                                      (os.path.dirname(nm_cert)))
-                            if _STRICT_MODE_ENABLED:
-                                rosnode.get_logger().warn('Security strict mode enabled!')
-            elif rosnode is not None:
-                rosnode.get_logger().warn(
-                    'ROS_SECURITY_ENABLE is True, but ROS_SECURITY_KEYSTORE is not set!')
+                        Log.warn('Security keys (cert.pem, key.pem) for node manager in %s not found!' %
+                                 (os.path.dirname(nm_cert)))
+                        if _STRICT_MODE_ENABLED:
+                            Log.warn('Security strict mode enabled!')
+            Log.warn(
+                'ROS_SECURITY_ENABLE is True, but ROS_SECURITY_KEYSTORE is not set!')
     _INITIALIZED = True
 
 

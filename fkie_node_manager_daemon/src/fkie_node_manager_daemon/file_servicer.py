@@ -45,7 +45,7 @@ from autobahn import wamp
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fms_grpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fms
 from . import file_item
-from . import remote
+from fkie_multimaster_msgs.grpc_helper import remote
 from . import url as nmdurl
 from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
 from fkie_multimaster_msgs import settings
@@ -271,7 +271,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     content = outfile.read()
                     # get channel to the remote grpc server
                     # TODO: get secure channel, if available
-                    channel = remote.get_insecure_channel(dest_uri)
+                    channel = remote.open_channel(dest_uri)
                     if channel is not None:
                         # save file on remote server
                         fs = fms_grpc.FileServiceStub(channel)

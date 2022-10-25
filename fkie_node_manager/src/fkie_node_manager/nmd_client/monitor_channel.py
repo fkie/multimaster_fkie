@@ -61,7 +61,7 @@ class MonitorChannel(ChannelInterface):
         pass
 
     def get_monitor_manager(self, uri='localhost:12321'):
-        channel = self.get_insecure_channel(uri)
+        channel = self.open_channel(uri)
         return mstub.MonitorStub(channel), channel
 
     def get_system_diagnostics_threaded(self, grpc_url='grpc://localhost:12321'):

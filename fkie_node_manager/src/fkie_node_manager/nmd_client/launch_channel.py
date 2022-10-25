@@ -113,7 +113,7 @@ class LaunchChannel(ChannelInterface):
                 self._launch_args.clear()
 
     def get_launch_manager(self, uri='localhost:12321'):
-        channel = self.get_insecure_channel(uri)
+        channel = self.open_channel(uri)
         return lstub.LaunchStub(channel), channel
 
     def launch_args(self, grpc_path):
