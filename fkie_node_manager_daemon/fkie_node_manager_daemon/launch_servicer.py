@@ -452,7 +452,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         result = LaunchLoadReply(paths=[], changed_nodes=[], args=[])
 
         result.paths.append(request.path)
-        cfgid = CfgId(request.path, request.masteruri)
+        # cfgid = CfgId(request.path, request.masteruri)
+        # TODO: check if we need daemonuri as identification
+        cfgid = CfgId(request.path, '')
         if cfgid in self._loaded_files:
             try:
                 self._remove_launch_from_observer(request.path)
@@ -514,7 +516,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             #    reply_lc.parameters.append(RosParameter(name, p.value))
             print('nodes', reply_lc.nodes)
             # TODO: add assosiations
-
+            reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)
 
     @wamp.register('ros.launch.start_node')
@@ -553,7 +555,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     [lcfg.filename for lcfg in launch_configs])
                 return json.dumps(result, cls=SelfEncoder)
             try:
-                result.launch.append(launch_configs[0].filename)
+                result.launch_files.append(launch_configs[0].filename)
                 n = launch_configs[0].get_node(request.name)
                 if n is not None:
                     if n.composable_container:

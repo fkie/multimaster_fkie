@@ -373,7 +373,7 @@ def run_node(startcfg):
         nmd.ros_node.get_logger().debug(
             "environment while run node '%s': '%s'" % (cmd_str, new_env))
         SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
-                        startcfg.fullname, description="Run [%s]%s" % (startcfg.package, startcfg.binary), rosnode=nmd.ros_node)
+                        startcfg.fullname, description="Run [%s]%s" % (startcfg.package, startcfg.binary))
     else:
         nmduri = startcfg.nmduri
         nmd.ros_node.get_logger().info("remote run node '%s' at '%s'" % (nodename, nmduri))

@@ -746,6 +746,7 @@ class LaunchConfig(object):
     @classmethod
     def cmd_to_name(cls, cmd_list):
         result = ''
+        count = 0
         for cmds in cmd_list:
             for cmd in cmds:
                 if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
@@ -764,7 +765,12 @@ class LaunchConfig(object):
                     # print('      + perform:', cmd.perform(self.__launch_context))
                 else:
                     print('      + CMD OTHER:', cmd, dir(cmd))
+                if count > 0:
+                    break
                 result += '_'
+            count += 1
+            if count > 1:
+                break
         return result
 
     def get_robot_icon(self):
