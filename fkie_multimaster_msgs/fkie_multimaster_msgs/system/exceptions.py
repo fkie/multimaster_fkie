@@ -59,7 +59,7 @@ class AlreadyOpenException(Exception):
         self.error = error
 
     def __repr__(self):
-        return "%s <path=%s>::%s" % (self.__class__, utf8(self.path), repr(self.error))
+        return "%s <path=%s>::%s" % (self.__class__, self.path, repr(self.error))
 
     def __str__(self):
         return self.error
