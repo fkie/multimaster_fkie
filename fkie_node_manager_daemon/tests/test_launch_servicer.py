@@ -145,8 +145,8 @@ class TestLaunchServicer(unittest.TestCase):
         self.assertEqual(response.status.code, lmsg.ReturnStatus.StatusType.Value('MULTIPLE_LAUNCHES'),
                          "wrong status code for multiple launch files, result: %d, expected: %d, reported error: %s"
                          % (response.status.code, lmsg.ReturnStatus.StatusType.Value('MULTIPLE_LAUNCHES'), response.status.error_msg))
-        self.assertEqual(len(response.path), 4, "wrong count of multiple launch files, result: %d, expected: %d" % (
-            len(response.path), 4))
+        self.assertEqual(len(response.path), 2, "wrong count of multiple launch files, result: %d, expected: %d" % (
+            len(response.path), 2))
         path = interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         response = ls.LoadLaunch(lmsg.LoadLaunchRequest(package='fkie_node_manager_daemon',

@@ -25,10 +25,10 @@ else:
     from setuptools import setup
 
     resource_files = [
-        'resources/description_example.launch.xml',
-        'resources/include_dummy.launch.xml',
-        'resources/included1.launch.xml',
-        'resources/included2.launch.xml',
+        'tests/resources/description_example.launch.xml',
+        'tests/resources/include_dummy.launch.xml',
+        'tests/resources/included1.launch.xml',
+        'tests/resources/included2.launch.xml',
     ]
 
     version = "0.0.0"
@@ -92,7 +92,7 @@ else:
             ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
             (f'share/{package_name}', ['package.xml']),
             (f'share/{package_name}/launch', ['launch/autostart.launch.xml']),
-            (f'share/{package_name}/resources', resource_files),
+            #(f'share/{package_name}/tests/resources', resource_files),
             (f'lib/{package_name}', ['scripts/remote_node.py', 'scripts/respawn'])
         ],
         install_requires=['setuptools', 'ruamel.yaml', 'launch-xml'],
