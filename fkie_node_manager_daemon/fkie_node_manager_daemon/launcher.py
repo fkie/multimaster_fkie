@@ -17,7 +17,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Dict
 from typing import Text
+from typing import Tuple
 
 import os
 import pathlib
@@ -45,11 +47,12 @@ from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead
-from .common import get_cwd, get_namespace, package_name, interpret_path
+from .common import get_cwd, package_name, interpret_path
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_multimaster_msgs.names import ns_join
 from .startcfg import StartConfig
 import fkie_node_manager_daemon as nmd
+from fkie_multimaster_msgs import names
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.system import exceptions
@@ -138,7 +141,7 @@ def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: La
     if executable:
         result.binary_path = executable
     result.fullname = LaunchConfig.get_name_from_node(node)
-    result.namespace = get_namespace(result.fullname, with_sep_suffix=False)
+    result.namespace = names.namespace(result.fullname, with_sep_suffix=False)
     result.name = os.path.basename(result.fullname)
 
     # set launch prefix
@@ -230,7 +233,7 @@ def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: La
     return result
 
 
-def get_package_exec(node: launch_ros.actions.node.Node, context: LaunchContext) -> (str, str):
+def get_package_exec(node: launch_ros.actions.node.Node, context: LaunchContext) -> Tuple[str, str]:
     for cmds in node.cmd:
         for cmd in cmds:
             if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
@@ -503,7 +506,7 @@ def _rosconsole_cfg_file(package, loglevel='INFO'):
     return result
 
 
-def _get_respawn_params(node: launch_ros.actions.node.Node) -> {}:
+def _get_respawn_params(node: launch_ros.actions.node.Node) -> Dict[str: Any]:
     result = {'enabled': False, 'max': 0, 'min_runtime': 0, 'delay': 0}
     return result
     # TODO

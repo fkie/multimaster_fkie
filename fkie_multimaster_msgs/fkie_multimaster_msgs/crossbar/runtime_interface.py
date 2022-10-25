@@ -4,6 +4,7 @@ import platform
 from typing import List, Dict, Union
 import re
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs import names
 
 SEP = '/'
 try:
@@ -11,18 +12,6 @@ try:
     SEP = rospy.names.SEP
 except ImportError:
     pass
-
-
-def get_namespace(name):
-    '''
-    :param str name: the name of the node or namespace.
-    :return: The namespace of given name. The last character is always a slash.
-    :rtype: str
-    '''
-    result = os.path.dirname(name)
-    # if not result.endswith(SEP):
-    #     result += SEP
-    return result
 
 
 def get_node_name(name):
@@ -93,7 +82,7 @@ class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
         self.name = get_node_name(name)
-        self.namespace = get_namespace(name)
+        self.namespace = names.namespace(name)
         self.status = 'running'
         self.pid = -1
         self.node_API_URI = ''

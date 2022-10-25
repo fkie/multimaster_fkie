@@ -20,6 +20,7 @@
 from typing import List
 from typing import Text
 from typing import Tuple
+from typing import Union
 
 from xml.dom.minidom import parse  # , parseString
 import os
@@ -37,11 +38,11 @@ from launch.utilities import normalize_to_list_of_substitutions
 import launch_ros
 
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
-from fkie_multimaster_msgs.names import ns_join
+from fkie_multimaster_msgs import names
+from fkie_multimaster_msgs.defines import SEP
 from fkie_multimaster_msgs.system import ros1_grpcuri
 import fkie_node_manager_daemon as nmd
 
-from .common import SEP
 from .common import package_name
 from .launch_context import LaunchContext
 
@@ -618,17 +619,17 @@ class LaunchConfig(object):
                                     ','), 'description': self._decode(entry[3])}
             # get the capability nodes
             for item in self.roscfg.nodes:
-                node_fullname = ns_join(item.namespace, item.name)
+                node_fullname = names.ns_join(item.namespace, item.name)
                 machine_name = item.machine_name if item.machine_name is not None and not item.machine_name == 'localhost' else ''
                 added = False
-                cap_param = ns_join(node_fullname, 'capability_group')
+                cap_param = names.ns_join(node_fullname, 'capability_group')
                 cap_ns = node_fullname
                 # find the capability group parameter in namespace
                 while cap_param not in self.roscfg.params and cap_param.count(SEP) > 1:
-                    cap_ns = get_namespace(cap_ns).rstrip(SEP)
+                    cap_ns = names.namespace(cap_ns).rstrip(SEP)
                     if not cap_ns:
                         cap_ns = SEP
-                    cap_param = ns_join(cap_ns, 'capability_group')
+                    cap_param = names.ns_join(cap_ns, 'capability_group')
                 if cap_ns == node_fullname:
                     cap_ns = item.namespace.rstrip(SEP)
                     if not cap_ns:
@@ -673,7 +674,7 @@ class LaunchConfig(object):
                 result[key] = value
         return result
 
-    def get_node(self, name: str, daemonuri: str = '') -> [launch_ros.actions.node.Node, None]:
+    def get_node(self, name: str, daemonuri: str = '') -> Union[launch_ros.actions.node.Node, None]:
         '''
         Returns a configuration node for a given node name.
 
@@ -734,7 +735,7 @@ class LaunchConfig(object):
             ns = SEP
             if not result.startswith(SEP) and hasattr(node, 'expanded_node_namespace') and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
                 ns = node.expanded_node_namespace
-            result = ns_join(ns, result)
+            result = names.ns_join(ns, result)
         else:
             nmd.ros_node.get_logger().debug("No name for node found: %s %s" %
                                             (type(node), dir(node)))

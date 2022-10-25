@@ -21,6 +21,7 @@ from typing import Dict
 from typing import List
 from typing import Text
 from typing import Tuple
+from typing import Union
 
 from datetime import datetime
 import os
@@ -108,28 +109,6 @@ class IncludedFile():
 #             return unicode(str(s))
 #     return s
 
-def get_namespace(name: Text, with_sep_suffix: bool = True) -> Text:
-    """
-    Get the namespace of name. The namespace is returned with a
-    trailing slash in order to favor easy concatenation and easier use
-    within the global context.
-
-    :param str name: name to return the namespace of. Must be a legal
-        name. NOTE: an empty name will return the global namespace.
-    :return str: Namespace of name. For example, '/wg/node1' returns '/wg/'. The
-        global namespace is '/'. 
-    :rtype: str
-    :raise ValueError: if name is invalid
-    """
-    if name is None:
-        raise ValueError('name')
-    if not name:
-        return SEP
-    elif name[-1] == SEP:
-        name = name[:-1]
-    offset = 1 if with_sep_suffix else 0
-    return name[:name.rfind(SEP)+offset] or SEP
-
 
 def get_cwd(cwd: Text, binary: Text = '') -> Text:
     result = ''
@@ -150,7 +129,7 @@ def get_cwd(cwd: Text, binary: Text = '') -> Text:
     return result
 
 
-def sizeof_fmt(num: [float, int], suffix: str = 'B') -> Text:
+def sizeof_fmt(num: Union[float, int], suffix: str = 'B') -> Text:
     for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return '%.0f%s%s' % (num, unit, suffix)
@@ -170,7 +149,7 @@ def formated_ts(stamp: float, with_date: bool = True, with_nanosecs: bool = True
     return datetime.fromtimestamp(ts, tz).strftime(str_format)
 
 
-def get_packages(path: [Text, None]) -> Dict[Text, Text]:
+def get_packages(path: Union[Text, None]) -> Dict[Text, Text]:
     result = {}
     if path is None:
         # we use ament to get the list of all packages
@@ -268,7 +247,7 @@ def get_share_files_path_from_package(package_name, file_name):
     return matching_file_paths
 
 
-def interpret_path(path: Text, *, pwd: Text = '.', rosnode: [Node, None] = None) -> Text:
+def interpret_path(path: Text, *, pwd: Text = '.', rosnode: Union[Node, None] = None) -> Text:
     '''
     Tries to determine the path of included file. The statement of $(find-pkg-share 'package') will be resolved.
 
@@ -339,7 +318,7 @@ def replace_paths(text: Text, pwd: Text = '.'):
     return result
 
 
-def get_internal_args(content: Text, path: Text = None, only_default: bool = False, rosnode: [Node, None] = None):
+def get_internal_args(content: Text, path: Text = None, only_default: bool = False, rosnode: Union[Node, None] = None):
     '''
     Load the content with xml parser, search for arg-nodes.
     :return: a dictionary with detected arguments
@@ -374,7 +353,7 @@ def get_internal_args(content: Text, path: Text = None, only_default: bool = Fal
     return resolve_args_intern
 
 
-def replace_internal_args(content: Text, resolve_args: Dict[Text, Text] = {}, path: Text = None, rosnode: [Node, None] = None):
+def replace_internal_args(content: Text, resolve_args: Dict[Text, Text] = {}, path: Text = None, rosnode: Union[Node, None] = None):
     '''
     Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
     :return: True if something was replaced, new content and detected arguments
@@ -420,7 +399,7 @@ def replace_arg(value, resolve_args: Dict[Text, Text]):
     return result
 
 
-def __get_include_args(content: Text, resolve_args: Dict[Text, Text], rosnode: [Node, None] = None):
+def __get_include_args(content: Text, resolve_args: Dict[Text, Text], rosnode: Union[Node, None] = None):
     included_files = []
     try:
         xml_nodes = minidom.parseString(
@@ -471,7 +450,7 @@ def find_included_files(string: Text,
                         resolve_args: Dict[Text, Text] = {},
                         unique_files: List[Text] = [],
                         rec_depth: int = 0,
-                        rosnode: [Node, None] = None):
+                        rosnode: Union[Node, None] = None):
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
