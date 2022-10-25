@@ -36,12 +36,12 @@ import rospy
 import threading
 from python_qt_binding.QtCore import Signal
 
-import fkie_node_manager_daemon.exceptions as exceptions
 import fkie_node_manager_daemon.launch_stub as lstub
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager_daemon.startcfg import StartConfig
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import exceptions
 
 from .channel_interface import ChannelInterface
 

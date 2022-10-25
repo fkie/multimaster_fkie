@@ -39,7 +39,6 @@ import os
 import threading
 import rospy
 
-from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon.common import get_internal_args, sizeof_fmt, utf8
 import fkie_node_manager as nm
 from fkie_node_manager.common import package_name
@@ -51,6 +50,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QDockWidget, QAbstractItemView
     from python_qt_binding.QtCore import QItemSelectionModel
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import exceptions
 
 
 class GraphViewWidget(QDockWidget):

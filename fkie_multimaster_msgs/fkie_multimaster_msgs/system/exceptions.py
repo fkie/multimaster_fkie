@@ -95,3 +95,17 @@ class ConnectionException(Exception):
 
     def __str__(self):
         return self.error
+
+
+class GrpcTimeout(Exception):
+
+    def __init__(self, remote, error):
+        Exception.__init__(self)
+        self.remote = remote
+        self.error = error
+
+    def __repr__(self):
+        return "%s <%s>::%s" % (self.__class__, self.remote, repr(self.error))
+
+    def __str__(self):
+        return self.error

@@ -38,7 +38,7 @@ import re
 import rospy
 import traceback
 
-from fkie_node_manager_daemon import exceptions, file_item
+from fkie_node_manager_daemon import file_item
 from fkie_node_manager_daemon.common import find_included_files, get_arg_names, get_internal_args, replace_arg, utf8
 from fkie_node_manager.common import package_name
 from fkie_node_manager.detailed_msg_box import MessageBox
@@ -48,6 +48,7 @@ import fkie_node_manager as nm
 from .xml_highlighter import XmlHighlighter
 from .yaml_highlighter import YamlHighlighter
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import exceptions
 
 
 try:

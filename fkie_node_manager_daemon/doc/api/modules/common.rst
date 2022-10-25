@@ -15,16 +15,6 @@ This module offers common methods not assigned to a specific module.
    :undoc-members:
    :show-inheritance:
 
-`exceptions`
-============
-
-Collection of exceptions.
-
-.. automodule:: fkie_node_manager_daemon.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 `remote`
 ========
 

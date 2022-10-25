@@ -20,8 +20,8 @@
 
 import fkie_node_manager_daemon.grpc_proto.launch_pb2_grpc as lgrpc
 import fkie_node_manager_daemon.grpc_proto.launch_pb2 as lmsg
-from . import exceptions
 from fkie_multimaster_msgs import settings
+from fkie_multimaster_msgs.system import exceptions
 from .common import IncludedFile
 from .launch_description import Capability
 from .launch_description import LaunchDescription

@@ -33,8 +33,8 @@
 
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
-from . import exceptions
 from fkie_multimaster_msgs import settings
+from fkie_multimaster_msgs.system import exceptions
 from .common import IncludedFile
 from .launch_description import LaunchDescription, RobotDescription, Capability
 from .startcfg import StartConfig

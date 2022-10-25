@@ -54,10 +54,10 @@ except ImportError:
 from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.master_info import NodeInfo
 from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, isstring, utf8
-from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system.host import get_hostname, get_port
 
 from fkie_node_manager_daemon.version import detect_version

@@ -43,7 +43,8 @@ from fkie_node_manager_daemon.server import GrpcServer
 from fkie_multimaster_msgs.grpc_helper import remote
 import fkie_node_manager_daemon.file_stub as fstub
 import fkie_node_manager_daemon.launch_stub as lstub
-import fkie_node_manager_daemon.exceptions as exceptions
+from fkie_multimaster_msgs.system import exceptions
+
 
 PKG = 'fkie_node_manager_daemon'
 

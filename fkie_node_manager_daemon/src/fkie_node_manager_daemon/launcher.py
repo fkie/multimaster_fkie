@@ -51,11 +51,11 @@ from fkie_master_discovery.udp import DiscoverSocket
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import host
 from fkie_multimaster_msgs.system import screen
 
 
-from . import exceptions
 from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_stub import LaunchStub
 from .common import get_cwd, package_name, interpret_path, isstring, utf8

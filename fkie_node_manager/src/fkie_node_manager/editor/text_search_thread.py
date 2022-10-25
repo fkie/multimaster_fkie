@@ -40,9 +40,9 @@ from xml.dom import minidom
 
 import fkie_node_manager as nm
 
-from fkie_node_manager_daemon import exceptions
 from fkie_node_manager_daemon.common import replace_arg, utf8
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import exceptions
 
 
 class TextSearchThread(QObject, threading.Thread):
