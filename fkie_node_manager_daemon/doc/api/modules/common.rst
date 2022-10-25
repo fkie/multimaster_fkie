@@ -25,16 +25,6 @@ Collection of exceptions.
    :undoc-members:
    :show-inheritance:
 
-`host`
-======
-
-Helper methods to parse the host names and check for local hosts names.
-
-.. automodule:: fkie_node_manager_daemon.host
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 `remote`
 ========
 

@@ -49,7 +49,6 @@ import rospy
 import threading
 
 from fkie_node_manager_daemon.common import utf8
-from fkie_node_manager_daemon.host import get_hostname
 from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.logging.logging import Log
 

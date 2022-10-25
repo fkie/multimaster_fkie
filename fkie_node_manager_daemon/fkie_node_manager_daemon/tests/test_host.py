@@ -21,7 +21,7 @@ import os
 import unittest
 import time
 
-import fkie_node_manager_daemon.host as host
+import fkie_multimaster_fkie.system.host as host
 
 PKG = 'fkie_node_manager_daemon'
 
