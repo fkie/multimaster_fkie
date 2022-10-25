@@ -36,7 +36,7 @@ import time
 import rospkg
 
 from fkie_master_discovery.common import masteruri_from_master
-from fkie_node_manager_daemon import host
+from fkie_multimaster_msgs.system import host
 from fkie_node_manager_daemon import url
 
 PKG = 'fkie_node_manager_daemon'
