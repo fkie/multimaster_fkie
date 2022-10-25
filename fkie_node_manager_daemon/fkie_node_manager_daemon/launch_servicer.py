@@ -55,9 +55,9 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system.host import is_local
+from fkie_multimaster_msgs.system.url import equal_uri
 
 from . import launcher
-from . import url
 from .common import get_arg_names
 from .common import replace_arg
 from .common import get_share_files_path_from_package
@@ -106,7 +106,7 @@ class CfgId(object):
         if not daemonuri:
             if self._local:
                 return True
-        if url.equal_uri(self.daemonuri, daemonuri):
+        if equal_uri(self.daemonuri, daemonuri):
             return True
         return False
 

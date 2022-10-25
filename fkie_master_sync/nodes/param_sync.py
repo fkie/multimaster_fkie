@@ -4,9 +4,9 @@
 
 import rospy
 
-from fkie_master_discovery.common import masteruri_from_master
 from fkie_multimaster_msgs.msg import MasterState
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 
 def master_changed(msg, cb_args):
@@ -14,8 +14,8 @@ def master_changed(msg, cb_args):
     local_name = ''
     if local_master:
         local_name = local_master[0]
-    if msg.master.uri != masteruri_from_master() and local_name in param_cache:
-        master_to = rospy.MasterProxy(masteruri_from_master())
+    if msg.master.uri != ros1_masteruri.from_master() and local_name in param_cache:
+        master_to = rospy.MasterProxy(ros1_masteruri.from_master())
         master_from = rospy.MasterProxy(msg.master.uri)
         Log.debug("Getting params from {}...".format(msg.master.uri))
         params_from = master_from.getParam('/')[2]
@@ -66,7 +66,7 @@ def main():
 
     param_cache = dict()
     local_master = list()
-    masteruri_from_master()
+    ros1_masteruri.from_master()
 
     __add_ns = rospy.get_param('~add_ns', True)
     __ignore = rospy.get_param('~ignore', [])

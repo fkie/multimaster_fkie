@@ -40,8 +40,8 @@ import traceback
 
 import rospy
 
-from . import url
 from .server import GrpcServer
+from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.screen import test_screen
 from fkie_multimaster_msgs.logging.logging import Log
 
@@ -117,7 +117,7 @@ def start_server(node_name='node_manager_daemon'):
         Log.error("No SCREEN available! You can't launch nodes.")
     try:
         launch_manager = GrpcServer()
-        launch_manager.start('[::]:%s' % str(url.nmdport()))
+        launch_manager.start('[::]:%s' % str(ros1_grpcuri.port()))
         # load launch file from parameter
         for lfile in load_files:
             launch_manager.load_launch_file(lfile, autostart=False)

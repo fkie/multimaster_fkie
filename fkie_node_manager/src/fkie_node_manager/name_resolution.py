@@ -39,11 +39,9 @@ except ImportError:
 import socket
 
 import rospy
-from fkie_master_discovery.common import get_hostname
-from fkie_node_manager_daemon.common import utf8
-from fkie_node_manager_daemon.common import isstring
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_msgs.system.url import equal_uri
 
 
 RESOLVE_CACHE = {}  # hostname : address
@@ -178,7 +176,7 @@ class MasterEntry(object):
     def __eq__(self, item):
         if isinstance(item, MasterEntry):
             result = []
-            if nmdurl.equal_uri(self.masteruri, item.masteruri):
+            if equal_uri(self.masteruri, item.masteruri):
                 result = set(self.addresses()).intersection(
                     set(item.addresses()))
             return len(result) > 0

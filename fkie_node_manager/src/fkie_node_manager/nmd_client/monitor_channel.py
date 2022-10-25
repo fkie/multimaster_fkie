@@ -36,10 +36,10 @@ from diagnostic_msgs.msg import DiagnosticArray
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.monitor_stub as mstub
-from fkie_node_manager_daemon import url as nmdurl
 
 from .channel_interface import ChannelInterface
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
 
 
 class MonitorChannel(ChannelInterface):
@@ -70,7 +70,7 @@ class MonitorChannel(ChannelInterface):
 
     def get_system_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
         Log.debug("get system diagnostics from %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         vm, channel = self.get_monitor_manager(uri)
         try:
             diagnostic_array = vm.get_system_diagnostics()
@@ -89,7 +89,7 @@ class MonitorChannel(ChannelInterface):
 
     def get_diagnostics(self, grpc_url='grpc://localhost:12321', threaded=False):
         Log.debug("get diagnostics from %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         vm, channel = self.get_monitor_manager(uri)
         try:
             diagnostic_array = vm.get_diagnostics()
@@ -105,7 +105,7 @@ class MonitorChannel(ChannelInterface):
     def kill_process(self, pid, grpc_url='grpc://localhost:12321'):
         if pid is not None:
             Log.debug("kill process %d on %s" % (pid, grpc_url))
-            uri, _ = nmdurl.split(grpc_url)
+            uri, _ = ros1_grpcuri.split(grpc_url)
             vm, channel = self.get_monitor_manager(uri)
             try:
                 vm.kill_process(pid)
@@ -120,7 +120,7 @@ class MonitorChannel(ChannelInterface):
 
     def get_user(self, grpc_url='grpc://localhost:12321'):
         Log.debug("get user from %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         vm, channel = self.get_monitor_manager(uri)
         user = ''
         try:

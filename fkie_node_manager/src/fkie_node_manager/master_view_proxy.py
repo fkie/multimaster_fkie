@@ -51,14 +51,16 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 
-from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.master_info import NodeInfo
 from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, isstring, utf8
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system import exceptions
-from fkie_multimaster_msgs.system.host import get_hostname, get_port
+from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_msgs.system.url import get_port
+from fkie_multimaster_msgs.system.url import equal_uri
 
 from fkie_node_manager_daemon.version import detect_version
 from .common import package_name
@@ -77,6 +79,7 @@ from .parameter_list_model import ParameterModel, ParameterNameItem, ParameterVa
 from .progress_queue import ProgressQueue
 from .select_dialog import SelectDialog
 from .service_list_model import ServiceModel, ServiceItem, ServiceGroupItem
+from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from .topic_list_model import TopicModel, TopicItem, TopicGroupItem
 import fkie_node_manager as nm
@@ -640,8 +643,7 @@ class MasterViewProxy(QWidget):
         try:
             update_result = (set(), set(), set(), set(),
                              set(), set(), set(), set(), set())
-            my_masterinfo = nmdurl.equal_uri(
-                master_info.masteruri, self.masteruri)
+            my_masterinfo = equal_uri(master_info.masteruri, self.masteruri)
             if self.__master_info is None:
                 if my_masterinfo:
                     self.__master_info = master_info
@@ -721,7 +723,7 @@ class MasterViewProxy(QWidget):
             print(traceback.format_exc(3))
 
     def perform_nmd_requests(self):
-        nmd_uri = nmdurl.nmduri(self.masteruri)
+        nmd_uri = ros1_grpcuri.create(self.masteruri)
         if self._has_nmd:
             # only try to get updates from daemon if it is running
             nm.nmd().launch.get_nodes_threaded(nmd_uri, self.masteruri)
@@ -947,8 +949,8 @@ class MasterViewProxy(QWidget):
             cfg.includes = includes
 
     def _apply_changed_binaries(self, launchfile, nodes):
-        muri = nmdurl.masteruri(launchfile)
-        if nmdurl.equal_uri(muri, self.masteruri):
+        muri = ros1_masteruri.from_grpc(launchfile)
+        if equal_uri(muri, self.masteruri):
             for nodename, mtime in nodes.items():
                 tnodes = self.node_tree_model.get_tree_node(
                     nodename, self.masteruri)
@@ -965,7 +967,7 @@ class MasterViewProxy(QWidget):
                         self.question_restart_changed_binary(tnode)
 
     def perform_master_checks(self):
-        grpc_url = nmdurl.nmduri(self.masteruri)
+        grpc_url = ros1_grpcuri.create(self.masteruri)
         lfiles = {}
         for path, cfg in self.__configs.items():
             if cfg.mtime > 0:
@@ -983,11 +985,11 @@ class MasterViewProxy(QWidget):
     def perform_diagnostic_requests(self, force=False):
         now = time.time()
         if self._has_nmd and (self._has_diagnostics or force) and now - self._ts_last_diagnostic_request >= 1.0:
-            nmd_uri = nmdurl.nmduri(self.masteruri)
+            nmd_uri = ros1_grpcuri.create(self.masteruri)
             nm.nmd().monitor.get_system_diagnostics_threaded(nmd_uri)
             if not self.has_master_sync:
                 nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
-            elif nmdurl.equal_uri(self.masteruri, self.main_window.getMasteruri()):
+            elif equal_uri(self.masteruri, self.main_window.getMasteruri()):
                 nm.nmd().monitor.get_diagnostics_threaded(nmd_uri)
             self._ts_last_diagnostic_request = now
 
@@ -1185,7 +1187,7 @@ class MasterViewProxy(QWidget):
         if self._first_launch:
             self._first_launch = False
             if self.default_load_launch:
-                lfile = nmdurl.join(nmdurl.nmduri(
+                lfile = ros1_grpcuri.join(ros1_grpcuri.create(
                     self.masteruri), self.default_load_launch)
                 if os.path.isdir(self.default_load_launch):
                     self.main_window.launch_dock.launchlist_model.set_path(
@@ -1336,13 +1338,13 @@ class MasterViewProxy(QWidget):
                     node_count, nodes_text), MessageData((changed_nodes, cfg)))
 
     def on_nmd_version_retrieved(self, nmd_url, version, date):
-        if not nmdurl.equal_uri(nmdurl.masteruri(nmd_url), self.masteruri):
+        if not equal_uri(ros1_masteruri.from_grpc(nmd_url), self.masteruri):
             return
         self._diag_nmd_version = version
         self._check_diag_state_nmd()
 
     def on_log_dir_retrieved(self, nmd_url, log_dir_size):
-        if not nmdurl.equal_uri(nmdurl.masteruri(nmd_url), self.masteruri):
+        if not equal_uri(ros1_masteruri.from_grpc(nmd_url), self.masteruri):
             return
         self._diag_log_dir_size = log_dir_size
         self._check_diag_state_nmd()
@@ -1439,9 +1441,10 @@ class MasterViewProxy(QWidget):
 
     def _sysmon_update_callback(self):
         if self._has_nmd and self.__online:
-            nm.nmd().monitor.get_system_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+            nm.nmd().monitor.get_system_diagnostics_threaded(
+                ros1_grpcuri.create(self.masteruri))
             if not nm.is_local(self.mastername):
-                nm.nmd().monitor.get_diagnostics_threaded(nmdurl.nmduri(self.masteruri))
+                nm.nmd().monitor.get_diagnostics_threaded(ros1_grpcuri.create(self.masteruri))
 
     @property
     def launch_servers(self):
@@ -2709,12 +2712,12 @@ class MasterViewProxy(QWidget):
             if node.pid is not None:
                 if hasattr(node, 'kill_on_stop') and type(node.kill_on_stop) in [int, float]:
                     time.sleep(float(node.kill_on_stop) / 1000.0)
-                    nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
+                    nm.nmd().monitor.kill_process(node.pid, ros1_grpcuri.create(node.masteruri))
                 elif not success:
                     if node.name != '/node_manager_daemon':
                         Log.info(
                             "Try to kill process %d of the node: %s", node.pid, utf8(node.name))
-                        nm.nmd().monitor.kill_process(node.pid, nmdurl.nmduri(node.masteruri))
+                        nm.nmd().monitor.kill_process(node.pid, ros1_grpcuri.create(node.masteruri))
         elif isinstance(node, NodeItem) and node.is_ghost:
             # since for ghost nodes no info is available, emit a signal to handle the
             # stop message in other master_view_proxy
@@ -2975,7 +2978,7 @@ class MasterViewProxy(QWidget):
             if isstring(c):
                 launch_config = self.__configs[c]
                 if node.name in launch_config.nodes:
-                    url, _path = nmdurl.split(c, with_scheme=True)
+                    url, _path = ros1_grpcuri.split(c, with_scheme=True)
                     return get_hostname(url)
 #                 if item is not None and item.machine_name and not item.machine_name == 'localhost':
 #                     return launch_config.Roscfg.machines[item.machine_name].address
@@ -2994,18 +2997,18 @@ class MasterViewProxy(QWidget):
         # get hostname from host item where the node is located
         host = node.host
         if host:
-            return nmdurl.nmduri('http://%s:%d' % (host, get_port(self.masteruri)))
+            return ros1_grpcuri.create('http://%s:%d' % (host, get_port(self.masteruri)))
         if node.masteruri is not None:
-            return nmdurl.nmduri(node.masteruri)
+            return ros1_grpcuri.create(node.masteruri)
         # try to get it from the configuration,
         # TODO: get it from node manager daemon?
         for c in node.cfgs:
             if isstring(c):
                 launch_config = self.__configs[c]
                 if node.name in launch_config.nodes:
-                    url, _path = nmdurl.split(c, with_scheme=True)
+                    url, _path = ros1_grpcuri.split(c, with_scheme=True)
                     return url
-        return nmdurl.nmduri(self.masteruri)
+        return ros1_grpcuri.create(self.masteruri)
 
     def on_io_clicked(self, activated=False):
         '''
@@ -3113,7 +3116,7 @@ class MasterViewProxy(QWidget):
         cursor = self.cursor()
         self.setCursor(Qt.WaitCursor)
         try:
-            grpc_url = nmdurl.nmduri(self.masteruri)
+            grpc_url = ros1_grpcuri.create(self.masteruri)
             sel_screen = []
             try:
                 screens = nm.nmd().screen.get_all_screens(grpc_url)
@@ -3140,7 +3143,7 @@ class MasterViewProxy(QWidget):
             self.setCursor(cursor)
 
     def on_multiple_screens(self, grpc_url, screens):
-        muri = nmdurl.masteruri(grpc_url)
+        muri = ros1_masteruri.from_grpc(grpc_url)
         self.node_tree_model.clear_multiple_screens(muri)
         for node, screens in screens.items():
             nodes = self.node_tree_model.get_tree_node(node, muri)
@@ -3406,9 +3409,9 @@ class MasterViewProxy(QWidget):
             # fill the input fields
             # determine the list all available message types
             msg_types = []
-            for ppath, pname in nm.nmd().file.get_packages(nmdurl.nmduri(self.masteruri)).items():
+            for ppath, pname in nm.nmd().file.get_packages(ros1_grpcuri.create(self.masteruri)).items():
                 #:TODO: get message types from remote nmduri
-                _guri, lpath = nmdurl.split(ppath, with_scheme=False)
+                _guri, lpath = ros1_grpcuri.split(ppath, with_scheme=False)
                 import rosmsg
                 for f in rosmsg._list_types('%s/msg' % lpath, 'msg', rosmsg.MODE_MSG):
                     msg_types.append("%s/%s" % (pname, f))
@@ -3866,7 +3869,8 @@ class MasterViewProxy(QWidget):
                 for (key, value) in selectedParameter:
                     params[key] = value
                 if params:
-                    dia_params = {'master': {':value': masteruri_from_ros()}}
+                    dia_params = {'master': {
+                        ':value': ros1_masteruri.from_ros()}}
                     dia = ParameterDialog(
                         dia_params, store_geometry="transfer_param_dialog")
                     dia.setFilterVisible(False)
@@ -4040,7 +4044,7 @@ class MasterViewProxy(QWidget):
         :rtype: str or None
         '''
         if not hasattr(self, '_nm_materuri') or self._nm_materuri is None:
-            masteruri = masteruri_from_ros()
+            masteruri = ros1_masteruri.from_ros()
             master = xmlrpcclient.ServerProxy(masteruri)
             # reuslt: code, message, self._nm_materuri
             _, _, self._nm_materuri = master.getUri(rospy.get_name())
@@ -4072,7 +4076,7 @@ class MasterViewProxy(QWidget):
                                    data.data, '%s' % utf8(err))
         elif questionid == MessageFrame.TYPE_TRANSFER:
             try:
-                nmd_uri = nmdurl.nmduri(self.masteruri)
+                nmd_uri = ros1_grpcuri.create(self.masteruri)
                 username = self.current_user
                 self.main_window.launch_dock.progress_queue.add2queue(utf8(uuid.uuid4()),
                                                                       'transfer %s to %s' % (

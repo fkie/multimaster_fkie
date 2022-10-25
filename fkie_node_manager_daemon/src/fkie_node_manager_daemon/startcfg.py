@@ -33,8 +33,8 @@
 
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from .common import utf8
+from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.host import get_hostname
-from .url import nmduri, nmdport
 
 
 STRING = lmsg.Argument.ValueType.Value('STRING')
@@ -102,9 +102,9 @@ class StartConfig():
         '''
         if self.host:
             try:
-                return nmduri(self.host, prefix='')
+                return ros1_grpcuri.create(self.host, prefix='')
             except ValueError:
-                return '%s:%d' % (self.host, nmdport(self.masteruri))
+                return '%s:%d' % (self.host, ros1_grpcuri.port(self.masteruri))
         return None
 
     def _msg_type(self, value):

@@ -45,15 +45,16 @@ import rospy
 import traceback
 
 from diagnostic_msgs.msg import KeyValue
-from fkie_master_discovery.common import get_hostname, subdomain
 from fkie_master_discovery.master_info import NodeInfo
 from fkie_node_manager_daemon.common import sizeof_fmt, isstring, utf8
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager.common import lnamespace, namespace, normns
 from fkie_node_manager.name_resolution import NameResolution, MasterEntry
 from fkie_node_manager.parameter_handler import ParameterHandler
 import fkie_node_manager as nm
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_msgs.system.host import subdomain
+from fkie_multimaster_msgs.system.url import equal_uri
 
 
 class CellItem(QStandardItem):
@@ -1205,7 +1206,7 @@ class HostItem(GroupItem):
             Log.warn("compare HostItem with unicode deprecated")
             return False
         elif isinstance(item, tuple):
-            return nmdurl.equal_uri(self.masteruri, item[0]) and self.host == item[1]
+            return equal_uri(self.masteruri, item[0]) and self.host == item[1]
         elif isinstance(item, MasterEntry):
             return self._master_entry == item
         elif isinstance(item, HostItem):
@@ -1836,7 +1837,7 @@ class NodeTreeModel(QStandardItemModel):
         master_entry = nm.nameres().get_master(masteruri, address)
         host = (masteruri, address)
         local = (self.local_addr in [address] + nm.nameres().resolve_cached(address) and
-                 nmdurl.equal_uri(self._local_masteruri, masteruri))
+                 equal_uri(self._local_masteruri, masteruri))
         # find the host item by address
         root = self.invisibleRootItem()
         for i in range(root.rowCount()):
@@ -1876,7 +1877,7 @@ class NodeTreeModel(QStandardItemModel):
         muris = []
         addresses = []
         updated_nodes = []
-        local_info = nmdurl.equal_uri(self._local_masteruri, info_masteruri)
+        local_info = equal_uri(self._local_masteruri, info_masteruri)
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
             host.reset_remote_launched_nodes()
@@ -2136,7 +2137,7 @@ class NodeTreeModel(QStandardItemModel):
         '''
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host is not None and (masteruri is None or nmdurl.equal_uri(host.masteruri, masteruri)):
+            if host is not None and (masteruri is None or equal_uri(host.masteruri, masteruri)):
                 res = host.get_node_items_by_name(node_name)
                 if res:
                     return res
@@ -2145,7 +2146,7 @@ class NodeTreeModel(QStandardItemModel):
     def clear_multiple_screens(self, masteruri):
         for i in reversed(range(self.invisibleRootItem().rowCount())):
             host = self.invisibleRootItem().child(i)
-            if host is not None and (masteruri is None or nmdurl.equal_uri(host.masteruri, masteruri)):
+            if host is not None and (masteruri is None or equal_uri(host.masteruri, masteruri)):
                 host.clear_multiple_screens()
 
     def get_node_items_by_name(self, nodes, only_local=True):

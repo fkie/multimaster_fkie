@@ -46,9 +46,10 @@ except ImportError:
 from fkie_multimaster_msgs.msg import SyncTopicInfo, SyncServiceInfo, SyncMasterInfo
 import rospy
 
-from fkie_master_discovery.common import masteruri_from_ros, get_hostname
+from fkie_master_discovery.common import get_hostname
 from fkie_master_discovery.filter_interface import FilterInterface
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 
 class SyncThread(object):
@@ -88,7 +89,7 @@ class SyncThread(object):
         self._online = True
         self._offline_ts = 0
 
-        self.masteruri_local = masteruri_from_ros()
+        self.masteruri_local = ros1_masteruri.from_ros()
         self.hostname_local = get_hostname(self.masteruri_local)
         Log.debug(
             "SyncThread[%s]: create this sync thread, discoverer_name: %s", self.name, self.discoverer_name)

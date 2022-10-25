@@ -49,12 +49,12 @@ from .common import get_cwd, get_namespace, package_name, interpret_path
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_multimaster_msgs.names import ns_join
 from .startcfg import StartConfig
-from .url import nmduri as url_nmduri
 import fkie_node_manager_daemon as nmd
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import host
+from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system import screen
 
 
@@ -107,7 +107,7 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
         result.daemonuri = daemonuri
     # override host with machine tag
     if n.machine_name and n.machine_name in launchcfg.roscfg.machines:
-        result.daemonuri = url_nmduri(
+        result.daemonuri = ros1_grpcuri.create(
             launchcfg.roscfg.machines[n.machine_name].address)
     # set args
     result.args = n.args.split()

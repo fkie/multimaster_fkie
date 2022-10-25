@@ -46,10 +46,11 @@ from fkie_multimaster_msgs.msg import MasterState
 from fkie_multimaster_msgs.srv import DiscoverMasters, GetSyncInfo, GetSyncInfoResponse
 import rospy
 
-from fkie_master_discovery.common import masteruri_from_master, resolve_url, read_interface, create_pattern, is_empty_pattern, get_hostname
+from fkie_master_discovery.common import resolve_url, read_interface, create_pattern, is_empty_pattern, get_hostname
 from fkie_master_discovery.master_info import MasterInfo
 import fkie_master_discovery.interface_finder as interface_finder
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 from .sync_thread import SyncThread
 
@@ -69,7 +70,7 @@ class Main(object):
         '''
         self.masters = {}
         # the connection to the local service master
-        self.masteruri = masteruri_from_master()
+        self.masteruri = ros1_masteruri.from_master()
         self.hostname = get_hostname(self.masteruri)
         self._localname = ''
         '''@ivar: the ROS master URI of the C{local} ROS master. '''
@@ -79,7 +80,7 @@ class Main(object):
         # subscribe to changes notifier topics
         self._check_host = rospy.get_param('~check_host', True)
         topic_names = interface_finder.get_changes_topic(
-            masteruri_from_master(), check_host=self._check_host)
+            ros1_masteruri.from_master(), check_host=self._check_host)
         self.sub_changes = dict()
         '''@ivar: `dict` with topics {name: U{rospy.Subscriber<http://docs.ros.org/api/rospy/html/rospy.topics.Subscriber-class.html>}} publishes the changes of the discovered ROS masters.'''
         for topic_name in topic_names:
@@ -136,7 +137,7 @@ class Main(object):
         '''
         if not rospy.is_shutdown():
             service_names = interface_finder.get_listmaster_service(
-                masteruri_from_master(), False, check_host=self._check_host)
+                ros1_masteruri.from_master(), False, check_host=self._check_host)
             for service_name in service_names:
                 try:
                     with self.__lock:

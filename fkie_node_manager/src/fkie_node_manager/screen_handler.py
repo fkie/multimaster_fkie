@@ -39,10 +39,10 @@ import grpc
 import rospy
 
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
-from fkie_node_manager_daemon import url
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.common import utf8
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_masteruri
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system.host import get_hostname
 
@@ -128,7 +128,7 @@ class ScreenHandler(object):
         try:
             host = get_hostname(grpc_url)
             try:
-                muri = url.masteruri(grpc_url)
+                muri = ros1_masteruri.from_grpc(grpc_url)
             except ValueError:
                 muri = host
             if items:

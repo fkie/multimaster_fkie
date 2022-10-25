@@ -38,12 +38,12 @@ import launch_ros
 
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
 from fkie_multimaster_msgs.names import ns_join
+from fkie_multimaster_msgs.system import ros1_grpcuri
 import fkie_node_manager_daemon as nmd
 
 from .common import SEP
 from .common import package_name
 from .launch_context import LaunchContext
-from .url import nmduri as url_nmduri
 
 
 class LaunchConfigException(Exception):
@@ -82,7 +82,7 @@ class LaunchConfig(object):
         self.__launchfile = launch_file
         self.__package = package_name(os.path.dirname(self.__launchfile))[
             0] if package is None else package
-        self.__nmduri = url_nmduri(daemonuri)
+        self.__nmduri = ros1_grpcuri.create(daemonuri)
         self.launch_arguments = launch_arguments
         argv = sys.argv[1:]
         argv.extend(["%s:=%s" % (name, value)

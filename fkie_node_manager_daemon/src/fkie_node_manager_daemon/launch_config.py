@@ -42,7 +42,7 @@ import rospy
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from fkie_multimaster_msgs.logging.logging import Log
-from fkie_master_discovery.common import masteruri_from_master
+from fkie_multimaster_msgs.system import ros1_masteruri
 from .common import package_name, utf8
 
 
@@ -76,7 +76,7 @@ class LaunchConfig(object):
         self.__launchfile = launch_file
         self.__package = package_name(os.path.dirname(self.__launchfile))[
             0] if package is None else package
-        self.__masteruri = masteruri if masteruri else masteruri_from_master(
+        self.__masteruri = masteruri if masteruri else ros1_masteruri.from_master(
             True)
         self.__roscfg = None
         self.argv = argv

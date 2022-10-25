@@ -35,8 +35,8 @@ import rospy
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.settings_stub as scstub
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
 
 
 from .channel_interface import ChannelInterface
@@ -62,7 +62,7 @@ class SettingsChannel(ChannelInterface):
 
     def get_config(self, grpc_url='grpc://localhost:12321', threaded=False):
         Log.debug("get config from %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         sm, channel = self.get_settings_manager(uri)
         try:
             yaml_cfg = sm.get_config()
@@ -77,7 +77,7 @@ class SettingsChannel(ChannelInterface):
 
     def set_config(self, grpc_url='grpc://localhost:12321', data=''):
         Log.debug("set config to %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         sm, channel = self.get_settings_manager(uri)
         sm.set_config(data)
         self.close_channel(channel, uri)

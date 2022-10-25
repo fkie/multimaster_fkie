@@ -38,8 +38,6 @@ import os
 import rospy
 
 
-from fkie_master_discovery.common import masteruri_from_ros
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager.common import package_name
 from fkie_node_manager.detailed_msg_box import MessageBox
@@ -53,6 +51,8 @@ from .text_edit import TextEdit
 from .text_search_frame import TextSearchFrame
 from .text_search_thread import TextSearchThread
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 
 try:
@@ -621,7 +621,7 @@ class Editor(QMainWindow):
 
     def _on_new_packages(self, url):
         try:
-            if nmdurl.nmduri_from_path(url) == nmdurl.nmduri_from_path(self.tabWidget.currentWidget().filename):
+            if ros1_grpcuri.from_path(url) == ros1_grpcuri.from_path(self.tabWidget.currentWidget().filename):
                 Log.debug("packages updated, rebuild graph")
                 if self.graph_view.has_none_packages:
                     self.graph_view.clear_cache()
@@ -985,9 +985,9 @@ class Editor(QMainWindow):
                           '</group>', 11, 9)
 
     def _get_package_dialog(self):
-        muri = masteruri_from_ros()
+        muri = ros1_masteruri.from_ros()
         if self.init_filenames:
-            muri = nmdurl.masteruri(self.init_filenames[0])
+            muri = ros1_masteruri.from_grpc(self.init_filenames[0])
         return PackageDialog(muri)
 
     def _on_add_node_tag(self):

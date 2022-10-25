@@ -41,8 +41,6 @@ import os
 import rospy
 import ruamel.yaml
 import uuid
-from fkie_master_discovery.common import get_hostname
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import utf8
 
 
@@ -50,6 +48,8 @@ import fkie_node_manager as nm
 from .common import get_rosparam, delete_rosparam, package_name, to_pkg, resolve_pkg
 from .detailed_msg_box import MessageBox
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.system.host import get_hostname
 
 
 class ProfileWidget(QDockWidget):
@@ -91,8 +91,8 @@ class ProfileWidget(QDockWidget):
             nm.settings().current_dialog_path = os.path.dirname(path)
             try:
                 # we need a grpc url for local node manager daemon
-                nmd_url = nmdurl.nmduri()
-                (pkg, _) = package_name(nmdurl.join(
+                nmd_url = ros1_grpcuri.create()
+                (pkg, _) = package_name(ros1_grpcuri.join(
                     nmd_url, os.path.dirname(path)))  # _:=pkg_path
                 if pkg is None:
                     ret = MessageBox.warning(self, "New File Error",
@@ -186,7 +186,7 @@ class ProfileWidget(QDockWidget):
         '''
         path = grpc_url
         if grpc_url.startswith('grpc'):
-            _url, path = nmdurl.split(grpc_url)
+            _url, path = ros1_grpcuri.split(grpc_url)
         Log.info("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
@@ -245,7 +245,7 @@ class ProfileWidget(QDockWidget):
                                     '$LOCAL$', local_hostname)
                                 if cfg_name.startswith("pkg://"):
                                     cfg_name = resolve_pkg(
-                                        cfg_name, nmdurl.nmduri(rmuri))
+                                        cfg_name, ros1_grpcuri.create(rmuri))
                                 conf_set.add(cfg_name)
                                 reload_launch = True
                                 args = {}

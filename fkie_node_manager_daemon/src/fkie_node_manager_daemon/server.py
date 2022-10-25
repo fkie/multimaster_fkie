@@ -45,14 +45,15 @@ import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.screen_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as stgrpc
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
+from fkie_multimaster_msgs.defines import GRPC_SERVER_PORT_OFFSET
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
 
 
 # crossbar-io dependencies
 import asyncio
 
 from .common import interpret_path
-from .url import nmdport, NMD_SERVER_PORT_OFFSET
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
@@ -65,7 +66,7 @@ from .parameter_servicer import ParameterServicer
 class GrpcServer:
 
     def __init__(self):
-        self.crossbar_port = nmdport() - NMD_SERVER_PORT_OFFSET + 600
+        self.crossbar_port = ros1_grpcuri.port() - GRPC_SERVER_PORT_OFFSET + 600
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
         self.server = None

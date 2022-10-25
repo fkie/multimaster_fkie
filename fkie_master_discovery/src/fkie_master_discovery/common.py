@@ -31,16 +31,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import platform
 import re
-import socket
-import struct
-import sys
+
 try:
-    import xmlrpclib as xmlrpcclient
     from urlparse import urlparse
 except ImportError:
-    import xmlrpc.client as xmlrpcclient
     from urllib.parse import urlparse
 
 import roslib.names
@@ -51,7 +46,6 @@ from fkie_multimaster_msgs.logging.logging import Log
 
 EMPTY_PATTERN = re.compile('\b', re.I)
 IP4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
-MASTERURI = None
 
 
 def get_hostname(url):
@@ -74,79 +68,6 @@ def get_hostname(url):
         else:
             hostname = url
     return hostname
-
-
-def get_port(url):
-    '''
-    Extracts the port from given url.
-
-    :param str url: the url to parse
-    :return: the port or `None`, if the url is `None` or `invalid`
-    :rtype: int
-    :see: http://docs.python.org/library/urlparse.html
-    '''
-    if url is None:
-        return None
-    o = urlparse(url)
-    return o.port
-
-
-def subdomain(hostname):
-    '''
-    :return: the name with first subdomain
-    '''
-    if hostname is None:
-        return None
-    if IP4_PATTERN.match(hostname):
-        return hostname
-    return hostname.split('.')[0]
-
-
-def masteruri_from_ros():
-    '''
-    Returns the master URI depending on ROS distribution API.
-
-    :return: ROS master URI
-    :rtype: str
-    :see: rosgraph.rosenv.get_master_uri() (fuerte)
-    :see: roslib.rosenv.get_master_uri() (prior)
-    '''
-    try:
-        import rospkg.distro
-        distro = rospkg.distro.current_distro_codename()
-        if distro in ['electric', 'diamondback', 'cturtle']:
-            return roslib.rosenv.get_master_uri()
-        else:
-            import rosgraph
-            return rosgraph.rosenv.get_master_uri()
-    except Exception:
-        return os.environ['ROS_MASTER_URI']
-
-
-def masteruri_from_master(from_env_on_error=False):
-    '''
-    Requests the ROS master URI from the ROS master through the RPC interface and
-    returns it. The 'materuri' attribute will be set to the requested value.
-
-    :return: ROS master URI
-    :rtype: str or None
-    '''
-    global MASTERURI
-    result = MASTERURI
-    try:
-        if MASTERURI is None:
-            masteruri = masteruri_from_ros()
-            result = masteruri
-            master = xmlrpcclient.ServerProxy(masteruri)
-            code, _, MASTERURI = master.getUri(rospy.get_name())
-            if code == 1:
-                result = MASTERURI
-    except Exception as err:
-        if from_env_on_error:
-            result = masteruri_from_ros()
-        else:
-            raise err
-    return result
 
 
 def resolve_url(interface_url, pwd='.'):

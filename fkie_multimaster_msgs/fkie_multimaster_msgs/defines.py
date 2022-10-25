@@ -65,3 +65,9 @@ except ImportError:
 
 GRPC_TIMEOUT = 15.0
 ''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
+
+GRPC_SERVER_PORT_OFFSET = 1010
+''':var GRPC_SERVER_PORT_OFFSET: offset to the ROS-Master port.'''
+
+NMD_DEFAULT_PORT = 11811
+''':var NMD_DEFAULT_PORT: default port of node manager daemon.'''

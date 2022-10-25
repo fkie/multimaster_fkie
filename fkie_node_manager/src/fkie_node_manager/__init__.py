@@ -40,7 +40,7 @@ import socket
 import sys
 import threading
 
-from fkie_master_discovery.common import get_hostname
+from fkie_multimaster_msgs.system.host import get_hostname
 from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_node_manager_daemon.version import detect_version
 from .common import get_ros_home

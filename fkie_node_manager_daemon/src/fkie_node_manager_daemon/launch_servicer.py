@@ -51,12 +51,10 @@ from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent
 
-from fkie_master_discovery.common import masteruri_from_master
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 
 from . import launcher
-from . import url
 from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, replace_arg, get_arg_names, find_included_files, interpret_path, utf8, reset_package_cache
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
@@ -80,6 +78,8 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchMessageStruct
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchPublishMessage
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_msgs.system.url import equal_uri
 
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
@@ -104,15 +104,16 @@ class CfgId(object):
     def __init__(self, path, masteruri=''):
         '''
         :param str path: absolute path of the launch file.
-        :param str masteruri: ROS-Masteruri if empty the masteruri will be determine by :meth:`fkie_master_discovery.common.masteruri_from_master`
+        :param str masteruri: ROS-Masteruri if empty the masteruri will be determine by :meth:`from fkie_multimaster_msgs.system.ros1_masteruri
+.from_master()`
         '''
         self.path = path
         self.masteruri = masteruri
         self._local = False
         if not masteruri:
-            self.masteruri = masteruri_from_master(True)
+            self.masteruri = ros1_masteruri.from_master(True)
             self._local = True
-        elif url.equal_uri(self.masteruri, masteruri_from_master(True)):
+        elif equal_uri(self.masteruri, ros1_masteruri.from_master(True)):
             self._local = True
 
     def __hash__(self, *args, **kwargs):
@@ -140,7 +141,7 @@ class CfgId(object):
         if not masteruri:
             if self._local:
                 return True
-        if url.equal_uri(self.masteruri, masteruri):
+        if equal_uri(self.masteruri, masteruri):
             return True
         return False
 

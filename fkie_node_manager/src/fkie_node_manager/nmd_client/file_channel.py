@@ -36,9 +36,9 @@ import rospy
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.file_stub as fstub
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import utf8
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
 
 from .channel_interface import ChannelInterface
 
@@ -96,7 +96,7 @@ class FileChannel(ChannelInterface):
         return fstub.FileStub(channel), channel
 
     def package_name(self, grpc_path):
-        uri, _path = nmdurl.split(grpc_path, with_scheme=True)
+        uri, _path = ros1_grpcuri.split(grpc_path, with_scheme=True)
         path = grpc_path
         try:
             pl = self._cache_packages[uri]
@@ -110,7 +110,7 @@ class FileChannel(ChannelInterface):
 
     def get_packages(self, url=''):
         if url:
-            grpc_url = nmdurl.nmduri(url)
+            grpc_url = ros1_grpcuri.create(url)
             if grpc_url in self._cache_packages:
                 return self._cache_packages[grpc_url]
             return {}
@@ -118,7 +118,7 @@ class FileChannel(ChannelInterface):
 
     def clear_package_cache(self, url):
         if url:
-            grpc_url = nmdurl.nmduri(url)
+            grpc_url = ros1_grpcuri.create(url)
             try:
                 del self._cache_packages[grpc_url]
                 Log.debug(
@@ -131,7 +131,7 @@ class FileChannel(ChannelInterface):
             "lpt_%s" % grpc_path, target=self._list_path_threaded, args=(grpc_path, clear_cache))
 
     def _list_path_threaded(self, grpc_path='grpc://localhost:12321', clear_cache=False):
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         Log.debug("[thread] list path: %s, '%s'" % (uri, path))
         fm, channel = self.get_file_manager(uri)
         result = None
@@ -159,7 +159,7 @@ class FileChannel(ChannelInterface):
     def check_for_changed_files_threaded(self, grpc_path_dict):
         dests = {}
         for grpc_path, mtime in grpc_path_dict.items():
-            uri, path = nmdurl.split(grpc_path, with_scheme=True)
+            uri, path = ros1_grpcuri.split(grpc_path, with_scheme=True)
             if uri not in dests:
                 dests[uri] = {}
             dests[uri][path] = mtime
@@ -170,17 +170,17 @@ class FileChannel(ChannelInterface):
     def _check_for_changed_files_threaded(self, grpc_url, path_dict):
         Log.debug("[thread] check_for_changed_files_threaded: with %d files on %s" % (
             len(path_dict), grpc_url))
-        uri, _path = nmdurl.split(grpc_url, with_scheme=False)
+        uri, _path = ros1_grpcuri.split(grpc_url, with_scheme=False)
         fm, channel = self.get_file_manager(uri)
         try:
             response = fm.changed_files(path_dict)
             for item in response:
-                self.changed_file.emit(nmdurl.join(
+                self.changed_file.emit(ros1_grpcuri.join(
                     grpc_url, item.path), item.mtime)
         except Exception as e:
             self.error.emit("changed_files", "grpc://%s" % uri, "", e)
             # Log.warn("check_for_changed_files_threaded: %s" % e)
-        url, _path = nmdurl.split(grpc_url, with_scheme=True)
+        url, _path = ros1_grpcuri.split(grpc_url, with_scheme=True)
         self.close_channel(channel, uri)
         if hasattr(self, '_threads'):
             self._threads.finished("cft_%s" % url)
@@ -190,7 +190,7 @@ class FileChannel(ChannelInterface):
                                    target=self._list_packages, args=(grpc_url_or_path, clear_ros_cache))
 
     def _list_packages(self, grpc_url_or_path='grpc://localhost:12321', clear_ros_cache=False):
-        uri, path = nmdurl.split(grpc_url_or_path)
+        uri, path = ros1_grpcuri.split(grpc_url_or_path)
         grpc_url = "grpc://%s" % uri
         result = {}
         try:
@@ -203,7 +203,7 @@ class FileChannel(ChannelInterface):
             fm, channel = self.get_file_manager(uri)
             try:
                 result = fm.list_packages(clear_ros_cache)
-                fixed_result = {nmdurl.join(
+                fixed_result = {ros1_grpcuri.join(
                     grpc_url, path): name for path, name in result.items()}
                 self._cache_packages[grpc_url] = fixed_result
                 self.packages.emit(grpc_url, fixed_result)
@@ -228,7 +228,7 @@ class FileChannel(ChannelInterface):
             file_size, file_mtime, file_content = self._cache_file_content[grpc_path]
         except KeyError:
             Log.debug("get file content for %s:" % grpc_path)
-            uri, path = nmdurl.split(grpc_path)
+            uri, path = ros1_grpcuri.split(grpc_path)
             fm, channel = self.get_file_manager(uri)
             try:
                 file_size, file_mtime, file_content = fm.get_file_content(path)
@@ -248,7 +248,7 @@ class FileChannel(ChannelInterface):
 
     def save_file(self, grpc_path, content, mtime):
         Log.debug("save_file_content: %s" % grpc_path)
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         fm, channel = self.get_file_manager(uri)
         result = fm.save_file_content(path, content, mtime)
         for ack in result:
@@ -260,8 +260,8 @@ class FileChannel(ChannelInterface):
         return 0
 
     def rename(self, grpc_path_old='grpc://localhost:12321', grpc_path_new='grpc://localhost:12321'):
-        uri, old = nmdurl.split(grpc_path_old)
-        _, new = nmdurl.split(grpc_path_new)
+        uri, old = ros1_grpcuri.split(grpc_path_old)
+        _, new = ros1_grpcuri.split(grpc_path_new)
         Log.debug("rename path on %s" % uri)
         fm, channel = self.get_file_manager(uri)
         result = fm.rename(old, new)
@@ -269,27 +269,27 @@ class FileChannel(ChannelInterface):
         return result
 
     def copy(self, grpc_path='grpc://localhost:12321', grpc_dest='grpc://localhost:12321'):
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         Log.debug("copy '%s' to '%s'" % (grpc_path, grpc_dest))
         fm, channel = self.get_file_manager(uri)
         fm.copy(path, grpc_dest)
         self.close_channel(channel, uri)
 
     def get_package_binaries(self, pkgname, grpc_url='grpc://localhost:12321'):
-        uri, _path = nmdurl.split(grpc_url)
+        uri, _path = ros1_grpcuri.split(grpc_url)
         Log.debug("get_package_binaries for '%s' from '%s'" %
                   (pkgname, uri))
         fm, channel = self.get_file_manager(uri)
         response = fm.get_package_binaries(pkgname)
-        url, _ = nmdurl.split(grpc_url, with_scheme=True)
+        url, _ = ros1_grpcuri.split(grpc_url, with_scheme=True)
         result = {}
         for item in response:
-            result[nmdurl.join(url, item.path)] = item.mtime
+            result[ros1_grpcuri.join(url, item.path)] = item.mtime
         self.close_channel(channel, uri)
         return result
 
     def delete(self, grpc_path='grpc://localhost:12321'):
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         Log.debug("delete '%s' @ %s" % (path, uri))
         fm, channel = self.get_file_manager(uri)
         result = fm.delete(path)
@@ -300,7 +300,7 @@ class FileChannel(ChannelInterface):
         '''
         :param int path_type: 0=file, 1=dir
         '''
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         Log.debug("create new '%s' @ %s" % (path, uri))
         fm, channel = self.get_file_manager(uri)
         result = fm.new(path, path_type)

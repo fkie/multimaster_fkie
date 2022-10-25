@@ -18,7 +18,7 @@ from fkie_multimaster_msgs.system import screen
 import fkie_multimaster_msgs.names as names
 
 if os.environ['ROS_VERSION'] == "1":
-    from fkie_master_discovery.common import masteruri_from_ros
+    from fkie_multimaster_msgs.system import mod_masteruri
     from fkie_node_manager_daemon.common import isstring
     from rosgraph.network import get_local_addresses
     try:
@@ -171,7 +171,7 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
     import roslib
 
     if not masteruri:
-        masteruri = masteruri_from_ros()
+        masteruri = ros1_masteruri.from_ros()
 
     # start roscore, if needed
     StartHandler._prepareROSMaster(masteruri)

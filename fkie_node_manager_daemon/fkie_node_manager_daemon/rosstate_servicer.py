@@ -35,14 +35,14 @@ from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
 from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAME
 from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAMESPACE
+from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.url import get_port
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import DiscoveredState
 from fkie_multimaster_msgs.msg import Endpoint
 
 import fkie_node_manager_daemon as nmd
-from .url import NMD_DEFAULT_PORT
-from .url import port_from_uri
 
 
 class RosStateServicer(CrossbarBaseSession):
@@ -73,7 +73,7 @@ class RosStateServicer(CrossbarBaseSession):
         result = []
         for uri, endpoint in endpoints.items():
             provider = RosProvider(
-                name=endpoint.ros_name, host=endpoint.name, port=port_from_uri(endpoint.uri))
+                name=endpoint.ros_name, host=endpoint.name, port=get_port(endpoint.uri))
             result.append(provider)
         return result
 

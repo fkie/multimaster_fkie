@@ -49,8 +49,9 @@ import rospy
 import threading
 
 from fkie_node_manager_daemon.common import utf8
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 import fkie_node_manager as nm
 from .detailed_msg_box import MessageBox
@@ -169,7 +170,7 @@ class LaunchFilesWidget(QDockWidget):
 
     def path2mastername(self, grpc_path):
         try:
-            muri = nmdurl.masteruri(grpc_path)
+            muri = ros1_masteruri.from_grpc(grpc_path)
             return self._masteruri2name[muri.rstrip(os.path.sep)]
         except Exception as _:
             pass
@@ -279,7 +280,7 @@ class LaunchFilesWidget(QDockWidget):
     def set_package_filter(self, text):
         if text:
             if text.startswith(os.path.sep):
-                self._current_search = nmdurl.join(
+                self._current_search = ros1_grpcuri.join(
                     self.launchlist_model.current_grpc, text)
                 self.launchlist_model.set_path(text)
             else:
@@ -351,7 +352,7 @@ class LaunchFilesWidget(QDockWidget):
 
     def on_save_profile_clicked(self):
         # save the profile
-        _netloc, path = nmdurl.split(
+        _netloc, path = ros1_grpcuri.split(
             self.launchlist_model.current_path, with_scheme=True)
         self.save_profile_signal.emit(path)
 
@@ -395,7 +396,7 @@ class LaunchFilesWidget(QDockWidget):
                         self.launchlist_model.reload_current_path()
                     elif not self.launchlist_model.is_in_root:
                         if key_mod & Qt.ShiftModifier:
-                            rem_uri, rem_path = nmdurl.split(item.path)
+                            rem_uri, rem_path = ros1_grpcuri.split(item.path)
                             host = rem_uri.split(':')
                             result = MessageBox.question(self, "Delete Question", "Delete %s\n@ %s" % (
                                 rem_path, host[0]), buttons=MessageBox.No | MessageBox.Yes)

@@ -46,7 +46,6 @@ import fkie_multimaster_msgs.grpc.file_pb2_grpc as fms_grpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fms
 from . import file_item
 from fkie_multimaster_msgs.grpc_helper import remote
-from . import url as nmdurl
 from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
 from fkie_multimaster_msgs import settings
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
@@ -56,6 +55,7 @@ from fkie_multimaster_msgs.crossbar.file_interface import PathItem
 from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
 from fkie_multimaster_msgs.logging.logging import Log
 
+from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.screen import get_logfile
 from fkie_multimaster_msgs.system.screen import get_ros_logfile
 
@@ -259,7 +259,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         result = fms.ReturnStatus()
         try:
             path = request.path
-            dest_uri, dest_path = nmdurl.split(request.uri)
+            dest_uri, dest_path = ros1_grpcuri.split(request.uri)
             # get package from path
             pname, ppath = package_name(dest_path)
             if pname is not None:

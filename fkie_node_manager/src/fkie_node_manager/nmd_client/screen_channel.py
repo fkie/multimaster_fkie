@@ -35,9 +35,9 @@ import rospy
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.screen_stub as sstub
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import sizeof_fmt
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import ros1_grpcuri
 
 
 from .channel_interface import ChannelInterface
@@ -63,7 +63,7 @@ class ScreenChannel(ChannelInterface):
 
     def get_all_screens(self, grpc_url='grpc://localhost:12321'):
         Log.debug("get all screens from %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         sm, channel = self.get_screen_manager(uri)
         screens = sm.all_screens()
         self.close_channel(channel, uri)
@@ -71,7 +71,7 @@ class ScreenChannel(ChannelInterface):
 
     def get_screens(self, grpc_url='grpc://localhost:12321', node=''):
         Log.debug("get screen from %s for %s" % (grpc_url, node))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         sm, channel = self.get_screen_manager(uri)
         screens = sm.screens(node)
         self.close_channel(channel, uri)
@@ -91,7 +91,7 @@ class ScreenChannel(ChannelInterface):
     def _multiple_screens(self, grpc_url='grpc://localhost:12321'):
         Log.debug("get multiple screens from %s" % (grpc_url))
         try:
-            uri, _ = nmdurl.split(grpc_url)
+            uri, _ = ros1_grpcuri.split(grpc_url)
             sm, channel = self.get_screen_manager(uri)
             result = sm.multiple_screens()
             self.multiple_screens.emit(grpc_url, result)
@@ -104,7 +104,7 @@ class ScreenChannel(ChannelInterface):
 
     def rosclean(self, grpc_url='grpc://localhost:12321'):
         Log.debug("clear log directory on %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         sm, channel = self.get_screen_manager(uri)
         result = sm.rosclean()
         self.close_channel(channel, uri)
@@ -112,7 +112,7 @@ class ScreenChannel(ChannelInterface):
 
     def wipe_screens(self, grpc_url='grpc://localhost:12321'):
         Log.debug("wipe screens on %s" % (grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         sm, channel = self.get_screen_manager(uri)
         sm.wipe_screens()
         self.close_channel(channel, uri)
@@ -129,7 +129,7 @@ class ScreenChannel(ChannelInterface):
     def _log_dir_size(self, grpc_url='grpc://localhost:12321'):
         Log.debug("get log_dir size on %s" % (grpc_url))
         try:
-            uri, _ = nmdurl.split(grpc_url)
+            uri, _ = ros1_grpcuri.split(grpc_url)
             sm, channel = self.get_screen_manager(uri)
             log_dir_size = sm.log_dir_size()
             Log.debug("log_dir size on %s: %s" %
@@ -144,7 +144,7 @@ class ScreenChannel(ChannelInterface):
 
     def delete_log(self, grpc_url='grpc://localhost:12321', nodes=[]):
         Log.debug("delete logs on %s for %s" % (grpc_url, nodes))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         sm, channel = self.get_screen_manager(uri)
         result = sm.delete_log(nodes)
         self.close_channel(channel, uri)

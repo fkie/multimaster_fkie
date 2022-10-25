@@ -45,16 +45,19 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 
-from fkie_master_discovery.common import get_hostname, get_port, masteruri_from_ros
 from fkie_node_manager_daemon.common import get_cwd
 from fkie_node_manager_daemon import launcher
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from fkie_node_manager_daemon.common import package_name, isstring, utf8
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_msgs.system.url import get_port
+
 
 import fkie_node_manager as nm
 
@@ -152,7 +155,7 @@ class StartHandler(object):
                     if ros_hostname:
                         new_env['ROS_HOSTNAME'] = ros_hostname
             if use_nmd:
-                nm.nmd().launch.start_standalone_node(nmdurl.nmduri(), package,
+                nm.nmd().launch.start_standalone_node(ros1_grpcuri.create(), package,
                                                       binary, name, namespace, args, new_env, masteruri, host)
             else:
                 local_env = dict(os.environ)
@@ -225,7 +228,7 @@ class StartHandler(object):
     @classmethod
     def _prepareROSMaster(cls, masteruri):
         if masteruri is None:
-            masteruri = masteruri_from_ros()
+            masteruri = ros1_masteruri.from_ros()
         # start roscore, if needed
         try:
             if not os.path.isdir(LOG_PATH):
@@ -637,7 +640,7 @@ class StartHandler(object):
             nm.nmd().file.copy(path, grpc_url)
         except Exception as err:
             host = get_hostname(grpc_url)
-            _uri, path = nmdurl.split(path)
+            _uri, path = ros1_grpcuri.split(path)
             Log.warn("use SSH to transfer file '%s' to '%s', because of error: %s" % (
                 path, host, utf8(err)))
             cls.transfer_files(host, path, auto_pw_request, user, pw)
@@ -765,7 +768,7 @@ class StartHandler(object):
         masteruri = startcfg.masteruri
         on_hostname = startcfg.hostname
         if masteruri is None:
-            masteruri = masteruri_from_ros()
+            masteruri = ros1_masteruri.from_ros()
         if masteruri is not None:
             new_env['ROS_MASTER_URI'] = masteruri
             if 'ROS_HOSTNAME' in os.environ:

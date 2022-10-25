@@ -41,7 +41,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
 import os
 
-from fkie_node_manager_daemon import url as nmdurl
+from fkie_multimaster_msgs.system import ros1_grpcuri
 import fkie_node_manager as nm
 
 
@@ -77,7 +77,7 @@ class RequestBinariesThread(QObject, threading.Thread):
         if self._grpc_url:
             try:
                 self._result = nm.nmd().file.get_package_binaries(
-                    self._package, nmdurl.nmduri(self._grpc_url))
+                    self._package, ros1_grpcuri.create(self._grpc_url))
                 if not self._canceled:
                     self.binaries_signal.emit(self._package, self._result)
             except Exception:
@@ -131,7 +131,7 @@ class PackageDialog(QDialog):
             self.package_field.setCurrentIndex(0)
         # fill the input fields
         self.packages = {name: path for path, name in nm.nmd(
-        ).file.get_packages(nmdurl.nmduri(masteruri)).items()}
+        ).file.get_packages(ros1_grpcuri.create(masteruri)).items()}
         packages = list(self.packages.keys())
         packages.sort()
         self.package_field.clear()
@@ -165,7 +165,7 @@ class PackageDialog(QDialog):
             if self.packages and package in self.packages:
                 self.binary_field.setEnabled(True)
                 self._request_bin_thread = RequestBinariesThread(
-                    package, nmdurl.nmduri(self.masteruri))
+                    package, ros1_grpcuri.create(self.masteruri))
                 self._request_bin_thread.binaries_signal.connect(
                     self._on_new_binaries)
                 self._request_bin_thread.start()

@@ -68,7 +68,7 @@ from autobahn.wamp.types import ComponentConfig
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from asyncio import coroutine
 
-from .common import masteruri_from_ros, get_hostname
+from .common import get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
@@ -78,6 +78,7 @@ from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
 from fkie_multimaster_msgs.crossbar.server import crossbar_start_server, CROSSBAR_PATH
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site
@@ -180,7 +181,7 @@ class MasterMonitor(ApplicationSession):
         self._state_access_lock = threading.RLock()
         self._create_access_lock = threading.RLock()
         self._lock = threading.RLock()
-        self.__masteruri = masteruri_from_ros()
+        self.__masteruri = ros1_masteruri.from_ros()
         self.__new_master_state = None
         self.__masteruri_rpc = None
         self.__mastername = None

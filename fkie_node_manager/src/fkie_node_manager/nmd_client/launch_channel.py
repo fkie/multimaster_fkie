@@ -37,11 +37,11 @@ import threading
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.launch_stub as lstub
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager_daemon.startcfg import StartConfig
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_msgs.system import ros1_grpcuri
 
 from .channel_interface import ChannelInterface
 
@@ -145,13 +145,13 @@ class LaunchChannel(ChannelInterface):
         except KeyError:
             Log.debug("get_included_files_set for %s, recursive: %s" % (
                 grpc_path, recursive))
-            uri, path = nmdurl.split(grpc_path, with_scheme=False)
+            uri, path = ros1_grpcuri.split(grpc_path, with_scheme=False)
             lm, channel = self.get_launch_manager(uri)
-            url, path = nmdurl.split(grpc_path, with_scheme=True)
+            url, path = ros1_grpcuri.split(grpc_path, with_scheme=True)
             reply = lm.get_included_files_set(
                 path, recursive, {}, include_pattern, search_in_ext)
             for fname in reply:
-                result.append(nmdurl.join(url, fname))
+                result.append(ros1_grpcuri.join(url, fname))
             self._cache_file_unique_includes[grpc_path] = result
             self.close_channel(channel, uri)
         return result
@@ -184,21 +184,21 @@ class LaunchChannel(ChannelInterface):
         if dorequest:
             current_path = grpc_path
             try:
-                uri, path = nmdurl.split(current_path)
+                uri, path = ros1_grpcuri.split(current_path)
                 lm, channel = self.get_launch_manager(uri)
                 Log.debug("get_included_files for %s, recursive: %s, include_args: %s, pattern: %s, search_in_ext: %s" % (
                     grpc_path, recursive, include_args, include_pattern, search_in_ext))
                 reply = lm.get_included_files(
                     path, recursive, include_args, include_pattern, search_in_ext)
-                url, _ = nmdurl.split(grpc_path, with_scheme=True)
+                url, _ = ros1_grpcuri.split(grpc_path, with_scheme=True)
                 # initialize requested path in cache
                 if recursive:
                     if grpc_path not in self._cache_file_includes:
                         self._cache_file_includes[grpc_path] = []
                 for inc_file in reply:
                     entry = inc_file
-                    entry.path_or_str = nmdurl.join(url, inc_file.path_or_str)
-                    entry.inc_path = nmdurl.join(url, inc_file.inc_path)
+                    entry.path_or_str = ros1_grpcuri.join(url, inc_file.path_or_str)
+                    entry.inc_path = ros1_grpcuri.join(url, inc_file.inc_path)
                     # initialize and add returned root path to cache, only on recursive
                     if recursive:
                         if current_path not in self._cache_file_includes:
@@ -221,13 +221,13 @@ class LaunchChannel(ChannelInterface):
         :return: Returns an iterator for tuples with interpreted path and file exists or not
         :rtype: tuple(str, bool)
         '''
-        uri, _ = nmdurl.split(grpc_url_or_path)
+        uri, _ = ros1_grpcuri.split(grpc_url_or_path)
         lm, channel = self.get_launch_manager(uri)
         Log.debug("get_interpreted_path in text %s" % text)
         reply = lm.get_interpreted_path(text)
-        url, _ = nmdurl.split(grpc_url_or_path, with_scheme=True)
+        url, _ = ros1_grpcuri.split(grpc_url_or_path, with_scheme=True)
         for path, exists in reply:
-            yield (nmdurl.join(url, path), exists)
+            yield (ros1_grpcuri.join(url, path), exists)
         self.close_channel(channel, uri)
 
     def load_launch(self, grpc_path, masteruri='', host='', package='', launch='', args={}):
@@ -237,7 +237,7 @@ class LaunchChannel(ChannelInterface):
         :return: Path of loaded file
         :rtype: str
         '''
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         lm, channel = self.get_launch_manager(uri)
         myargs = args
         request_args = True
@@ -279,7 +279,7 @@ class LaunchChannel(ChannelInterface):
                 raise
             finally:
                 self.close_channel(channel, uri)
-        launch_file = nmdurl.join("grpc://%s" % uri, launch_file)
+        launch_file = ros1_grpcuri.join("grpc://%s" % uri, launch_file)
         Log.debug("  load launch file result - %s: %s" %
                   ('OK' if ok else "ERR", launch_file))
         with self._args_lock:
@@ -290,7 +290,7 @@ class LaunchChannel(ChannelInterface):
 
     def reload_launch(self, grpc_path, masteruri=''):
         Log.debug("reload launch %s" % grpc_path)
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         lm, channel = self.get_launch_manager(uri)
         launch_file = ''
         try:
@@ -308,7 +308,7 @@ class LaunchChannel(ChannelInterface):
 
     def unload_launch(self, grpc_path, masteruri=''):
         Log.debug("unload launch %s" % grpc_path)
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         lm, channel = self.get_launch_manager(uri)
         launch_file = lm.unload_launch(path, masteruri)
         with self._args_lock:
@@ -323,15 +323,15 @@ class LaunchChannel(ChannelInterface):
             "glft_%s" % grpc_path, target=self._get_loaded_files_threaded, args=(grpc_path,))
 
     def _get_loaded_files_threaded(self, grpc_path='grpc://localhost:12321'):
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         Log.debug("[thread] get loaded_files from %s" % uri)
         try:
             lm, channel = self.get_launch_manager(uri)
             result = lm.get_loaded_files()
-            url, _ = nmdurl.split(grpc_path, with_scheme=True)
+            url, _ = ros1_grpcuri.split(grpc_path, with_scheme=True)
             for _package, path, args, _masteruri, _host in result:
                 with self._args_lock:
-                    gpath = nmdurl.join(url, path)
+                    gpath = ros1_grpcuri.join(url, path)
                     Log.debug(
                         "[thread] add args for %s: %s" % (gpath, args))
                     self._launch_args[gpath] = args
@@ -348,13 +348,13 @@ class LaunchChannel(ChannelInterface):
             "gmt_%s" % grpc_path, target=self._get_mtimes_threaded, args=(grpc_path,))
 
     def _get_mtimes_threaded(self, grpc_path='grpc://localhost:12321'):
-        uri, path = nmdurl.split(grpc_path)
+        uri, path = ros1_grpcuri.split(grpc_path)
         Log.debug("[thread] get mtimes from %s" % uri)
         try:
             lm, channel = self.get_launch_manager(uri)
             rpath, mtime, included_files = lm.get_mtimes(path)
-            url, _ = nmdurl.split(grpc_path, with_scheme=True)
-            self.mtimes.emit(nmdurl.join(url, rpath), mtime, {nmdurl.join(
+            url, _ = ros1_grpcuri.split(grpc_path, with_scheme=True)
+            self.mtimes.emit(ros1_grpcuri.join(url, rpath), mtime, {ros1_grpcuri.join(
                 url, pobj.path): pobj.mtime for pobj in included_files})
         except Exception:
             pass
@@ -368,7 +368,7 @@ class LaunchChannel(ChannelInterface):
             "gcbt_%s" % grpc_url, target=self._get_changed_binaries_threaded, args=(grpc_url, nodes))
 
     def _get_changed_binaries_threaded(self, grpc_url='grpc://localhost:12321', nodes=[]):
-        uri, _path = nmdurl.split(grpc_url)
+        uri, _path = ros1_grpcuri.split(grpc_url)
         Log.debug("[thread] get changed binaries from %s" % uri)
         try:
             lm, channel = self.get_launch_manager(uri)
@@ -383,7 +383,7 @@ class LaunchChannel(ChannelInterface):
             self._threads.finished("gcbt_%s" % grpc_url)
 
     def get_nodes(self, grpc_path='grpc://localhost:12321', masteruri=''):
-        uri, _ = nmdurl.split(grpc_path)
+        uri, _ = ros1_grpcuri.split(grpc_path)
         Log.debug("get nodes from %s" % uri)
         lm, channel = self.get_launch_manager(uri)
         try:
@@ -400,14 +400,14 @@ class LaunchChannel(ChannelInterface):
             grpc_path, masteruri), target=self._get_nodes_threaded, args=(grpc_path, masteruri))
 
     def _get_nodes_threaded(self, grpc_path='grpc://localhost:12321', masteruri=''):
-        uri, _ = nmdurl.split(grpc_path)
+        uri, _ = ros1_grpcuri.split(grpc_path)
         Log.debug("[thread] get nodes from %s" % uri)
         lm, channel = self.get_launch_manager(uri)
         try:
             launch_descriptions = lm.get_nodes(True, masteruri=masteruri)
-            clean_url = nmdurl.nmduri_from_path(grpc_path)
+            clean_url = ros1_grpcuri.from_path(grpc_path)
             for ld in launch_descriptions:
-                ld.path = nmdurl.join(clean_url, ld.path)
+                ld.path = ros1_grpcuri.join(clean_url, ld.path)
             self.launch_nodes.emit(clean_url, launch_descriptions)
         except Exception as err:
             self.error.emit("_get_nodes", grpc_path, masteruri, err)
@@ -418,7 +418,7 @@ class LaunchChannel(ChannelInterface):
 
     def start_node(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat='', path='', cmd_prefix=''):
         Log.info("start node: %s with %s" % (name, grpc_path))
-        uri, opt_launch = nmdurl.split(grpc_path)
+        uri, opt_launch = ros1_grpcuri.split(grpc_path)
         lm, channel = self.get_launch_manager(uri)
         try:
             return lm.start_node(name, opt_binary=path, opt_launch=opt_launch, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param, cmd_prefix=cmd_prefix)
@@ -436,7 +436,7 @@ class LaunchChannel(ChannelInterface):
 
     def start_standalone_node(self, grpc_url, package, binary, name, ns, args=[], env={}, masteruri=None, host=None):
         Log.info("start standalone node: %s on %s" % (name, grpc_url))
-        uri, _ = nmdurl.split(grpc_url)
+        uri, _ = ros1_grpcuri.split(grpc_url)
         lm, channel = self.get_launch_manager(uri)
         try:
             startcfg = StartConfig(package, binary)
@@ -472,7 +472,7 @@ class LaunchChannel(ChannelInterface):
     def get_start_cfg(self, name, grpc_path='grpc://localhost:12321', masteruri='', reload_global_param=False, loglevel='', logformat=''):
         Log.debug("get start configuration for '%s' from %s" %
                   (name, grpc_path))
-        uri, _ = nmdurl.split(grpc_path)
+        uri, _ = ros1_grpcuri.split(grpc_path)
         lm, channel = self.get_launch_manager(uri)
         try:
             return lm.get_start_cfg(name, loglevel=loglevel, logformat=logformat, masteruri=masteruri, reload_global_param=reload_global_param)
@@ -486,7 +486,7 @@ class LaunchChannel(ChannelInterface):
             grpc_path), target=self._reset_package_path, args=(grpc_path,))
 
     def _reset_package_path(self, grpc_path='grpc://localhost:12321'):
-        uri, _ = nmdurl.split(grpc_path)
+        uri, _ = ros1_grpcuri.split(grpc_path)
         Log.debug("[thread] reset package path on %s" % uri)
         lm, channel = self.get_launch_manager(uri)
         try:

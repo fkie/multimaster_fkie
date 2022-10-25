@@ -58,23 +58,6 @@ class TestHost(unittest.TestCase):
         self.assertEqual(hostname, wrong, "Wrong hostname from `%s`, got: %s, expected: %s" % (
             wrong, hostname, wrong))
 
-    def test_get_port(self):
-        port = host.get_port(None)
-        self.assertEqual(
-            port, None, "Port from `None` should be `None`, got: %s, expected: %s" % (port, None))
-        port = host.get_port('')
-        self.assertEqual(
-            port, '', "Port from `` should be ``, got: %s, expected: ''" % (port))
-        port = host.get_port('host:21')
-        self.assertEqual(
-            port, 21, "wrong port from `:21`, got: %s, expected: %d" % (port, 21))
-        port = host.get_port('https://host:21')
-        self.assertEqual(
-            port, 21, "wrong port from `https://host:21`, got: %s, expected: %d" % (port, 21))
-        port = host.get_port('https://host:s21')
-        self.assertEqual(
-            port, None, "wrong port from `https://host:s21`, got: %s, expected: %s" % (port, None))
-
     def test_get_ros_hostname(self):
         roshn = host.get_ros_hostname(None)
         self.assertEqual(

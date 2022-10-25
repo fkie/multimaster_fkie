@@ -46,7 +46,6 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 from rosgraph.network import get_local_addresses
-from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
@@ -54,6 +53,7 @@ from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import host
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 
 from fkie_multimaster_msgs.grpc_helper import remote
@@ -276,7 +276,7 @@ def run_node(startcfg):
         # check for masteruri
         masteruri = startcfg.masteruri
         if masteruri is None:
-            masteruri = masteruri_from_ros()
+            masteruri = ros1_masteruri.from_ros()
         if masteruri is not None:
             if 'ROS_MASTER_URI' not in startcfg.env:
                 new_env['ROS_MASTER_URI'] = masteruri

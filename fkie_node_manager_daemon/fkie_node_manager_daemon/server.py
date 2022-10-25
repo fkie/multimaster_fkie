@@ -31,6 +31,7 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReli
 from fkie_multimaster_msgs.msg import Endpoint
 from fkie_multimaster_msgs.srv import LoadLaunch, Task
 from fkie_multimaster_msgs.names import ns_join
+from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.host import get_host_name
 import fkie_node_manager_daemon as nmd
 
@@ -42,7 +43,6 @@ from .monitor_servicer import MonitorServicer
 from .rosstate_servicer import RosStateServicer
 from .screen_servicer import ScreenServicer
 from .settings_servicer import SettingsServicer
-from .url import nmduri, nmdport
 #from .version_servicer import VersionServicer
 from .parameter_servicer import ParameterServicer
 
@@ -51,7 +51,7 @@ class Server:
 
     def __init__(self, rosnode, *, default_domain_id=-1):
         self.rosnode = rosnode
-        self.crossbar_port = nmdport()
+        self.crossbar_port = ros1_grpcuri.port()
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
         self.ros_domain_id = default_domain_id
@@ -142,7 +142,7 @@ class Server:
         # return False
         # update name if port is not a default one
         self.insecure_port = port
-        if nmdport() != port:
+        if ros1_grpcuri.port() != port:
             self.name = "%s_%d" % (self.name, port)
         self.uri = self.rosstate_servicer.uri  # nmduri('grpc://%s' % uri)
         endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=get_host_name(

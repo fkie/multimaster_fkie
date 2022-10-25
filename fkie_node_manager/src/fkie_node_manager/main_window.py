@@ -54,13 +54,15 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 import ruamel.yaml
 
-from fkie_master_discovery.common import resolve_url, subdomain, masteruri_from_master, masteruri_from_ros
+from fkie_master_discovery.common import resolve_url
 from fkie_node_manager_daemon.common import utf8, get_pkg_path
-from fkie_node_manager_daemon import url as nmdurl
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system.host import get_hostname
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_msgs.system.host import subdomain
 
 import fkie_node_manager as nm
 
@@ -635,7 +637,7 @@ class MainWindow(QMainWindow):
         @rtype: C{str} or C{None}
         '''
         if not hasattr(self, 'materuri') or self.materuri is None:
-            masteruri = masteruri_from_ros()
+            masteruri = ros1_masteruri.from_ros()
             master = xmlrpcclient.ServerProxy(masteruri)
             _, _, self.materuri = master.getUri(
                 rospy.get_name())  # _:=code, message
@@ -1034,7 +1036,7 @@ class MainWindow(QMainWindow):
                             if self.currentMaster is not None and not self.currentMaster.is_local:
                                 self.setCurrentMaster(master)
 #                        elif nm.is_local(get_hostname(master.master_info.masteruri)) or self.restricted_to_one_master:
-                        elif master.master_info.masteruri == masteruri_from_master() or self.restricted_to_one_master:
+                        elif master.master_info.masteruri == ros1_masteruri.from_master() or self.restricted_to_one_master:
                             if new_info:
                                 has_discovery_service = self.hasDiscoveryService(
                                     minfo)
@@ -1457,9 +1459,9 @@ class MainWindow(QMainWindow):
                 try:
                     host = get_hostname(master.masteruri)
                     if self._sync_dialog.interface_filename is not None and not nm.is_local(host):
-                        nmd_uri = nmdurl.nmduri(master.masteruri)
-                        sync_file = nmdurl.join(
-                            nmdurl.nmduri(), self._sync_dialog.interface_filename)
+                        nmd_uri = ros1_grpcuri.create(master.masteruri)
+                        sync_file = ros1_grpcuri.join(
+                            ros1_grpcuri.create(), self._sync_dialog.interface_filename)
                         # copy the interface file to remote machine
                         self._progress_queue_sync.add2queue(utf8(uuid.uuid4()),
                                                             'Transfer sync interface to %s' % nmd_uri,
@@ -1743,7 +1745,7 @@ class MainWindow(QMainWindow):
             self._history_selected_robot = item.master.name
             self.setCurrentMaster(item.master.uri)
             if not nm.nmd().file.get_packages(item.master.uri):
-                nm.nmd().file.list_packages_threaded(nmdurl.nmduri(item.master.uri))
+                nm.nmd().file.list_packages_threaded(ros1_grpcuri.create(item.master.uri))
             if self.currentMaster.master_info is not None and not self.restricted_to_one_master:
                 node = self.currentMaster.master_info.getNodeEndsWith(
                     'master_sync')
@@ -2047,7 +2049,7 @@ class MainWindow(QMainWindow):
     def rosclean(self, masteruri):
         try:
             host = get_hostname(masteruri)
-            nuri = nmdurl.nmduri(masteruri)
+            nuri = ros1_grpcuri.create(masteruri)
             ret = MessageBox.warning(self, "ROS Node Manager",
                                      "Do you really want delete all logs on `%s`?" % host,
                                      buttons=MessageBox.Ok | MessageBox.Cancel)
@@ -2142,7 +2144,7 @@ class MainWindow(QMainWindow):
         '''
         # use node manager daemon
         if files:
-            nmd_url = nmdurl.nmduri()
+            nmd_url = ros1_grpcuri.create()
             if self.currentMaster is not None:
                 nmd_url = get_hostname(self.currentMaster.masteruri)
             params = {'master': {':type': 'string', ':value': self.currentMaster.masteruri},
@@ -2159,7 +2161,7 @@ class MainWindow(QMainWindow):
                     nmd_url = params['master']
                     recursive = params['recursive']
                     for path in files:
-                        nmd_url = nmdurl.nmduri(nmd_url)
+                        nmd_url = ros1_grpcuri.create(nmd_url)
                         Log.info("TRANSFER to %s: %s" % (nmd_url, path))
                         self.launch_dock.progress_queue.add2queue('%s' % uuid.uuid4(),
                                                                   'transfer files to %s' % nmd_url,
@@ -2569,7 +2571,7 @@ class MainWindow(QMainWindow):
 
     def _callback_system_diagnostics(self, data, grpc_url=''):
         try:
-            muri = nmdurl.masteruri(grpc_url)
+            muri = ros1_masteruri.from_grpc(grpc_url)
             master = self.getMaster(muri, create_new=False)
             if master:
                 master.update_system_diagnostics(data)
@@ -2589,7 +2591,7 @@ class MainWindow(QMainWindow):
 
     def _callback_username(self, username, grpc_url=''):
         try:
-            muri = nmdurl.masteruri(grpc_url)
+            muri = ros1_masteruri.from_grpc(grpc_url)
             master = self.getMaster(muri, create_new=False)
             if master:
                 master.daemon_user = username
@@ -2603,7 +2605,7 @@ class MainWindow(QMainWindow):
             master.sysmon_active_update()
 
     def nmd_cfg(self, masteruri):
-        nmd_uri = nmdurl.nmduri(masteruri)
+        nmd_uri = ros1_grpcuri.create(masteruri)
         nm.nmd().settings.get_config_threaded(nmd_uri)
 
     def _nmd_yaml_cfg(self, data, nmdurl):
@@ -2670,7 +2672,7 @@ class MainWindow(QMainWindow):
         :param str url: the URI of the node manager daemon.
         :param Exception error: on occurred exception.
         '''
-        muri = nmdurl.masteruri(url)
+        muri = ros1_masteruri.from_grpc(url)
         master = self.getMaster(muri, False)
         if master is not None and not master._has_nmd:
             # no daemon for this master available, ignore errors
@@ -2681,7 +2683,7 @@ class MainWindow(QMainWindow):
         self._throttle_nmd_errrors(reason, url, error, 60)
         if hasattr(error, 'code'):
             if error.code() == grpc.StatusCode.UNIMPLEMENTED:
-                muri = nmdurl.masteruri(url)
+                muri = ros1_masteruri.from_grpc(url)
                 master = self.getMaster(muri, create_new=False)
                 if master:
                     self.master_model.add_master_error(nm.nameres().mastername(

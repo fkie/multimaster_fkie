@@ -12,7 +12,6 @@ import roslib
 import rospy
 from rosgraph.network import get_local_addresses
 
-from fkie_master_discovery.common import masteruri_from_ros
 from fkie_master_discovery.udp import DiscoverSocket
 from fkie_node_manager_daemon.common import isstring
 
@@ -32,6 +31,7 @@ from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system import ros1_masteruri
 
 
 def _get_optparse():
@@ -213,7 +213,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
     Runs a ROS node. Starts a roscore if needed.
     '''
     if not masteruri:
-        masteruri = masteruri_from_ros()
+        masteruri = ros1_masteruri.from_ros()
     # start roscore, if needed
     StartHandler._prepareROSMaster(masteruri)
     # start node

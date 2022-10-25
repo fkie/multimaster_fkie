@@ -42,7 +42,6 @@ import hashlib
 import roslib
 import rospy
 
-from fkie_master_discovery.common import masteruri_from_ros
 from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_multimaster_msgs import settings as nmd_settings
 from fkie_node_manager.detailed_msg_box import MessageBox
@@ -50,6 +49,8 @@ from fkie_node_manager.common import get_ros_home
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system import ros1_masteruri
+
 
 
 class LoggingConfig(object):
@@ -153,7 +154,7 @@ class Settings(object):
         self._terminal_command_arg = 'e'
         self._noclose_str = ''
         self._terminal_title = '-T'
-        self._masteruri = masteruri_from_ros()
+        self._masteruri = ros1_masteruri.from_ros()
         self.CFG_PATH = os.path.expanduser('~/.config/ros.fkie/node_manager/')
         # loads the current configuration path. If the path was changed, a redirection
         # file exists with new configuration folder
