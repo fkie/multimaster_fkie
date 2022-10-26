@@ -82,7 +82,7 @@ class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
         self.name = get_node_name(name)
-        self.namespace = names.namespace(name)
+        self.namespace = names.namespace(name, with_sep_suffix=False)
         self.status = 'running'
         self.pid = -1
         self.node_API_URI = ''
