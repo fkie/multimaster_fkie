@@ -34,13 +34,13 @@
 from xml.dom.minidom import parse  # , parseString
 import os
 import re
-import time
 
 import roslaunch
 import roslib
 import rospy
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
+from fkie_multimaster_msgs import names
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import ros1_masteruri
 from .common import package_name, utf8
@@ -85,7 +85,6 @@ class LaunchConfig(object):
         self.__reqTested = False
         self.__argv_values = dict()
         self.global_param_done = []  # masteruri's where the global parameters are registered
-        self.__launch_id = '%.9f' % time.time()
         self._robot_description = None
         self._capabilities = None
         self.host = host if host else None
@@ -200,8 +199,8 @@ class LaunchConfig(object):
             if self._monitor_servicer is not None:
                 diag_dep.header.stamp = rospy.Time.now()
             for n in roscfg.nodes:
-                node_fullname = roslib.names.ns_join(n.namespace, n.name)
-                associations_param = roslib.names.ns_join(
+                node_fullname = names.ns_join(n.namespace, n.name)
+                associations_param = names.ns_join(
                     node_fullname, 'associations')
                 if associations_param in roscfg.params:
                     ds = DiagnosticStatus()
@@ -367,24 +366,20 @@ class LaunchConfig(object):
                                     ','), 'description': self._decode(entry[3])}
             # get the capability nodes
             for item in self.roscfg.nodes:
-                node_fullname = roslib.names.ns_join(item.namespace, item.name)
+                node_fullname = names.ns_join(item.namespace, item.name)
                 machine_name = item.machine_name if item.machine_name is not None and not item.machine_name == 'localhost' else ''
                 added = False
-                cap_param = roslib.names.ns_join(
-                    node_fullname, 'capability_group')
+                cap_param = names.ns_join(node_fullname, 'capability_group')
                 cap_ns = node_fullname
                 # find the capability group parameter in namespace
-                while cap_param not in self.roscfg.params and cap_param.count(roslib.names.SEP) > 1:
-                    cap_ns = roslib.names.namespace(
-                        cap_ns).rstrip(roslib.names.SEP)
-                    if not cap_ns:
-                        cap_ns = roslib.names.SEP
-                    cap_param = roslib.names.ns_join(
-                        cap_ns, 'capability_group')
+                while cap_param not in self.roscfg.params and cap_param.count(names.SEP) > 1:
+                    cap_ns = names.namespace(
+                        cap_ns, with_sep_suffix=True, global_on_none=True)
+                    cap_param = names.ns_join(cap_ns, 'capability_group')
                 if cap_ns == node_fullname:
-                    cap_ns = item.namespace.rstrip(roslib.names.SEP)
+                    cap_ns = item.namespace.rstrip(names.SEP)
                     if not cap_ns:
-                        cap_ns = roslib.names.SEP
+                        cap_ns = names.SEP
                 # if the 'capability_group' parameter found, assign node to the group
                 if cap_param in self.roscfg.params and self.roscfg.params[cap_param].value:
                     p = self.roscfg.params[cap_param]
@@ -433,10 +428,10 @@ class LaunchConfig(object):
         :return: the configuration node stored in this configuration
         :rtype: :class:`roslaunch.Node` <http://docs.ros.org/kinetic/api/roslaunch/html/> or None
         '''
-        nodename = os.path.basename(name)
-        namespace = os.path.dirname(name).strip(roslib.names.SEP)
+        nodename = names.basename(name)
+        namespace = names.namespace(name, with_sep_suffix=True)
         for item in self.roscfg.nodes:
-            if (item.name == nodename) and (item.namespace.strip(roslib.names.SEP) == namespace):
+            if (item.name == nodename) and (item.namespace == namespace):
                 return item
         return None
 

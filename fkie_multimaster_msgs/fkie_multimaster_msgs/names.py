@@ -46,7 +46,7 @@ def ns_join(ns: Text, name: Text) -> Text:
     return ns + SEP + name
 
 
-def namespace(name: Text, with_sep_suffix: bool = True) -> Text:
+def namespace(name: Text, with_sep_suffix: bool = True, global_on_none: str = False) -> Text:
     """
     Get the namespace of name. The namespace is returned with a
     trailing slash in order to favor easy concatenation and easier use
@@ -60,7 +60,10 @@ def namespace(name: Text, with_sep_suffix: bool = True) -> Text:
     :raise ValueError: if name is invalid
     """
     if name is None:
-        raise ValueError('name')
+        if global_on_none:
+            return SEP
+        else:
+            raise ValueError('name')
     if not name:
         return SEP
     elif name[-1] == SEP:
