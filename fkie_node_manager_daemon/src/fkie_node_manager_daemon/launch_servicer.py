@@ -55,9 +55,10 @@ import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 
 from . import launcher
-from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, replace_arg, get_arg_names, find_included_files, interpret_path, utf8, reset_package_cache
+from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, replace_arg, get_arg_names, find_included_files, interpret_path, utf8
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
@@ -1416,5 +1417,5 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
     def ResetPackageCache(self, request, context):
         Log.debug('ResetPackageCache request:\n%s' % str(request))
         result = lmsg.Empty()
-        reset_package_cache()
+        ros_pkg.reset_cache()
         return result

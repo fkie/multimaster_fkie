@@ -39,8 +39,8 @@ from datetime import tzinfo, timedelta, datetime
 from fkie_node_manager_daemon.common import IncludedFile
 from fkie_node_manager_daemon.common import sizeof_fmt
 from fkie_node_manager_daemon.common import formated_ts
-from fkie_node_manager_daemon.common import get_packages
-from fkie_node_manager_daemon.common import get_cwd, find_included_files, interpret_path, package_name
+from fkie_multimaster_msgs import ros_pkg
+from fkie_node_manager_daemon.common import get_cwd, find_included_files, interpret_path
 from fkie_node_manager_daemon.common import replace_paths
 from fkie_node_manager_daemon.common import get_arg_names
 
@@ -111,7 +111,7 @@ class TestCommonLib(unittest.TestCase):
 
     def test_get_packages(self):
         path = os.path.dirname(self.nm_path.rstrip(os.path.sep))
-        pkg_res = get_packages(path)
+        pkg_res = ros_pkg.get_packages(path)
         count_exp = 6
         if 'industrial_ci' in pkg_res:
             count_exp += 1
@@ -137,20 +137,20 @@ class TestCommonLib(unittest.TestCase):
             test_path, result_path))
 
     def test_package_name(self):
-        pkg = package_name(self.nm_path)
+        pkg = ros_pkg.get_name(self.nm_path)
         self.assertEqual('fkie_node_manager_daemon', pkg[0], "wrong package name, expected: %s, got: %s" % (
             'fkie_node_manager_daemon', pkg[0]))
         pkg_dir = self.nm_path
         self.assertEqual(
             pkg_dir, pkg[1], "wrong package path, expected: %s, got: %s" % (pkg_dir, pkg[1]))
         # test cache
-        pkg = package_name(self.nm_path)
+        pkg = ros_pkg.get_name(self.nm_path)
         self.assertEqual('fkie_node_manager_daemon', pkg[0], "wrong package name from cache, expected: %s, got: %s" % (
             'fkie_node_manager_daemon', pkg[0]))
         self.assertEqual(
             pkg_dir, pkg[1], "wrong package path from cache, expected: %s, got: %s" % (pkg_dir, pkg[1]))
         # test invalid path
-        pkg = package_name('INVALID')
+        pkg = ros_pkg.get_name('INVALID')
         self.assertEqual(
             None, pkg[0], "wrong package name, expected: %s, got: %s" % (None, pkg[0]))
         self.assertEqual(

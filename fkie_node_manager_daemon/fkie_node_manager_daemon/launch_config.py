@@ -39,11 +39,11 @@ import launch_ros
 
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
 from fkie_multimaster_msgs import names
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.defines import SEP
 from fkie_multimaster_msgs.system import ros1_grpcuri
 import fkie_node_manager_daemon as nmd
 
-from .common import package_name
 from .launch_context import LaunchContext
 
 
@@ -81,7 +81,7 @@ class LaunchConfig(object):
         :raise roslaunch.XmlParseException: if the launch file can't be found.
         '''
         self.__launchfile = launch_file
-        self.__package = package_name(os.path.dirname(self.__launchfile))[
+        self.__package = ros_pkg.get_name(os.path.dirname(self.__launchfile))[
             0] if package is None else package
         self.__nmduri = ros1_grpcuri.create(daemonuri)
         self.launch_arguments = launch_arguments

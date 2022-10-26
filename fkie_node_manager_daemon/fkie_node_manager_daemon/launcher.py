@@ -47,18 +47,18 @@ from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead
-from .common import get_cwd, package_name, interpret_path
-from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
-from fkie_multimaster_msgs.names import ns_join
+from .common import get_cwd, interpret_path
 from .startcfg import StartConfig
 import fkie_node_manager_daemon as nmd
 from fkie_multimaster_msgs import names
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import host
 from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 
 
 STARTED_BINARIES = dict()
@@ -98,7 +98,7 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
         if n.respawn_delay > 0:
             result.respawn_delay = n.respawn_delay
         respawn_params = _get_respawn_params(
-            ns_join(n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
+            names.ns_join(n.namespace, n.name), launchcfg.roscfg.params, result.respawn_delay)
         result.respawn_max = respawn_params['max']
         result.respawn_min_runtime = respawn_params['min_runtime']
         result.respawn_delay = respawn_params['delay']
@@ -603,7 +603,7 @@ def _test_value(key, value):
 
 def _abs_to_package_path(path):
     result = path
-    pname, ppath = package_name(path)
+    pname, ppath = ros_pkg.get_name(path)
     if pname:
         result = path.replace(ppath, '$(find-pkg-share %s)' % pname)
         nmd.ros_node.get_logger().debug("replace abs path '%s' by '%s'" % (path, result))

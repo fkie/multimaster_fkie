@@ -24,7 +24,6 @@ from fkie_multimaster_msgs.system.host import ros_host_suffix
 
 SEP = '/'
 PRIV_NAME = '~'
-PACKAGE_FILE = 'package.xml'
 NM_DISCOVERY_NAMESPACE = '/_node_manager'
 NM_DISCOVERY_NAME = f'discovery_{os.environ["ROS_DISTRO"]}_{ros_host_suffix()}'
 EMPTY_PATTERN = re.compile(r'\b', re.I)

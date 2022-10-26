@@ -38,7 +38,7 @@ import threading
 
 import rospy
 
-from fkie_node_manager_daemon.common import is_package, utf8
+from fkie_node_manager_daemon.common import utf8
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.editor.yaml_highlighter import YamlHighlighter
 
@@ -50,6 +50,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 import fkie_node_manager as nm
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
@@ -477,7 +478,7 @@ class InterfacesThread(QObject, threading.Thread):
             # set package, if it is currently None and one found
             if not package:
                 # detect package
-                if is_package(fileList):
+                if ros_pkg.is_package(fileList):
                     package = os.path.basename(path)
             for f in fileList:
                 ret = self._get_interfaces(os.path.join(path, f), package)

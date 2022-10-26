@@ -40,6 +40,7 @@ import rospy
 import roslib
 import rospkg
 from xml.dom import minidom
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.logging.logging import Log
 
 
@@ -172,85 +173,6 @@ def formated_ts(stamp, with_date=True, with_nanosecs=True, tz=None):
     return datetime.fromtimestamp(ts, tz).strftime(str_format)
 
 
-def get_packages(path):
-    result = {}
-    if os.path.isdir(path):
-        fileList = os.listdir(path)
-        if MANIFEST_FILE in fileList:
-            return {os.path.basename(path): path}
-        if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
-            try:
-                pkg = parse_package(path)
-                return {pkg.name: path}
-            except Exception:
-                pass
-            return {}
-        for f in fileList:
-            ret = get_packages(os.path.join(path, f))
-            result.update(ret)
-    return result
-
-
-def package_name(path):
-    '''
-    The results are cached!
-
-    :return: Returns for given directory a tuple of package name and package path.
-    :rtype: tuple(str, str) or tuple(None, None)
-    '''
-    if path is not None and path and path != os.path.sep:
-        dir_path = path
-        if not os.path.isdir(dir_path):
-            dir_path = os.path.dirname(dir_path)
-        if dir_path in PACKAGE_CACHE:
-            return PACKAGE_CACHE[dir_path]
-        package = os.path.basename(dir_path)
-        try:
-            fileList = os.listdir(dir_path)
-            for f in fileList:
-                if f == MANIFEST_FILE:
-                    PACKAGE_CACHE[dir_path] = (package, dir_path)
-                    return (package, dir_path)
-                if CATKIN_SUPPORTED and f == PACKAGE_FILE:
-                    try:
-                        pkg = parse_package(os.path.join(dir_path, f))
-                        PACKAGE_CACHE[dir_path] = (pkg.name, dir_path)
-                        return (pkg.name, dir_path)
-                    except Exception:
-                        return (None, None)
-            PACKAGE_CACHE[dir_path] = package_name(os.path.dirname(dir_path))
-            return PACKAGE_CACHE[dir_path]
-        except OSError:
-            return (None, None)
-    return (None, None)
-
-
-def is_package(file_list):
-    return (MANIFEST_FILE in file_list or (CATKIN_SUPPORTED and PACKAGE_FILE in file_list))
-
-
-def get_pkg_path(package_name):
-    ''' :noindex: '''
-    global _get_pkg_path_var
-    if _get_pkg_path_var is None:
-        try:
-            import rospkg
-            rp = rospkg.RosPack()
-            _get_pkg_path_var = rp.get_path
-        except ImportError:
-            _get_pkg_path_var = roslib.packages.get_pkg_dir
-    return _get_pkg_path_var(package_name)
-
-
-def reset_package_cache():
-    global _get_pkg_path_var
-    _get_pkg_path_var = None
-    global PACKAGE_CACHE
-    PACKAGE_CACHE = {}
-    global SOURCE_PATH_TO_PACKAGES
-    SOURCE_PATH_TO_PACKAGES = {}
-
-
 def interpret_path(path, pwd='.'):
     '''
     Tries to determine the path of included file. The statement of $(find 'package') will be resolved.
@@ -270,7 +192,7 @@ def interpret_path(path, pwd='.'):
         for index in range(groups.lastindex):
             pkg_name = groups.groups()[index]
             if pkg_name:
-                pkg = get_pkg_path(pkg_name)
+                pkg = ros_pkg.get_path(pkg_name)
                 Log.debug(
                     "rospkg.RosPack.get_path for '%s': %s" % (pkg_name, pkg))
                 path_suffix = path[groups.end():].rstrip("'")

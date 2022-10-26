@@ -41,9 +41,10 @@ import rospy
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from fkie_multimaster_msgs import names
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import ros1_masteruri
-from .common import package_name, utf8
+from .common import utf8
 
 
 class LaunchConfigException(Exception):
@@ -74,7 +75,7 @@ class LaunchConfig(object):
         '''
         self._monitor_servicer = monitor_servicer
         self.__launchfile = launch_file
-        self.__package = package_name(os.path.dirname(self.__launchfile))[
+        self.__package = ros_pkg.get_name(os.path.dirname(self.__launchfile))[
             0] if package is None else package
         self.__masteruri = masteruri if masteruri else ros1_masteruri.from_master(
             True)

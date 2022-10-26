@@ -47,6 +47,7 @@ except ImportError:
 
 from rosgraph.network import get_local_addresses
 from fkie_master_discovery.udp import DiscoverSocket
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.logging.logging import Log
@@ -58,7 +59,7 @@ from fkie_multimaster_msgs.system import ros1_masteruri
 
 from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_stub import LaunchStub
-from .common import get_cwd, package_name, interpret_path, isstring, utf8
+from .common import get_cwd, interpret_path, isstring, utf8
 
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
@@ -446,7 +447,7 @@ def _test_value(key, value):
 
 def _abs_to_package_path(path):
     result = path
-    pname, ppath = package_name(path)
+    pname, ppath = ros_pkg.get_name(path)
     if pname is not None:
         result = path.replace(ppath, '$(find %s)' % pname)
         Log.debug("replace abs path '%s' by '%s'" % (path, result))

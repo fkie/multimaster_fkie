@@ -27,14 +27,13 @@ from autobahn import wamp
 import json
 import os
 from typing import List
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.file_interface import RosPackage
 from fkie_multimaster_msgs.crossbar.file_interface import PathItem
 from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
 from fkie_multimaster_msgs.logging.logging import Log
-from fkie_node_manager_daemon.common import get_packages
-from .common import is_package
 from fkie_multimaster_msgs.system.screen import get_logfile
 from fkie_multimaster_msgs.system.screen import get_ros_logfile
 
@@ -67,7 +66,7 @@ class FileServicer(CrossbarBaseSession):
                 Log.warn(f"Cannot reset package cache: {err}")
         package_list: List[RosPackage] = []
         # fill the input fields
-        ret = get_packages(None)
+        ret = ros_pkg.get_packages(None)
         for name, path in ret.items():
             package = RosPackage(
                 name=name, path=os.path.join(path, 'share', name))
@@ -117,7 +116,7 @@ class FileServicer(CrossbarBaseSession):
                 try:
                     fileList = os.listdir(path)
                     file_type = None
-                    if is_package(fileList):
+                    if ros_pkg.is_package(fileList):
                         file_type = 'package'
                     else:
                         file_type = 'dir'

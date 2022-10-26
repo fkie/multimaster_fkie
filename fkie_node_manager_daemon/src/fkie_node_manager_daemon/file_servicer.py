@@ -45,8 +45,9 @@ from autobahn import wamp
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fms_grpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fms
 from . import file_item
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.grpc_helper import remote
-from .common import interpret_path, is_package, get_pkg_path, package_name, utf8
+from .common import interpret_path, utf8
 from fkie_multimaster_msgs import settings
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
@@ -140,7 +141,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             count = 0
             for chunk in request_iterator:
                 if chunk.file.package:
-                    pkg_path = get_pkg_path(chunk.file.package)
+                    pkg_path = ros_pkg.get_path(chunk.file.package)
                     if pkg_path:
                         path = os.path.join(
                             pkg_path, chunk.file.path.lstrip(os.path.sep))
@@ -261,7 +262,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             path = request.path
             dest_uri, dest_path = ros1_grpcuri.split(request.uri)
             # get package from path
-            pname, ppath = package_name(dest_path)
+            pname, ppath = ros_pkg.get_name(dest_path)
             if pname is not None:
                 # we need relative package path without leading slash
                 prest = dest_path.replace(ppath, '').lstrip(os.path.sep)
@@ -325,7 +326,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     path = os.path.normpath(p)
                     fileList = os.listdir(path)
                     file_type = None
-                    if is_package(fileList):
+                    if ros_pkg.is_package(fileList):
                         file_type = PATH_PACKAGE
                     else:
                         file_type = PATH_DIR
@@ -351,7 +352,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                         try:
                             fileList = os.listdir(path)
                             file_type = None
-                            if is_package(fileList):
+                            if ros_pkg.is_package(fileList):
                                 file_type = PATH_PACKAGE
                             else:
                                 file_type = PATH_DIR
@@ -389,7 +390,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 try:
                     fileList = os.listdir(path)
                     file_type = None
-                    if is_package(fileList):
+                    if ros_pkg.is_package(fileList):
                         file_type = 'package'
                     else:
                         file_type = 'dir'
@@ -416,23 +417,6 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
 
         return json.dumps(path_list, cls=SelfEncoder)
 
-    def _get_packages(self, path):
-        result = {}
-        if os.path.isdir(path):
-            fileList = os.listdir(path)
-            if MANIFEST_FILE in fileList:
-                return {os.path.basename(path): path}
-            if CATKIN_SUPPORTED and PACKAGE_FILE in fileList:
-                try:
-                    pkg = parse_package(path)
-                    return {pkg.name: path}
-                except Exception:
-                    pass
-                return {}
-            for f in fileList:
-                ret = self._get_packages(os.path.join(path, f))
-                result.update(ret)
-        return result
 
     def ListPackages(self, request, context):
         if request.clear_ros_cache:
@@ -448,7 +432,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             root_paths = [os.path.normpath(p) for p in os.getenv(
                 "ROS_PACKAGE_PATH").split(':')]
             for p in root_paths:
-                ret = self._get_packages(p)
+                ret = ros_pkg.get_packages(p)
                 for name, path in ret.items():
                     package = fms.PackageObj(name=name, path=path)
                     result.items.extend([package])
@@ -475,7 +459,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             "ROS_PACKAGE_PATH").split(':')]
         packages = []
         for p in root_paths:
-            ret = self._get_packages(p)
+            ret = ros_pkg.get_packages(p)
             for name, path in ret.items():
                 if name not in packages:
                     package = RosPackage(name=name, path=path)
@@ -534,7 +518,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         result = fms.PathList()
         binaries = []
         try:
-            path = get_pkg_path(request.name)
+            path = ros_pkg.get_path(request.name)
             self._get_binaries(path, binaries)
             # find binaries in catkin workspace
             from catkin.find_in_workspaces import find_in_workspaces as catkin_find

@@ -47,8 +47,9 @@ except ImportError:
 
 from fkie_node_manager_daemon.common import get_cwd
 from fkie_node_manager_daemon import launcher
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
-from fkie_node_manager_daemon.common import package_name, isstring, utf8
+from fkie_node_manager_daemon.common import isstring, utf8
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import host as nmdhost
@@ -654,7 +655,7 @@ class StartHandler(object):
         if nm.is_local(host):
             # it's local -> no copy needed
             return
-        (pkg_name, pkg_path) = package_name(os.path.dirname(path))
+        (pkg_name, pkg_path) = ros_pkg.get_name(os.path.dirname(path))
         if pkg_name is not None:
             # get the subpath of the file
             subfile_path = path.replace(pkg_path, '')
@@ -913,7 +914,7 @@ class StartHandler(object):
             else:
                 path = os.path.dirname(
                     value) if os.path.isfile(value) else value
-                package, package_path = package_name(path)
+                package, package_path = ros_pkg.get_name(path)
                 if package:
                     _, stdout, _, ok = nm.ssh().ssh_exec(
                         host, ['rospack', 'find', package], user, pw, auto_pw_request, close_stdin=True, close_stderr=True)
