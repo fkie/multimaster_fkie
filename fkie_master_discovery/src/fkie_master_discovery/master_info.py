@@ -40,6 +40,7 @@ import rospy
 
 from .common import get_hostname
 from .filter_interface import FilterInterface
+from fkie_multimaster_msgs import names
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
@@ -1416,11 +1417,7 @@ class MasterInfo(object):
                 ros_node.location = 'local' if node.isLocal else 'remote'
 
                 # Include namespace in name
-                if "/" not in ros_node.name:
-                    if ros_node.namespace == "/":
-                        ros_node.name = f'/{ros_node.name}'
-                    else:
-                        ros_node.name = f'{ros_node.namespace}/{ros_node.name}'
+                ros_node.name = names.ns_join(ros_node.namespace, ros_node.name)
 
                 # Add active screens for a given node
                 screens = screen.get_active_screens(name)
