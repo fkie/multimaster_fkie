@@ -130,7 +130,7 @@ class LaunchConfig(object):
         '''
         if os.path.isfile(self.__launchfile):
             return self.__launchfile
-        elif self.__package is not None:
+        elif self.__package:
             try:
                 return roslib.packages.find_resource(self.packagename, self.launchname).pop()
             except Exception:

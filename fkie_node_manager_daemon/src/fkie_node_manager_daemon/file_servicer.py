@@ -263,7 +263,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
             dest_uri, dest_path = ros1_grpcuri.split(request.uri)
             # get package from path
             pname, ppath = ros_pkg.get_name(dest_path)
-            if pname is not None:
+            if pname:
                 # we need relative package path without leading slash
                 prest = dest_path.replace(ppath, '').lstrip(os.path.sep)
                 with FileIO(path, 'r') as outfile:

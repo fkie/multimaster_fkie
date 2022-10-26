@@ -152,9 +152,9 @@ class TestCommonLib(unittest.TestCase):
         # test invalid path
         pkg = ros_pkg.get_name('INVALID')
         self.assertEqual(
-            None, pkg[0], "wrong package name, expected: %s, got: %s" % (None, pkg[0]))
+            '', pkg[0], "wrong package name, expected: %s, got: %s" % (None, pkg[0]))
         self.assertEqual(
-            None, pkg[1], "wrong package name, expected: %s, got: %s" % (None, pkg[1]))
+            '', pkg[1], "wrong package name, expected: %s, got: %s" % (None, pkg[1]))
 
     def test_interpret_path(self):
         text_path = "$(find fkie_node_manager_daemon)/%s/include_dummy.launch" % self.res_dir

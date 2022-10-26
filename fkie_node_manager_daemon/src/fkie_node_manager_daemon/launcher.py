@@ -448,7 +448,7 @@ def _test_value(key, value):
 def _abs_to_package_path(path):
     result = path
     pname, ppath = ros_pkg.get_name(path)
-    if pname is not None:
+    if pname:
         result = path.replace(ppath, '$(find %s)' % pname)
         Log.debug("replace abs path '%s' by '%s'" % (path, result))
     return result
