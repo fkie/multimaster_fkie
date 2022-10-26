@@ -18,7 +18,7 @@ from fkie_multimaster_msgs.system import screen
 import fkie_multimaster_msgs.names as names
 
 if os.environ['ROS_VERSION'] == "1":
-    from fkie_multimaster_msgs.system import mod_masteruri
+    from fkie_multimaster_msgs.system import ros1_masteruri
     from fkie_node_manager_daemon.common import isstring
     from rosgraph.network import get_local_addresses
     try:
