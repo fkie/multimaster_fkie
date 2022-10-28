@@ -669,7 +669,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         Log.debug('Loading launch file: %s (package: %s, launch: %s), masteruri: %s, host: %s, args: %s' % (
             request.path, request.ros_package, request.launch, request.masteruri, request.host, request.args))
 
-        result.path.append(request.path)
+        result.paths.append(request.path)
         cfgid = CfgId(request.path, request.masteruri)
         Log.debug("reload launch file: %s, masteruri: %s",
                   request.path, request.masteruri)
@@ -735,11 +735,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 Log.warn("Loading launch file: %s", err_details)
                 result.status.code = 'ERROR'
                 result.status.msg = err_details
-                return result
+                return json.dumps(result, cls=SelfEncoder)
         else:
             result.status.code = 'FILE_NOT_FOUND'
-            return result
-        return result
+            return json.dumps(result, cls=SelfEncoder)
+        return json.dumps(result, cls=SelfEncoder)
 
     def UnloadLaunch(self, request, context):
         Log.debug('UnloadLaunch request:\n%s' % str(request))
