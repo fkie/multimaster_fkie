@@ -39,7 +39,7 @@ import os
 import threading
 import rospy
 
-from fkie_node_manager_daemon.common import get_internal_args, sizeof_fmt, utf8
+from fkie_node_manager_daemon.strings import utf8
 import fkie_node_manager as nm
 from fkie_node_manager.common import package_name
 from fkie_node_manager.html_delegate import HTMLDelegate
@@ -49,6 +49,8 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QDockWidget, QAbstractItemView
     from python_qt_binding.QtCore import QItemSelectionModel
+from fkie_multimaster_msgs import formats
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 
@@ -310,7 +312,7 @@ class GraphViewWidget(QDockWidget):
                     if inc_file.size == 0 or inc_file.size > 1000000:
                         size_color = 'orange'
                     itemstr = '%s   <span style="color:%s;"><em>%s</em></span>   [%s]' % (
-                        os.path.basename(inc_file.inc_path), size_color, sizeof_fmt(inc_file.size), pkg)
+                        os.path.basename(inc_file.inc_path), size_color, formats.sizeof_fmt(inc_file.size), pkg)
                     inc_item = QStandardItem(
                         '%d: %s' % (inc_file.line_number, itemstr))
                     inc_item.setData(self.ITEM_TYPE_INC_FILE, self.ITEM_TYPE)
@@ -460,7 +462,7 @@ class GraphThread(QObject, threading.Thread):
                 launch_node = xml_nodes[-1]
             if launch_node is not None:
                 # read XML content and get default arguments
-                default_args = get_internal_args(data, only_default=True)
+                default_args = xml.get_internal_args(data, only_default=True)
                 for arg_in_file, arg_value in default_args.items():
                     if arg_in_file not in inc_args:
                         not_set_args[arg_in_file] = arg_value

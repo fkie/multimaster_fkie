@@ -47,26 +47,21 @@ import fkie_multimaster_msgs.grpc.file_pb2 as fms
 from . import file_item
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.grpc_helper import remote
-from .common import interpret_path, utf8
 from fkie_multimaster_msgs import settings
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.file_interface import RosPackage
 from fkie_multimaster_msgs.crossbar.file_interface import PathItem
 from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
+from fkie_multimaster_msgs.defines import PACKAGE_FILE
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
-
 from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.screen import get_logfile
 from fkie_multimaster_msgs.system.screen import get_ros_logfile
+from fkie_node_manager_daemon.strings import utf8
 
 from typing import List
-
-try:
-    from catkin_pkg.package import parse_package
-    CATKIN_SUPPORTED = True
-except ImportError:
-    CATKIN_SUPPORTED = False
 
 OK = fms.ReturnStatus.StatusType.Value('OK')
 ERROR = fms.ReturnStatus.StatusType.Value('ERROR')
@@ -79,7 +74,6 @@ PATH_DIR = fms.PathObj.PathType.Value('DIR')
 PATH_FILE = fms.PathObj.PathType.Value('FILE')
 PATH_SYMLINK = fms.PathObj.PathType.Value('SYMLINK')
 MANIFEST_FILE = 'manifest.xml'
-PACKAGE_FILE = 'package.xml'
 
 
 class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
@@ -108,7 +102,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
         result = fms.GetFileContentReply()
         try:
             with FileIO(request.path, 'r') as outfile:
-                result.file.path = interpret_path(request.path)
+                result.file.path = xml.interpret_path(request.path)
                 a = os.path.getmtime(request.path)
                 result.file.mtime = a
                 result.file.size = os.path.getsize(request.path)

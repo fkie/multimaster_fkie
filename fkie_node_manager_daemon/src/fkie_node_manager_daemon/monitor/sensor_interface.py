@@ -35,7 +35,7 @@ import rospy
 import threading
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from fkie_node_manager_daemon.common import formated_ts
+from fkie_multimaster_msgs import formats
 
 
 class SensorInterface(threading.Thread):
@@ -90,4 +90,4 @@ class SensorInterface(threading.Thread):
         if msg.values and msg.values[-1].key == 'Timestamp':
             del msg.values[-1]
         msg.values.append(
-            KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))
+            KeyValue(key='Timestamp', value=formats.timestamp_fmt(ts, False, False)))

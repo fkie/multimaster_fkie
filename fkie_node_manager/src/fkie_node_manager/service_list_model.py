@@ -36,7 +36,7 @@ import rospy
 from python_qt_binding.QtCore import Qt
 from python_qt_binding.QtGui import QStandardItem, QStandardItemModel
 
-from fkie_node_manager_daemon.common import isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
 from fkie_node_manager.common import lnamespace, namespace, normns
 from fkie_multimaster_msgs.system.host import get_hostname
 import fkie_node_manager as nm

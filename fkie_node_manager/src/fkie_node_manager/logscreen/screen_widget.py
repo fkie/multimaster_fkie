@@ -51,7 +51,7 @@ from .screen_highlighter import ScreenHighlighter
 from .terminal_formats import TerminalFormats
 from .logger_handler import LoggerHandler
 import fkie_node_manager as nm
-from fkie_node_manager_daemon.common import sizeof_fmt
+from fkie_multimaster_msgs import formats
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system.host import get_hostname
 
@@ -455,8 +455,8 @@ class ScreenWidget(QWidget):
                                          self.textBrowser.verticalScrollBar().maximum() / 20)
         seek_info = ''
         if self._seek_end > -1:
-            seek_info = '\t%s / %s' % (sizeof_fmt(self._seek_end -
-                                                  self._seek_start), sizeof_fmt(self._seek_end))
+            seek_info = '\t%s / %s' % (formats.sizeof_fmt(self._seek_end -
+                                                  self._seek_start), formats.sizeof_fmt(self._seek_end))
         elif self._ssh_output_file is not None:
             seek_info = '\ttail via SSH'
         self.infoLabel.setText(info_text + seek_info)

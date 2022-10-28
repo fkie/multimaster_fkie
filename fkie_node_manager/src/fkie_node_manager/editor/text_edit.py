@@ -39,7 +39,7 @@ import rospy
 import traceback
 
 from fkie_node_manager_daemon import file_item
-from fkie_node_manager_daemon.common import find_included_files, get_arg_names, get_internal_args, replace_arg, utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_node_manager.common import package_name
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.parameter_dialog import ParameterDialog
@@ -47,6 +47,7 @@ import fkie_node_manager as nm
 
 from .xml_highlighter import XmlHighlighter
 from .yaml_highlighter import YamlHighlighter
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 
@@ -124,7 +125,7 @@ class TextEdit(QTextEdit):
             self.setText("")
             self.file_mtime = file_mtime
             if self._ext in self.CONTEXT_FILE_EXT:
-                self._internal_args = get_internal_args(content)
+                self._internal_args = xml.get_internal_args(content)
             self.document().setPlainText(content)
             self.document().setModified(False)
             self._is_launchfile = False
@@ -371,7 +372,7 @@ class TextEdit(QTextEdit):
             try:
                 textblock = self._strip_bad_parts(
                     cursor.block().text(), cursor.positionInBlock())
-                for inc_file in find_included_files(textblock, False, False, search_in_ext=[]):
+                for inc_file in xml.find_included_files(textblock, False, False, search_in_ext=[]):
                     aval = inc_file.raw_inc_path
                     aitems = aval.split("'")
                     for search_for in aitems:
@@ -379,7 +380,7 @@ class TextEdit(QTextEdit):
                             continue
                         try:
                             Log.debug("try to interpret: %s" % search_for)
-                            args_in_name = get_arg_names(search_for)
+                            args_in_name = xml.get_arg_names(search_for)
                             resolved_args = {}
                             # if found arg in the name, try to detect values
                             if args_in_name:
@@ -404,7 +405,7 @@ class TextEdit(QTextEdit):
                                 dia.setWindowTitle('Select Parameter')
                                 if dia.exec_():
                                     params = dia.getKeywords()
-                                    search_for = replace_arg(
+                                    search_for = xml.replace_arg(
                                         search_for, params)
                                 else:
                                     # canceled -> cancel interpretation

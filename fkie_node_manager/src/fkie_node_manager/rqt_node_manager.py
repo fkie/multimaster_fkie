@@ -3,7 +3,7 @@
 from qt_gui.plugin import Plugin
 
 import fkie_node_manager
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_node_manager.detailed_msg_box import MessageBox
 
 from .main_window import MainWindow

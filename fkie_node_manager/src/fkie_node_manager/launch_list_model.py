@@ -42,7 +42,7 @@ import os
 
 import fkie_node_manager as nm
 
-from fkie_node_manager_daemon.common import isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
 from fkie_node_manager_daemon.file_item import FileItem
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import ros1_grpcuri

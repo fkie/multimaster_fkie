@@ -33,10 +33,9 @@
 import re
 import sys
 
-import rospy
-
-from .common import create_pattern, gen_pattern, is_empty_pattern, EMPTY_PATTERN
+from .common import create_pattern, gen_pattern, is_empty_pattern
 from .common import get_ros_param, resolve_url, read_interface
+from fkie_multimaster_msgs.defines import EMPTY_PATTERN
 from fkie_multimaster_msgs.logging.logging import Log
 
 
@@ -321,7 +320,9 @@ class FilterInterface(object):
     def do_not_sync(self, name):
         if isinstance(name, list):
             for nval in name:
-                if self._re_do_not_sync.match(nval) or self._re_do_not_sync_from_list.match(nval):
+                if self._re_do_not_sync.match(nval):
+                    return True
+                if self._re_do_not_sync_from_list.match(nval):
                     return True
         elif self._re_do_not_sync.match(name) or self._re_do_not_sync_from_list.match(name):
             return True

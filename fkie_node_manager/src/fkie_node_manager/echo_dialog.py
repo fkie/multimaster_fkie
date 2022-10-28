@@ -51,7 +51,7 @@ from genpy.rostime import Time, TVal
 import rospy
 
 import fkie_node_manager as nm
-from fkie_node_manager_daemon.common import isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
 from fkie_multimaster_msgs.logging.logging import Log
 
 

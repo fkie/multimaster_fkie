@@ -37,8 +37,6 @@ import rospkg
 import rospy
 import shlex
 import socket
-import sys
-import types
 import roslaunch
 try:
     import xmlrpclib as xmlrpcclient
@@ -46,10 +44,10 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 from rosgraph.network import get_local_addresses
-from fkie_master_discovery.udp import DiscoverSocket
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import host
@@ -59,7 +57,8 @@ from fkie_multimaster_msgs.system import ros1_masteruri
 
 from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_stub import LaunchStub
-from .common import get_cwd, interpret_path, isstring, utf8
+from fkie_node_manager_daemon.strings import isstring
+from fkie_node_manager_daemon.strings import utf8
 
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
@@ -202,7 +201,7 @@ def run_node(startcfg):
         for arg in startcfg.args:
             new_arg = arg
             if arg.startswith('$(find'):
-                new_arg = interpret_path(arg)
+                new_arg = xml.interpret_path(arg)
                 Log.debug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
         # set name and namespace of the node
@@ -242,7 +241,7 @@ def run_node(startcfg):
             binary = cmd_type
         except Exception:
             pass
-        cwd = get_cwd(startcfg.cwd, cmd_type)
+        cwd = ros_pkg.get_cwd(startcfg.cwd, cmd_type)
         # set environment
         new_env = dict(os.environ)
         # set display variable to local display
@@ -400,7 +399,7 @@ def _load_parameters(masteruri, params, clear_params):
             value = pval
             # resolve path elements
             if isstring(value) and (value.startswith('$')):
-                value = interpret_path(value)
+                value = xml.interpret_path(value)
                 Log.debug("interpret parameter '%s' to '%s'" %
                           (value, pval))
             # add parameter to the multicall

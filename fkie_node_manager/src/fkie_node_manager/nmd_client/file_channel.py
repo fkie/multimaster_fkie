@@ -36,7 +36,7 @@ import rospy
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.file_stub as fstub
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import ros1_grpcuri
 

@@ -25,6 +25,9 @@ from typing import Union
 
 import os
 
+from fkie_multimaster_msgs.defines import PACKAGE_FILE
+from fkie_multimaster_msgs.logging.logging import Log
+
 try:
     from ament_index_python import get_resource
     from ament_index_python import get_packages_with_prefixes
@@ -35,17 +38,43 @@ except ImportError:
 
 try:
     from catkin_pkg.package import parse_package
+    from catkin.find_in_workspaces import find_in_workspaces
     CATKIN_SUPPORTED = True
 except ImportError:
     CATKIN_SUPPORTED = False
-
-PACKAGE_FILE = 'package.xml'
 
 _get_pkg_path_var = None
 
 
 PACKAGE_CACHE = {}
 SOURCE_PATH_TO_PACKAGES = {}
+
+
+def get_cwd(cwd: Text, binary: Text = '') -> Text:
+    result = ''
+    if cwd == 'node':
+        result = os.path.dirname(binary)
+    elif cwd == 'cwd':
+        result = os.getcwd()
+    elif cwd == 'ros-root':
+        try:
+            import rospkg
+            result = rospkg.get_ros_root()
+        except:
+            pass
+    else:
+        try:
+            import rospkg
+            result = rospkg.get_ros_home()
+        except:
+            pass
+    if result and not os.path.exists(result):
+        try:
+            os.makedirs(result)
+        except OSError:
+            # exist_ok=True
+            pass
+    return result
 
 
 def get_packages(path: Union[Text, None]) -> Dict[Text, Text]:
@@ -125,6 +154,47 @@ def get_path(package_name: Text) -> Text:
         return _get_pkg_path_var(package_name)
 
 
+def get_ros_resource_from_package(path: str, path_suffix: str) -> List[str]:
+    try:
+        import roslib
+        paths = roslib.packages._find_resource(
+            path, path_suffix)
+        Log.debug(
+            f" search for resource with roslib.packages._find_resource, suffix '{path_suffix}': {paths}")
+        if len(paths) > 0:
+            # if more then one launch file is found, take the first one
+            return paths[0]
+    except Exception:
+        pass
+    return []
+
+
+def get_share_files_path_from_package(package_name: str, file_name: str) -> List[str]:
+    """
+    Return the full path to a file in the share directory of a package.
+    For ROS2 functionality.
+
+    :raises: PackageNotFoundError if package is not found
+    :raises: FileNotFoundError if the file is not found in the package
+    :raises: MultipleLaunchFilesError if the file is found in multiple places
+    """
+    matching_file_paths = []
+    if AMENT_SUPPORTED:
+        package_share_directory = get_package_share_directory(package_name)
+        for root, _dirs, files in os.walk(package_share_directory):
+            for name in files:
+                if name == file_name:
+                    matching_file_paths.append(os.path.join(root, name))
+    elif CATKIN_SUPPORTED:
+        # we try to find the specific path in share via catkin
+        # which will search in install/devel space and the source folder of the package
+        global SOURCE_PATH_TO_PACKAGES
+        matching_file_paths = find_in_workspaces(
+            ['share'], project=package_name, path=file_name, first_matching_workspace_only=True,
+            first_match_only=True, source_path_to_packages=SOURCE_PATH_TO_PACKAGES)
+    return matching_file_paths
+
+
 def reset_cache() -> None:
     global _get_pkg_path_var
     _get_pkg_path_var = None
@@ -132,4 +202,3 @@ def reset_cache() -> None:
     PACKAGE_CACHE = {}
     global SOURCE_PATH_TO_PACKAGES
     SOURCE_PATH_TO_PACKAGES = {}
-

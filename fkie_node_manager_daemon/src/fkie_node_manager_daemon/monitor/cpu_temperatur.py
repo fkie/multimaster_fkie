@@ -32,11 +32,10 @@
 
 
 import psutil
-import rospy
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from .sensor_interface import SensorInterface
 from fkie_multimaster_msgs.logging.logging import Log
 

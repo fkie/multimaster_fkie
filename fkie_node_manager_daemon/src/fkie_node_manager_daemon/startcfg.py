@@ -32,7 +32,7 @@
 
 
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
-from .common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.host import get_hostname
 

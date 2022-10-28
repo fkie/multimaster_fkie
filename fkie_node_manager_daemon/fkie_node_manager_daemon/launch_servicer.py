@@ -52,17 +52,15 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathReply
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
+from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
+from fkie_multimaster_msgs.launch import ros_pkg
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system.host import is_local
 from fkie_multimaster_msgs.system.url import equal_uri
 
 from . import launcher
-from .common import get_arg_names
-from .common import replace_arg
-from .common import get_share_files_path_from_package
-from .common import INCLUDE_PATTERN, SEARCH_IN_EXT
-from .common import find_included_files
 from .launch_config import LaunchConfig
 from .launch_validator import LaunchValidator
 
@@ -185,7 +183,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     def _add_launch_to_observer(self, path):
         try:
             self._add_file_to_observe(path)
-            pattern = INCLUDE_PATTERN
             search_in_ext = SEARCH_IN_EXT
             # search for loaded file and get the arguments
             resolve_args = {}
@@ -194,7 +191,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in find_included_files(path, True, True, pattern, search_in_ext, resolve_args):
+            for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
                 if inc_file.exists:
                     self._add_file_to_observe(inc_file.inc_path)
         except Exception as e:
@@ -203,7 +200,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     def _remove_launch_from_observer(self, path):
         try:
             self._remove_file_from_observe(path)
-            pattern = INCLUDE_PATTERN
             search_in_ext = SEARCH_IN_EXT
             # search for loaded file and get the arguments
             resolve_args = {}
@@ -212,7 +208,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in find_included_files(path, True, True, pattern, search_in_ext, resolve_args):
+            for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
                 self._remove_file_from_observe(inc_file.inc_path)
         except Exception as e:
             Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
@@ -302,7 +298,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         if not launchfile:
             # determine path from package name and launch name
             try:
-                paths = get_share_files_path_from_package(
+                paths = ros_pkg.get_share_files_path_from_package(
                     request.ros_package, request.launch)
                 if not paths:
                     result.status.code = 'FILE_NOT_FOUND'
@@ -601,9 +597,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             'Request to [ros.launch.get_included_files]: Path [%s]' % str(path))
         result = []
         try:
-            pattern = INCLUDE_PATTERN
-            if request.pattern:
-                pattern = request.pattern
             search_in_ext = SEARCH_IN_EXT
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
@@ -615,7 +608,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                         resolve_args.update(lcfg.resolve_dict)
                         break
             # replay each file
-            for inc_file in find_included_files(request.path, recursive=request.recursive, unique=request.unique, include_pattern=pattern, search_in_ext=search_in_ext, resolve_args=resolve_args):
+            for inc_file in xml.find_included_files(request.path, recursive=request.recursive, unique=request.unique, search_in_ext=search_in_ext, resolve_args=resolve_args):
                 file_size = 0
                 if inc_file.exists:
                     file_size = os.path.getsize(inc_file.inc_path)
@@ -649,14 +642,14 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         result = []
         if text:
             try:
-                for inc_file in find_included_files(text, False, False, search_in_ext=[]):
+                for inc_file in xml.find_included_files(text, False, False, search_in_ext=[]):
                     aval = inc_file.raw_inc_path
                     aitems = aval.split("'")
                     for search_for in aitems:
                         if not search_for:
                             continue
                         Log.debug("try to interpret: %s" % search_for)
-                        args_in_name = get_arg_names(search_for)
+                        args_in_name = xml.get_arg_names(search_for)
                         request_args = False
                         for arg_name in args_in_name:
                             if not arg_name in args:
@@ -675,7 +668,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                             reply.status.code = 'PARAMS_REQUIRED'
                             result.append(reply)
                         else:
-                            search_for_rpl = replace_arg(search_for, args)
+                            search_for_rpl = xml.replace_arg(search_for, args)
                             reply = LaunchInterpretPathReply(
                                 text=search_for, status='OK', path=search_for_rpl, exists=os.path.exists(search_for), args=request.args)
                             result.append(reply)

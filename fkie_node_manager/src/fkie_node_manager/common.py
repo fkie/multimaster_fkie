@@ -36,17 +36,6 @@ import rospy
 
 import fkie_node_manager as nm
 
-MANIFEST_FILE = 'manifest.xml'
-PACKAGE_FILE = 'package.xml'
-
-try:
-    from catkin_pkg.package import parse_package
-    CATKIN_SUPPORTED = True
-except ImportError:
-    CATKIN_SUPPORTED = False
-
-PACKAGE_CACHE = {}
-
 
 def get_ros_home():
     '''

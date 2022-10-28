@@ -30,13 +30,13 @@ import asyncio
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import Endpoint
 from fkie_multimaster_msgs.srv import LoadLaunch, Task
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.names import ns_join
 from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.host import get_host_name
 import fkie_node_manager_daemon as nmd
 
 #import fkie_node_manager_daemon.security as security
-from .common import interpret_path
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
@@ -170,17 +170,17 @@ class Server:
 
     def load_launch_file(self, path, autostart=False):
         pass
-        #self.launch_servicer.load_launch_file(interpret_path(path), autostart)
+        #self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
         nmd.ros_node.get_logger().info("Service request to load and start %s" % request.path)
-        #self.launch_servicer.load_launch_file(interpret_path(request.path), True)
+        #self.launch_servicer.load_launch_file(xml.interpret_path(request.path), True)
         return LoadLaunch.Response()
 
     def _rosservice_load_launch(self, request):
         nmd.ros_node.get_logger().info("Service request to load %s" % request.path)
         self.launch_servicer.load_launch_file(
-            interpret_path(request.path), False)
+            xml.interpret_path(request.path), False)
         return LoadLaunch.Response()
 
     def _rosservice_start_node(self, req):

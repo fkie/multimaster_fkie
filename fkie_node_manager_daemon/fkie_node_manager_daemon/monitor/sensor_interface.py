@@ -24,7 +24,7 @@ import threading
 from typing import Callable
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from fkie_node_manager_daemon.common import formated_ts
+from fkie_multimaster_msgs import formats
 from fkie_multimaster_msgs.settings import Settings
 import fkie_node_manager_daemon as nmd
 
@@ -82,7 +82,7 @@ class SensorInterface(object):
         if msg.values and msg.values[-1].key == 'Timestamp':
             del msg.values[-1]
         msg.values.append(
-            KeyValue(key='Timestamp', value=formated_ts(ts, False, False)))
+            KeyValue(key='Timestamp', value=formats.timestamp_fmt(ts, False, False)))
 
     def is_active(self):
         if not rclpy.ok():

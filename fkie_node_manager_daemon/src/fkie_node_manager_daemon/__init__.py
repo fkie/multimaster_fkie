@@ -95,7 +95,7 @@ def start_server(node_name='node_manager_daemon'):
     log_level = rospy.DEBUG
     try:
         log_level = getattr(rospy, rospy.get_param(
-            '/%s/log_level' % node_name, "DEBUG"))
+            '/%s/log_level' % node_name, "INFO"))
     except Exception as e:
         print("Error while set the log level: %s\n->INFO level will be used!" % e)
     rospy.init_node(node_name, log_level=log_level)

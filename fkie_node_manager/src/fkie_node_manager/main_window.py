@@ -55,7 +55,7 @@ except ImportError:
 import ruamel.yaml
 
 from fkie_master_discovery.common import resolve_url
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system.host import get_hostname

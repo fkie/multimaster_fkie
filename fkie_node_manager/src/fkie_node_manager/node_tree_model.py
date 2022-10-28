@@ -46,11 +46,12 @@ import traceback
 
 from diagnostic_msgs.msg import KeyValue
 from fkie_master_discovery.master_info import NodeInfo
-from fkie_node_manager_daemon.common import sizeof_fmt, isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
 from fkie_node_manager.common import lnamespace, namespace, normns
 from fkie_node_manager.name_resolution import NameResolution, MasterEntry
 from fkie_node_manager.parameter_handler import ParameterHandler
 import fkie_node_manager as nm
+from fkie_multimaster_msgs import formats
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system.host import get_hostname
 from fkie_multimaster_msgs.system.host import subdomain
@@ -1123,7 +1124,7 @@ class HostItem(GroupItem):
                                 if val.key == 'Free [%]':
                                     free_percent = float(val.value)
                                 elif val.key == 'Free':
-                                    free = sizeof_fmt(float(val.value))
+                                    free = formats.sizeof_fmt(float(val.value))
                                 elif val.key == 'Timestamp':
                                     stamp = val.value
                                 else:
@@ -1144,7 +1145,7 @@ class HostItem(GroupItem):
                                 key_fmt = key
                                 val_fmt = value
                                 if '[1s]' in key:
-                                    val_fmt = '%s/s' % sizeof_fmt(float(value))
+                                    val_fmt = '%s/s' % formats.sizeof_fmt(float(value))
                                     key_fmt = key_fmt.replace(' [1s]', '')
                                 elif '[%]' in key:
                                     val_fmt = '%s%%' % value

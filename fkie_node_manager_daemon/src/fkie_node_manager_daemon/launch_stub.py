@@ -34,8 +34,8 @@
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from fkie_multimaster_msgs import settings
+from fkie_multimaster_msgs.launch.xml import IncludedFile
 from fkie_multimaster_msgs.system import exceptions
-from .common import IncludedFile
 from .launch_description import LaunchDescription, RobotDescription, Capability
 from .startcfg import StartConfig
 
@@ -226,7 +226,7 @@ class LaunchStub(object):
         :param search_in_ext: file extensions to search in
         :type search_in_ext: [str]
         :return: Returns an iterator for IncludedFile
-        :rtype: fkie_node_manager_daemon.common.IncludedFile
+        :rtype: fkie_multimaster_msgs.launch.xml.IncludedFile
         '''
         reply = self._get_included_files(path=root, recursive=recursive, unique=False,
                                          include_args=include_args, include_pattern=include_pattern, search_in_ext=search_in_ext)

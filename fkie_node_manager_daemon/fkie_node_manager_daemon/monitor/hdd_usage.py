@@ -21,7 +21,7 @@ import psutil
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from fkie_node_manager_daemon.common import sizeof_fmt
+from fkie_multimaster_msgs import formats
 from fkie_multimaster_msgs.defines import LOG_PATH
 from .sensor_interface import SensorInterface
 
@@ -49,14 +49,14 @@ class HddUsage(SensorInterface):
             diag_vals = []
             warn_on_space = hdd.total * (1.0 - self._hdd_usage_warn)
             diag_msg = 'warn at >%s%% (<%s)' % (
-                self._hdd_usage_warn * 100., sizeof_fmt(warn_on_space))
+                self._hdd_usage_warn * 100., formats.sizeof_fmt(warn_on_space))
             warn_level = warn_on_space
             if diag_level == DiagnosticStatus.WARN:
                 warn_level = warn_level * 1.1
             if hdd.free <= warn_on_space:
                 diag_level = DiagnosticStatus.WARN
                 diag_msg = 'Free disk space on log path only %s (warn on <%s)' % (
-                    sizeof_fmt(hdd.free), sizeof_fmt(warn_on_space))
+                    formats.sizeof_fmt(hdd.free), formats.sizeof_fmt(warn_on_space))
             # print "Percent Disk %.2f" % (hdd.percent), diag_level
             diag_vals.append(KeyValue(key='Free', value='%d' % hdd.free))
             diag_vals.append(

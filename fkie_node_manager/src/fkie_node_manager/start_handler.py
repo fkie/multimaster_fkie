@@ -45,11 +45,10 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 
-from fkie_node_manager_daemon.common import get_cwd
 from fkie_node_manager_daemon import launcher
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
-from fkie_node_manager_daemon.common import isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import host as nmdhost
@@ -762,7 +761,7 @@ class StartHandler(object):
             if respawn_params['min_runtime'] > 0:
                 new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
         if startcfg.cwd:
-            cwd = get_cwd(startcfg.cwd, startcfg.binary_path)
+            cwd = ros_pkg.get_cwd(startcfg.cwd, startcfg.binary_path)
             if cwd:
                 args.append('__cwd:=%s' % cwd)
         # check for masteruri

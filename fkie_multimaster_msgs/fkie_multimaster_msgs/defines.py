@@ -26,15 +26,11 @@ SEP = '/'
 PRIV_NAME = '~'
 NM_DISCOVERY_NAMESPACE = '/_node_manager'
 NM_DISCOVERY_NAME = f'discovery_{os.environ["ROS_DISTRO"]}_{ros_host_suffix()}'
-EMPTY_PATTERN = re.compile(r'\b', re.I)
-INCLUDE_PATTERN = [r"\s*(\$\(find-pkg-share.*?\)[^ \"]*)",
-                   r"file=\"(.*?)\"",
-                   r"textfile=\"(.*?)\"",
-                   r"binfile=\"(.*?)\"",
-                   r"\"\s*(pkg:\/\/.*?)\"",
-                   r"\"\s*(package:\/\/.*?)\""]
+EMPTY_PATTERN = re.compile('\b', re.I)
 SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
                  '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
+
+PACKAGE_FILE = 'package.xml'
 
 try:
     import rospkg

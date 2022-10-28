@@ -13,7 +13,7 @@ import rospy
 from rosgraph.network import get_local_addresses
 
 from fkie_master_discovery.udp import DiscoverSocket
-from fkie_node_manager_daemon.common import isstring
+from fkie_node_manager_daemon.strings import isstring
 
 try:
     from fkie_node_manager import get_ros_home

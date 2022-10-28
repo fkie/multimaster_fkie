@@ -46,7 +46,7 @@ try:
 except ImportError as err:
     sys.stderr.write("Cannot import GetLoggers service definition: %s" % err)
 
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from .rosout_listener import RosoutListener
 import fkie_node_manager as nm
 from fkie_multimaster_msgs.logging.logging import Log

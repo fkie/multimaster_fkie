@@ -50,7 +50,7 @@ import rospy
 from fkie_master_discovery.master_discovery import Discoverer
 from fkie_master_discovery.udp import DiscoverSocket, QueueReceiveItem
 import fkie_node_manager as nm
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 
 
 class NetworkDiscoveryDialog(QDialog, threading.Thread):

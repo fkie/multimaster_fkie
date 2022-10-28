@@ -52,7 +52,9 @@ except ImportError:
 
 
 from fkie_master_discovery.master_info import NodeInfo
-from fkie_node_manager_daemon.common import interpret_path, sizeof_fmt, isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
+from fkie_multimaster_msgs import formats
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system import exceptions
@@ -1250,8 +1252,8 @@ class MasterViewProxy(QWidget):
                 for c in rd.capabilities:
                     if c.namespace not in caps:
                         caps[c.namespace] = dict()
-                    caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [interpret_path(
-                        i) for i in c.images], 'description': interpret_path(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
+                    caps[c.namespace][utf8(c.name)] = {'type': c.type, 'images': [xml.interpret_path(
+                        i) for i in c.images], 'description': xml.interpret_path(utf8(c.description.replace("\\n ", "\n"))), 'nodes': list(c.nodes)}
                     for n in c.nodes:
                         rd_node_cfgs[n] = ld.path
                         alredy_added_nodes.add(n)
@@ -1269,7 +1271,7 @@ class MasterViewProxy(QWidget):
                         masteruri, robot_addr, ld.path, caps)
                     # set host description
                     tooltip = self.node_tree_model.update_host_description(
-                        masteruri, robot_addr, rd.robot_type, utf8(rd.robot_name), interpret_path(utf8(rd.robot_descr)))
+                        masteruri, robot_addr, rd.robot_type, utf8(rd.robot_name), xml.interpret_path(utf8(rd.robot_descr)))
                     self.capabilities_update_signal.emit(
                         masteruri, robot_addr, ld.path, [rd])
                     self.host_description_updated.emit(
@@ -1366,7 +1368,7 @@ class MasterViewProxy(QWidget):
                 clean_cmd = '<a href="rosclean://%s" title="calls `rosclean purge` at `%s`">rosclean purge</a>' % (
                     self.masteruri.replace('http://', ''), hostname)
                 res = self.set_diagnostic_warn('/node_manager_daemon', "disk usage in log directory @%s is %s. %s" % (
-                    get_hostname(self.masteruri), sizeof_fmt(self._diag_log_dir_size), clean_cmd))
+                    get_hostname(self.masteruri), formats.sizeof_fmt(self._diag_log_dir_size), clean_cmd))
         if state_ok:
             self.set_diagnostic_ok('/node_manager_daemon')
 

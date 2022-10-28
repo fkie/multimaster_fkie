@@ -34,7 +34,7 @@
 import rospy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 import fkie_multimaster_msgs.grpc.monitor_pb2 as mmsg
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 
 from .service import Service
 

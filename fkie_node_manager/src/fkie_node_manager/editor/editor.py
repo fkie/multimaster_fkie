@@ -38,7 +38,7 @@ import os
 import rospy
 
 
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_node_manager.common import package_name
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.run_dialog import PackageDialog

@@ -35,7 +35,7 @@ import os
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, Signal
 from python_qt_binding.QtGui import QColor, QPixmap
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_node_manager.html_delegate import HTMLDelegate
 import fkie_node_manager as nm
 

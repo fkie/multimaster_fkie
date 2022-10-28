@@ -49,7 +49,7 @@ import sys
 import threading
 import traceback
 
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.editor.line_edit import EnhancedLineEdit
 from fkie_node_manager.parameter_handler import ParameterHandler

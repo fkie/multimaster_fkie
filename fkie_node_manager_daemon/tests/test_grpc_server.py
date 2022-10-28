@@ -37,12 +37,12 @@ import unittest
 import rospy
 import time
 
-from fkie_node_manager_daemon.common import interpret_path
 from fkie_node_manager_daemon.file_item import FileItem
 from fkie_node_manager_daemon.server import GrpcServer
 from fkie_multimaster_msgs.grpc_helper import remote
 import fkie_node_manager_daemon.file_stub as fstub
 import fkie_node_manager_daemon.launch_stub as lstub
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.system import exceptions
 
 
@@ -68,9 +68,9 @@ class TestGrpcServer(unittest.TestCase):
         channel = remote.open_channel(url)
         self.fs = fstub.FileStub(channel)
         self.ls = lstub.LaunchStub(channel)
-        self.test_include_file = interpret_path(
+        self.test_include_file = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/include_dummy.launch")
-        path = interpret_path(
+        path = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/../../../build")
         self.test_save_file = "%s/tmp_save_dummy.launch" % path
         self.test_rename_from_file = "%s/tmp_rename_from_dummy.launch" % path
@@ -127,7 +127,7 @@ class TestGrpcServer(unittest.TestCase):
                 "`get_file_content` raises wrong Exception on not existing path `/xyz`, got: %s, expected: `IOError`" % type(err))
 
     def test_get_included_files(self):
-        path = interpret_path(
+        path = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/include_dummy.launch")
         file_list = [file_tuple for file_tuple in self.ls.get_included_files_set(
             path, recursive=True, include_pattern=[])]
@@ -169,7 +169,7 @@ class TestGrpcServer(unittest.TestCase):
             self.fail(
                 "`load_launch` did not raises `exceptions.LaunchSelectionRequest` on multiple launch files")
         except exceptions.LaunchSelectionRequest as _lsr:
-            path = interpret_path(
+            path = xml.interpret_path(
                 "$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         except Exception as err:
             self.fail("`load_launch` raises wrong Exception on multiple launch files, got: %s, expected: `exceptions.LaunchSelectionRequest`: %s" % (
@@ -225,7 +225,7 @@ class TestGrpcServer(unittest.TestCase):
             len(result[0].robot_descriptions), 2))
 
     def test_reload_launch(self):
-        path = interpret_path(
+        path = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/include_dummy.launch")
         try:
             launch_file, _argv = self.ls.reload_launch(path)

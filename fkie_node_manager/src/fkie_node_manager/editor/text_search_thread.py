@@ -40,7 +40,8 @@ from xml.dom import minidom
 
 import fkie_node_manager as nm
 
-from fkie_node_manager_daemon.common import replace_arg, utf8
+from fkie_node_manager_daemon.strings import utf8
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 
@@ -291,10 +292,10 @@ class TextSearchThread(QObject, threading.Thread):
                         for attridx in range(node.attributes.length):
                             attr = node.attributes.item(attridx)
                             if attr.localName == 'if':
-                                val = replace_arg(attr.value, resolve_args)
+                                val = xml.replace_arg(attr.value, resolve_args)
                                 return val in ['true', '1']
                             elif attr.localName == 'unless':
-                                val = replace_arg(attr.value, resolve_args)
+                                val = xml.replace_arg(attr.value, resolve_args)
                                 return val in ['false', '0']
                     idx += 1
         except Exception as err:

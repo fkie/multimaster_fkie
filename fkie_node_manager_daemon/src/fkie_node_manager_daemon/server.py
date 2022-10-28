@@ -46,6 +46,7 @@ import fkie_multimaster_msgs.grpc.screen_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as stgrpc
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 from fkie_multimaster_msgs.defines import GRPC_SERVER_PORT_OFFSET
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import ros1_grpcuri
 
@@ -53,7 +54,6 @@ from fkie_multimaster_msgs.system import ros1_grpcuri
 # crossbar-io dependencies
 import asyncio
 
-from .common import interpret_path
 from .file_servicer import FileServicer
 from .launch_servicer import LaunchServicer
 from .monitor_servicer import MonitorServicer
@@ -184,18 +184,18 @@ class GrpcServer:
         self.server.stop(3)
 
     def load_launch_file(self, path, autostart=False):
-        self.launch_servicer.load_launch_file(interpret_path(path), autostart)
+        self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
         Log.info("Service request to load and start %s" % request.path)
         self.launch_servicer.load_launch_file(
-            interpret_path(request.path), True)
+            xml.interpret_path(request.path), True)
         return LoadLaunchResponse()
 
     def _rosservice_load_launch(self, request):
         Log.info("Service request to load %s" % request.path)
         self.launch_servicer.load_launch_file(
-            interpret_path(request.path), False)
+            xml.interpret_path(request.path), False)
         return LoadLaunchResponse()
 
     def _rosservice_start_node(self, req):

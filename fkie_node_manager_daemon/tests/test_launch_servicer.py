@@ -36,10 +36,10 @@ import unittest
 import time
 from grpc.beta._metadata import beta
 
-from fkie_node_manager_daemon.common import interpret_path
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from fkie_node_manager_daemon.launch_servicer import LaunchServicer
 from fkie_node_manager_daemon.launch_description import RobotDescription, Capability
+from fkie_multimaster_msgs.launch import xml
 
 PKG = 'fkie_node_manager_daemon'
 
@@ -96,7 +96,7 @@ class TestLaunchServicer(unittest.TestCase):
 
     def test_get_included_files(self):
         ls = LaunchServicer(monitor_servicer=None, loop=None, test_env=True)
-        path = interpret_path(
+        path = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/include_dummy.launch")
         response_stream = ls.GetIncludedFiles(lmsg.IncludedFilesRequest(
             path=path, recursive=True, unique=True, pattern=[]), DummyContext())
@@ -147,7 +147,7 @@ class TestLaunchServicer(unittest.TestCase):
                          % (response.status.code, lmsg.ReturnStatus.StatusType.Value('MULTIPLE_LAUNCHES'), response.status.error_msg))
         self.assertEqual(len(response.path), 2, "wrong count of multiple launch files, result: %d, expected: %d" % (
             len(response.path), 2))
-        path = interpret_path(
+        path = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         response = ls.LoadLaunch(lmsg.LoadLaunchRequest(package='fkie_node_manager_daemon',
                                                         launch='description_example.launch', path=path, request_args=request_args), DummyContext())
@@ -184,7 +184,7 @@ class TestLaunchServicer(unittest.TestCase):
 
     def test_reload_file(self):
         ls = LaunchServicer(monitor_servicer=None, loop=None, test_env=True)
-        path = interpret_path(
+        path = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         response = ls.ReloadLaunch(lmsg.LaunchFile(path=path), DummyContext())
         self.assertEqual(response.status.code, lmsg.ReturnStatus.StatusType.Value('FILE_NOT_FOUND'),
@@ -202,7 +202,7 @@ class TestLaunchServicer(unittest.TestCase):
 
     def test_get_nodes(self):
         ls = LaunchServicer(monitor_servicer=None, loop=None, test_env=True)
-        path = interpret_path(
+        path = xml.interpret_path(
             "$(find fkie_node_manager_daemon)/tests/resources/description_example.launch")
         response = ls.LoadLaunch(lmsg.LoadLaunchRequest(
             package='fkie_node_manager_daemon', launch='description_example.launch', path=path), DummyContext())

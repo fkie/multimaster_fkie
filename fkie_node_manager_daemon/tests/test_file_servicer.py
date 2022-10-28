@@ -37,8 +37,8 @@ import unittest
 import time
 from grpc.beta._metadata import beta
 
+from fkie_multimaster_msgs.launch import xml
 import fkie_multimaster_msgs.grpc.file_pb2 as fmsg
-from fkie_node_manager_daemon.common import interpret_path
 from fkie_node_manager_daemon.file_servicer import FileServicer
 
 PKG = 'fkie_node_manager_daemon'
@@ -82,7 +82,7 @@ class TestFileServiceServicer(unittest.TestCase):
 
     def setUp(self):
         self.current_pose = 0
-        path = interpret_path(
+        path = xml.interpret_path(
             '$(find fkie_node_manager_daemon)/../../../build')
         if not os.path.exists(path):
             os.mkdir(path)
@@ -241,7 +241,7 @@ class TestFileServiceServicer(unittest.TestCase):
         # save_response = next(fs.SaveFileContent([content], DummyContext()))
         # if save_response.status.code == fmsg.ReturnStatus.StatusType.Value('OK'):
         #     # test in industrial ci, use source folder
-        #     content.file.path = interpret_path('$(find fkie_node_manager_daemon)/') + content.file.path
+        #     content.file.path = xml.interpret_path('$(find fkie_node_manager_daemon)/') + content.file.path
         #     save_response = next(fs.SaveFileContent([content], DummyContext()))
         # self.assertEqual(save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR'), 'save in root folder returns a wrong result: %d, expected: %d' % (save_response.status.code, fmsg.ReturnStatus.StatusType.Value('IO_ERROR')))
         # save file in more chunks

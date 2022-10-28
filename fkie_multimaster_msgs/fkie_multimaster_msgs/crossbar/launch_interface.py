@@ -34,14 +34,7 @@ import json
 
 from typing import List, Dict
 
-INCLUDE_PATTERN = [r"\s*(\$\(find-pkg-share.*?\)[^ \"]*)",
-                   r"file=\"(.*?)\"",
-                   r"textfile=\"(.*?)\"",
-                   r"binfile=\"(.*?)\"",
-                   r"\"\s*(pkg:\/\/.*?)\"",
-                   r"\"\s*(package:\/\/.*?)\""]
-SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg', '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
-
+from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
 from .runtime_interface import RosParameter
 
 
@@ -299,7 +292,7 @@ class LaunchIncludedFilesRequest:
     def __init__(self, path: str, *,
                  recursive: bool = True,
                  unique: bool = False,
-                 pattern: List[str] = INCLUDE_PATTERN,
+                 pattern: List[str] = [],
                  search_in_ext: List[str] = SEARCH_IN_EXT,
                  args: List[LaunchArgument] = []) -> None:
         '''

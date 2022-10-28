@@ -35,7 +35,7 @@ import rospy
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.screen_stub as sstub
-from fkie_node_manager_daemon.common import sizeof_fmt
+from fkie_multimaster_msgs import formats
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import ros1_grpcuri
 
@@ -133,7 +133,7 @@ class ScreenChannel(ChannelInterface):
             sm, channel = self.get_screen_manager(uri)
             log_dir_size = sm.log_dir_size()
             Log.debug("log_dir size on %s: %s" %
-                      (grpc_url, sizeof_fmt(log_dir_size)))
+                      (grpc_url, formats.sizeof_fmt(log_dir_size)))
             self.log_dir_size_signal.emit(grpc_url, log_dir_size)
         except Exception as e:
             self.error.emit("log_dir_size", "grpc://%s" % uri, "", e)

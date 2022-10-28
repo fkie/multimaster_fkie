@@ -47,11 +47,11 @@ from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_config import LaunchConfig
 from .launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead
-from .common import get_cwd, interpret_path
 from .startcfg import StartConfig
 import fkie_node_manager_daemon as nmd
 from fkie_multimaster_msgs import names
 from fkie_multimaster_msgs import ros_pkg
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.system import exceptions
@@ -270,7 +270,7 @@ def run_node(startcfg):
             new_arg = arg
             # TODO: check if we have to prepand --ros-args
             if arg.startswith('$(find'):
-                new_arg = interpret_path(arg)
+                new_arg = xml.interpret_path(arg)
                 nmd.ros_node.get_logger().debug("interpret arg '%s' to '%s'" % (arg, new_arg))
             args.append(new_arg)
         print("startcfg", startcfg)
@@ -315,7 +315,7 @@ def run_node(startcfg):
                 # for p in e.paths:
                 #     err += f'\n- {p}'
                 raise exceptions.BinarySelectionRequest(e.paths, err)
-            cwd = get_cwd(startcfg.cwd, cmd_type)
+            cwd = ros_pkg.get_cwd(startcfg.cwd, cmd_type)
             try:
                 global STARTED_BINARIES
                 STARTED_BINARIES[nodename] = (

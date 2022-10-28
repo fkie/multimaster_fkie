@@ -38,7 +38,8 @@ import rospy
 
 import fkie_node_manager as nm
 
-from fkie_node_manager_daemon.common import interpret_path, replace_paths, utf8
+from fkie_node_manager_daemon.strings import utf8
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 
 try:
@@ -148,11 +149,11 @@ class CapabilityHeader(QHeaderView):
             if displayed_name:
                 obj['displayed_name'] = displayed_name
                 obj['type'] = robot_type
-                obj['description'] = replace_paths(description)
+                obj['description'] = xml.replace_paths(description)
                 if images:
                     del obj['images'][:]
             for image_path in images:
-                img = interpret_path(image_path)
+                img = xml.interpret_path(image_path)
                 if img and img[0] != os.path.sep:
                     img = os.path.join(nm.settings().PACKAGE_DIR, image_path)
                 if os.path.isfile(img):
@@ -174,10 +175,10 @@ class CapabilityHeader(QHeaderView):
             if not obj['type']:
                 obj['type'] = robot_type
             if not obj['description']:
-                obj['description'] = replace_paths(description)
+                obj['description'] = xml.replace_paths(description)
             if not obj['images']:
                 for image_path in images:
-                    img = interpret_path(image_path)
+                    img = xml.interpret_path(image_path)
                     if img and img[0] != os.path.sep:
                         img = os.path.join(
                             nm.settings().PACKAGE_DIR, image_path)

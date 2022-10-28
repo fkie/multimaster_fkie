@@ -21,7 +21,6 @@ import psutil
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-# from fkie_node_manager_daemon.common import sizeof_fmt
 from .sensor_interface import SensorInterface
 
 

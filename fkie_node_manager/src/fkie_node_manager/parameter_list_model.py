@@ -38,7 +38,7 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
-from fkie_node_manager_daemon.common import isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
 
 
 class ParameterValueItem(QStandardItem):

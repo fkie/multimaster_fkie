@@ -1,77 +1,42 @@
-# Software License Agreement (BSD License)
-#
-# Copyright (c) 2018, Fraunhofer FKIE/CMS, Alexander Tiderko
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above
-#    copyright notice, this list of conditions and the following
-#    disclaimer in the documentation and/or other materials provided
-#    with the distribution.
-#  * Neither the name of Fraunhofer nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
 
+# ROS 2 Node Manager
+# Graphical interface to manage the running and configured ROS 2 nodes on different hosts.
+#
+# Author: Alexander Tiderko
+#
+# Copyright 2020 Fraunhofer FKIE
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 
-from datetime import datetime
+from typing import Dict
+from typing import List
+from typing import Text
+from typing import Tuple
+from typing import Union
+
 import os
 import re
 import sys
-
-import rospy
-import roslib
-import rospkg
 from xml.dom import minidom
+
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.logging.logging import Log
-
-
-MANIFEST_FILE = 'manifest.xml'
-PACKAGE_FILE = 'package.xml'
-EMPTY_PATTERN = re.compile('\b', re.I)
-INCLUDE_PATTERN = [r"\s*(\$\(find.*?\)[^\"]*)",
-                   r"file=\"(.*?)\"",
-                   r"textfile=\"(.*?)\"",
-                   r"binfile=\"(.*?)\"",
-                   r"\"\s*(pkg:\/\/.*?)\"",
-                   r"\"\s*(package:\/\/.*?)\""]
-SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
-                 '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
-
-try:
-    from catkin_pkg.package import parse_package
-    CATKIN_SUPPORTED = True
-except ImportError:
-    CATKIN_SUPPORTED = False
-
-_get_pkg_path_var = None
-
-
-PACKAGE_CACHE = {}
-SOURCE_PATH_TO_PACKAGES = {}
+from fkie_multimaster_msgs.defines import EMPTY_PATTERN
+from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
 
 
 class IncludedFile():
 
-    def __init__(self, path_or_str, line_number, inc_path, exists, raw_inc_path, rec_depth, args, size=0):
+    def __init__(self, path_or_str: str, line_number: int, inc_path: str, exists: bool, raw_inc_path: str, rec_depth: int, args: Dict[str, str], size: int = 0):
         '''
         Representation of an included file found in given string or path of a file.
 
@@ -102,78 +67,35 @@ class IncludedFile():
         result += " exists=%s" % self.exists
         result += " size=%d" % self.size
         result += " rec_depth=%d" % self.rec_depth
-        result += " args=%s" % utf8(self.args)
+        result += " args=%s" % self.args
         result += " />"
         return result
 
 
-def utf8(s, errors='replace'):
+def _find_include_tuple(content: str) -> Dict[str, str]:
     '''
-    Converts string to unicode.
+    Searches in the content string for package include patterns.
+    Returns a dictionary with package name and path suffix.
     '''
-    if sys.version_info[0] <= 2:
-        if isinstance(s, (str, buffer)):
-            return unicode(s, 'utf-8', errors=errors)
-        elif not isinstance(s, unicode):
-            return unicode(str(s))
-    elif isinstance(s, bytes):
-        return s.decode('utf-8')
-    elif not isinstance(s, str):
-        return str(s)
-    return s
-
-
-def isstring(s):
-    '''
-    Small helper version to check an object is a string in a way that works
-    for both Python 2 and 3
-    '''
-    try:
-        return isinstance(s, basestring)
-    except NameError:
-        return isinstance(s, str)
-
-
-def get_cwd(cwd, binary=''):
-    result = ''
-    if cwd == 'node':
-        result = os.path.dirname(binary)
-    elif cwd == 'cwd':
-        result = os.getcwd()
-    elif cwd == 'ros-root':
-        result = rospkg.get_ros_root()
-    else:
-        result = rospkg.get_ros_home()
-    if not os.path.exists(result):
-        try:
-            os.makedirs(result)
-        except OSError:
-            # exist_ok=True
-            pass
+    result = {}
+    pattern = ["\$\(find (.*?)\)/([^ \"']*)",
+               "\$\(find-pkg-share (.*?)\)/([^ \"']*)",
+               "pkg:\/\/(.*?)/([^ \"']*)",
+               "package:\/\/(.*?)/([^ \"']*)"]
+    pkg_pattern = re.compile('|'.join(pattern))
+    groups = pkg_pattern.findall(content)
+    for group in groups:
+        for index in range(0, len(group), 2):
+            pkg_name = group[index]
+            if pkg_name:
+                path_suffix = ''
+                if index + 1 < len(group):
+                    path_suffix = group[index + 1]
+                result[pkg_name] = path_suffix
     return result
 
 
-def sizeof_fmt(num, suffix='B'):
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-        if abs(num) < 1024.0:
-            return "%.0f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.0f%s%s" % (num, 'YiB', suffix)
-
-
-def formated_ts(stamp, with_date=True, with_nanosecs=True, tz=None):
-    ts = stamp
-    if hasattr(stamp, 'secs'):
-        ts = stamp.secs + stamp.secs / 1000000000.
-    str_format = '%H:%M:%S'
-    if with_nanosecs:
-        str_format += '.%f'
-    if with_date:
-        str_format += ' (%d.%m.%Y)'
-    return datetime.fromtimestamp(ts, tz).strftime(str_format)
-
-
-def interpret_path(path, pwd='.'):
+def interpret_path(path: str, pwd: str = '.') -> str:
     '''
     Tries to determine the path of included file. The statement of $(find 'package') will be resolved.
 
@@ -184,68 +106,60 @@ def interpret_path(path, pwd='.'):
     :rtype: str
     '''
     result = path.strip()
-    # try replace package name by package path
-    pkg_pattern = re.compile(
-        r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
-    #pkg_pattern = re.compile(r"%s" % '|'.join(INCLUDE_PATTERN))
-    for groups in pkg_pattern.finditer(path):
-        for index in range(groups.lastindex):
-            pkg_name = groups.groups()[index]
-            if pkg_name:
-                pkg = ros_pkg.get_path(pkg_name)
-                Log.debug(
-                    "rospkg.RosPack.get_path for '%s': %s" % (pkg_name, pkg))
-                path_suffix = path[groups.end():].rstrip("'")
-                if path_suffix.startswith('/'):
-                    paths = roslib.packages._find_resource(
-                        pkg, path_suffix.strip(os.path.sep))
-                    Log.debug(" search for resource with roslib.packages._find_resource, suffix '%s': %s" % (
-                        path_suffix.strip(os.path.sep), paths))
-                    if len(paths) > 0:
-                        # if more then one launch file is found, take the first one
-                        return paths[0]
-                full_path = os.path.normpath(os.path.join(pkg, path_suffix))
-                if path_suffix:
-                    if not os.path.exists(full_path):
-                        # we try to find the specific path in share via catkin
-                        # which will search in install/devel space and the source folder of the package
-                        try:
-                            from catkin.find_in_workspaces import find_in_workspaces
-                            global SOURCE_PATH_TO_PACKAGES
-                            paths = find_in_workspaces(
-                                ['share'], project=pkg_name, path=path_suffix.strip(os.path.sep), first_matching_workspace_only=True,
-                                first_match_only=True, source_path_to_packages=SOURCE_PATH_TO_PACKAGES)
-                            if paths:
-                                return paths[0]
-                        except Exception:
-                            import traceback
-                            Log.warn(
-                                "search in install/devel space failed: %s" % traceback.format_exc())
-                    return full_path
-                else:
-                    return "%s%s" % (os.path.normpath(pkg), os.path.sep)
+    groups = _find_include_tuple(path)
+    full_path_not_exists = ''
+    for pkg_name, path_suffix in groups.items():
+        pkg_path = ros_pkg.get_path(pkg_name)
+        Log.debug(f"{result} got path for '{pkg_name}': {pkg_path}")
+        if path_suffix.startswith('//'):
+            path_suffix = path_suffix[2:]
+        full_path = os.path.normpath(os.path.join(pkg_path, path_suffix))
+        if os.path.exists(full_path):
+            return full_path
+        elif full_path:
+            full_path_not_exists = full_path
+
+        path_suffix_stripped = path_suffix.strip(os.path.sep)
+        # try to find first using ROS find_resource methods
+        path_res = ros_pkg.get_ros_resource_from_package(
+            pkg_path, path_suffix_stripped)
+        if path_res:
+            return path_res
+
+        # try to find the specific path in share
+        try:
+            paths = ros_pkg.get_share_files_path_from_package(
+                pkg_name, path_suffix_stripped)
+            if paths:
+                return paths[0]
+        except Exception:
+            import traceback
+            Log.warn(
+                f"search in install/devel space failed: {traceback.format_exc()}")
     if path.startswith('file://'):
         result = path[7:]
+    elif full_path_not_exists:
+        return full_path_not_exists
     return os.path.normpath(os.path.join(pwd, result))
 
 
-def replace_paths(text, pwd='.'):
+def replace_paths(text: str, pwd: str = '.') -> str:
     '''
     Like meth:interpret_path(), but replaces all matches in the text and retain other text.
     '''
     result = text
     path_pattern = re.compile(
-        r"(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
+        r"(\$\(find-pkg-share .*?\)/)|(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
     for groups in path_pattern.finditer(text):
         for index in range(groups.lastindex):
             path = groups.groups()[index]
             if path:
-                rpath = interpret_path(path, pwd)
-                result = result.replace(path, rpath)
+                new_path = interpret_path(path, pwd)
+                result = result.replace(path.rstrip(os.path.sep), new_path)
     return result
 
 
-def get_internal_args(content, path=None, only_default=False):
+def get_internal_args(content: str, path: str = '', only_default: bool = False) -> Dict[str, str]:
     '''
     Load the content with xml parser, search for arg-nodes.
     :return: a dictionary with detected arguments
@@ -254,8 +168,10 @@ def get_internal_args(content, path=None, only_default=False):
     new_content = content
     try:
         resolve_args_intern = {}
-        xml_nodes = minidom.parseString(new_content.encode(
-            'utf-8')).getElementsByTagName('launch')
+        if sys.version_info < (3, 0):
+            new_content = new_content.encode('utf-8')
+        xml_nodes = minidom.parseString(
+            new_content).getElementsByTagName('launch')
         for node in xml_nodes:
             for child in node.childNodes:
                 if child.localName == 'arg' and child.hasAttributes():
@@ -274,12 +190,12 @@ def get_internal_args(content, path=None, only_default=False):
                     if aname and add_arg:
                         resolve_args_intern[aname] = aval
     except Exception as err:
-        print("%s while get_internal_args %s" % (utf8(err), path))
-        Log.debug("%s while get_internal_args %s" % (utf8(err), path))
+        print(f"error while get_internal_args for {path}: {err}")
+        Log.debug(f"error while get_internal_args for {path}: {err}")
     return resolve_args_intern
 
 
-def replace_internal_args(content, resolve_args={}, path=None):
+def _replace_internal_args(content: str, resolve_args: Dict[str, str] = {}, path: str = '') -> Union[bool, str, Dict[str, str]]:
     '''
     Load the content with xml parser, search for arg-nodes and replace the arguments in whole content.
     :return: True if something was replaced, new content and detected arguments
@@ -299,35 +215,36 @@ def replace_internal_args(content, resolve_args={}, path=None):
             new_content = new_content.replace('$(arg %s)' % arg_key, args_val)
             replaced = True
     except Exception as err:
-        print("%s in %s" % (utf8(err), path))
+        print(f"error in _replace_internal_args for {path}: {err}")
         import traceback
-        Log.debug("%s in %s" % (traceback.format_exc(), path))
+        Log.debug(
+            f"error in _replace_internal_args for {path}: {traceback.format_exc()}")
     return replaced, new_content, resolve_args_intern
 
 
-def get_arg_names(value):
+def get_arg_names(content: str) -> List[str]:
     '''
     Searches for $(arg <name>) statements and returns a list with <name>.
     :rtype: [str]
     '''
     result = []
     re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
-    for arg in re_if.findall(value):
+    for arg in re_if.findall(content):
         result.append(arg)
     return result
 
 
-def replace_arg(value, resolve_args):
+def replace_arg(content: str, resolve_args: Dict[str, str]) -> str:
     # test for if statement
-    result = value
+    result = content
     re_if = re.compile(r"\$\(arg.(?P<name>.*?)\)")
-    for arg in re_if.findall(value):
+    for arg in re_if.findall(content):
         if arg in resolve_args:
             result = result.replace('$(arg %s)' % arg, resolve_args[arg])
     return result
 
 
-def __get_include_args(content, resolve_args):
+def __get_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
     included_files = []
     try:
         xml_nodes = minidom.parseString(
@@ -363,19 +280,18 @@ def __get_include_args(content, resolve_args):
                 if filename:
                     included_files.append((filename, resolved_inc_args))
     except Exception as err:
-        print("__get_include_args reports: %s" % utf8(err))
-        Log.debug(utf8(err))
+        print(f"__get_include_args reports: {err}")
+        Log.debug(f"__get_include_args reports: {err}")
     return included_files
 
 
-def find_included_files(string,
-                        recursive=True,
-                        unique=False,
-                        include_pattern=INCLUDE_PATTERN,
-                        search_in_ext=SEARCH_IN_EXT,
-                        resolve_args={},
-                        unique_files=[],
-                        rec_depth=0):
+def find_included_files(string: str,
+                        recursive: bool = True,
+                        unique: bool = False,
+                        search_in_ext: List[str] = SEARCH_IN_EXT,
+                        resolve_args: Dict[str, str] = {},
+                        unique_files: List[str] = [],
+                        rec_depth: int = 0) -> List[IncludedFile]:
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
@@ -383,8 +299,6 @@ def find_included_files(string,
     :param str string: Path to an exists file or test with included file.
     :param bool recursive: parse also found included files (Default: True)
     :param bool unique: returns the same files once (Default: False)
-    :param include_pattern: the list with patterns to find include files.
-    :type include_pattern: [str]
     :param search_in_ext: file extensions to search in
     :type search_in_ext: [str]
     :param resolve_args: dictionary with arguments to resolve arguments in path names
@@ -393,9 +307,14 @@ def find_included_files(string,
     :rtype: iterator with IncludedFile
     '''
     re_filelist = EMPTY_PATTERN
-    if include_pattern:
-        # create regular expression from pattern
-        re_filelist = re.compile(r"%s" % '|'.join(include_pattern))
+    pattern = ["\s*(\$\(find-pkg-share .*?\)[^\"]*)",
+               "\s*(\$\(find .*?\)[^\"]*)",
+               "\s*(pkg:\/\/.*?/[^\"]*)",
+               "\s*(package:\/\/.*?/[^\"]*)",
+               "textfile=\"(.*?)\"",
+               "binfile=\"(.*?)\"",
+               "file=\"(.*?)\""]
+    re_filelist = re.compile('|'.join(pattern))
     pwd = '.'
     content = string
     content_info = 'content'
@@ -417,7 +336,7 @@ def find_included_files(string,
     # replace the arguments and detect arguments for include-statements
     resolve_args_intern = {}
     if (string.endswith('.launch') or string.find('.launch.') > 0):
-        _replaced, content_resolved, resolve_args_intern = replace_internal_args(
+        _replaced, content_resolved, resolve_args_intern = _replace_internal_args(
             content, resolve_args=resolve_args, path=string)
         # intern args use only internal
         inc_files_forward_args = __get_include_args(
@@ -446,7 +365,7 @@ def find_included_files(string,
                         filename = replace_arg(filename, resolve_args_intern)
                         filename = interpret_path(filename, pwd)
                     except Exception as err:
-                        Log.warn("Interpret file failed: %s" % utf8(err))
+                        Log.warn(f"Interpret file failed: {err}")
                     if os.path.isdir(filename):
                         filename = ''
                     exists = os.path.isfile(filename)
@@ -468,7 +387,7 @@ def find_included_files(string,
                             try:
                                 ext = os.path.splitext(filename)
                                 if ext[1] in search_in_ext:
-                                    for res_item in find_included_files(filename, recursive, False, include_pattern, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
+                                    for res_item in find_included_files(filename, recursive, False, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
                                         publish = not unique or (
                                             unique and res_item.inc_path not in my_unique_files)
                                         if publish:
@@ -476,14 +395,14 @@ def find_included_files(string,
                                                 res_item.inc_path)
                                             yield res_item
                             except Exception as e:
-                                Log.warn("Error while recursive search for include pattern in %s: %s" % (
-                                    filename, utf8(e)))
+                                Log.warn(
+                                    f"Error while recursive search for include pattern in {filename}: {e}")
                 except Exception as e:
-                    Log.warn("Error while parse %s for include pattern: %s" % (
-                        content_info, utf8(e)))
+                    Log.warn(
+                        f"Error while parse {content_info} for include pattern: {e}")
 
 
-def remove_after_space(filename):
+def remove_after_space(filename: str) -> str:
     result = filename
     if filename:
         idx_whitespace = -1

@@ -55,7 +55,7 @@ import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 
 from . import launcher
-from .common import INCLUDE_PATTERN, SEARCH_IN_EXT, replace_arg, get_arg_names, find_included_files, interpret_path, utf8
+from fkie_node_manager_daemon.strings import utf8
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 from fkie_multimaster_msgs import ros_pkg
@@ -77,6 +77,8 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchMessageStruct
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchPublishMessage
+from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
+from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import ros1_masteruri
@@ -342,7 +344,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
     def _add_launch_to_observer(self, path):
         try:
             self._add_file_to_observe(path)
-            pattern = INCLUDE_PATTERN
             search_in_ext = SEARCH_IN_EXT
             # search for loaded file and get the arguments
             resolve_args = {}
@@ -351,7 +352,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in find_included_files(path, True, True, pattern, search_in_ext, resolve_args):
+            for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
                 if inc_file.exists:
                     self._add_file_to_observe(inc_file.inc_path)
         except Exception as e:
@@ -360,7 +361,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
     def _remove_launch_from_observer(self, path):
         try:
             self._remove_file_from_observe(path)
-            pattern = INCLUDE_PATTERN
             search_in_ext = SEARCH_IN_EXT
             # search for loaded file and get the arguments
             resolve_args = {}
@@ -369,7 +369,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                     resolve_args.update(cfg.resolve_dict)
                     break
             # replay each file
-            for inc_file in find_included_files(path, True, True, pattern, search_in_ext, resolve_args):
+            for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
                 self._remove_file_from_observe(inc_file.inc_path)
         except Exception as e:
             Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
@@ -1136,9 +1136,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             'Request to [ros.launch.get_included_files]: Path [%s]' % str(path))
         result = []
         try:
-            pattern = INCLUDE_PATTERN
-            if request.pattern:
-                pattern = request.pattern
             search_in_ext = SEARCH_IN_EXT
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
@@ -1150,7 +1147,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                         resolve_args.update(lcfg.resolve_dict)
                         break
             # replay each file
-            for inc_file in find_included_files(request.path, request.recursive, request.unique, pattern, search_in_ext, resolve_args):
+            for inc_file in xml.find_included_files(request.path, request.recursive, request.unique, search_in_ext, resolve_args):
                 file_size = 0
                 if inc_file.exists:
                     file_size = os.path.getsize(inc_file.inc_path)
@@ -1237,9 +1234,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
     def GetIncludedFiles(self, request, context):
         Log.debug('GetIncludedFiles request:\n%s' % str(request))
         try:
-            pattern = INCLUDE_PATTERN
-            if request.pattern:
-                pattern = request.pattern
             search_in_ext = SEARCH_IN_EXT
             if request.search_in_ext:
                 search_in_ext = request.search_in_ext
@@ -1252,7 +1246,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                         resolve_args.update(lcfg.resolve_dict)
                         break
             # replay each file
-            for inc_file in find_included_files(request.path, request.recursive, request.unique, pattern, search_in_ext, resolve_args):
+            for inc_file in xml.find_included_files(request.path, request.recursive, request.unique, search_in_ext, resolve_args):
                 reply = lmsg.IncludedFilesReply()
                 reply.root_path = inc_file.path_or_str
                 reply.linenr = inc_file.line_number
@@ -1282,14 +1276,14 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         result = []
         if text:
             try:
-                for inc_file in find_included_files(text, False, False, search_in_ext=[]):
+                for inc_file in xml.find_included_files(text, False, False, search_in_ext=[]):
                     aval = inc_file.raw_inc_path
                     aitems = aval.split("'")
                     for search_for in aitems:
                         if not search_for:
                             continue
                         Log.debug("try to interpret: %s" % search_for)
-                        args_in_name = get_arg_names(search_for)
+                        args_in_name = xml.get_arg_names(search_for)
                         request_args = False
                         for arg_name in args_in_name:
                             if not arg_name in args:
@@ -1308,7 +1302,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                             reply.status.code = 'PARAMS_REQUIRED'
                             result.append(reply)
                         else:
-                            search_for_rpl = replace_arg(search_for, args)
+                            search_for_rpl = xml.replace_arg(search_for, args)
                             reply = LaunchInterpretPathReply(
                                 text=search_for, status='OK', path=search_for_rpl, exists=os.path.exists(search_for), args=request.args)
                             result.append(reply)
@@ -1330,7 +1324,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             if text:
                 reply = lmsg.InterpredPath()
                 try:
-                    reply.path = interpret_path(text)
+                    reply.path = xml.interpret_path(text)
                     reply.exists = os.path.exists(reply.path)
                     reply.status.code = OK
                 except Exception as err:
@@ -1356,8 +1350,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                     resolve_args.update(lcfg.resolve_dict)
                     break
             # add mtimes for all included files
-            inc_files = find_included_files(
-                request.path, True, True, INCLUDE_PATTERN, SEARCH_IN_EXT, resolve_args)
+            inc_files = xml.find_included_files(
+                request.path, True, True, SEARCH_IN_EXT, resolve_args)
             for inc_file in inc_files:
                 incf = inc_file.inc_path
                 if incf not in already_in:

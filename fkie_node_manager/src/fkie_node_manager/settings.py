@@ -42,11 +42,12 @@ import hashlib
 import roslib
 import rospy
 
-from fkie_node_manager_daemon.common import isstring, utf8
+from fkie_node_manager_daemon.strings import isstring, utf8
 from fkie_multimaster_msgs import settings as nmd_settings
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.common import get_ros_home
 from fkie_multimaster_msgs.defines import LOG_PATH
+from fkie_multimaster_msgs.defines import SEARCH_IN_EXT as DEFAULT_SEARCH_IN_EXT
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system import ros1_masteruri
@@ -135,8 +136,7 @@ class Settings(object):
     TIMEOUT_CONTROL = 5
     TIMEOUT_UPDATES = 20
 
-    SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
-                     '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
+    SEARCH_IN_EXT = DEFAULT_SEARCH_IN_EXT
     LAUNCH_VIEW_EXT = ['.launch', '.yaml', '.conf', '.cfg',
                        '.iface', '.nmprofile', '.sync', '.test', '.xacro']
 

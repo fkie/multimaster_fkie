@@ -41,7 +41,7 @@ import os
 import rospy
 import ruamel.yaml
 import uuid
-from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.strings import utf8
 
 
 import fkie_node_manager as nm

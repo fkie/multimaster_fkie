@@ -20,13 +20,13 @@
 from lxml import etree
 from io import StringIO
 
-from .common import get_share_files_path_from_package
+from fkie_multimaster_msgs.launch import ros_pkg
 
 
 class LaunchValidator(object):
 
     def __init__(self):
-        self.launch_xsd = get_share_files_path_from_package(
+        self.launch_xsd = ros_pkg.get_share_files_path_from_package(
             'fkie_node_manager_daemon', 'launch.xsd')
         print('self.launch_xsd', self.launch_xsd)
         self.xmlschema = None
