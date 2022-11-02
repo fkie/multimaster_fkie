@@ -5,7 +5,6 @@
 ##  Python
 
 # Unit tests not needing a running ROS core.
-catkin_add_nosetests(test_common.py)
 catkin_add_nosetests(test_file_servicer.py)
 catkin_add_nosetests(test_launch_servicer.py)
 

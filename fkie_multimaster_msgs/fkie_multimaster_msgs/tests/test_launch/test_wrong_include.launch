@@ -1,0 +1,20 @@
+<launch>
+
+   <arg name="robot_ns" default="packbot"/>
+   <arg name="tf_carto" default="tf_carto" />
+   
+   <param name="tf_prefix" value="$(arg robot_ns)" />
+	
+	<group ns="$(arg robot_ns)">
+	  <node name="fkie_multimaster_msgs" pkg="fkie_multimaster_msgs"
+	        type="fkie_multimaster_msgs" args="
+	        -configuration_directory $(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch
+	        -configuration_basename packbot_cartographer.lua"
+	        output="screen">
+	    	 <param name="capability_group" value="localization_cartographer" />
+	      <remap from="scan" to="base_scan" />
+	      
+	      <remap from="/tf" to="$(arg tf_carto)"/>
+	      <remap from="/tf_static" to="$(arg tf_carto)_static"/>
+	  </node>
+</launch>
