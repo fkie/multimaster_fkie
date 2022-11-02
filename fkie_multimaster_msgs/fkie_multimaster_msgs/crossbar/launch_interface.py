@@ -33,6 +33,7 @@
 import json
 
 from typing import List, Dict
+from numbers import Number
 
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
 from .runtime_interface import RosParameter
@@ -160,6 +161,34 @@ class LaunchAssociations:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LaunchNodeInfo:
+    '''
+    Represents the launch information for a given node
+    '''
+
+    def __init__(self, nodeName: str, nodeNamespace: str, package: str, node_type: str,
+                 respawn: bool, respawn_delay: Number, args, remap_args, env_args, output: str,
+                 launch_prefix: str, required: bool, file_name: str, file_range,
+                 launch_context_arg: str, launch_name: str
+                 ) -> None:
+        self.nodeName = nodeName
+        self.nodeNamespace = nodeNamespace
+        self.package = package
+        self.node_type = node_type
+        self.respawn = respawn
+        self.respawn_delay = respawn_delay
+        self.args = args
+        self.remap_args = remap_args
+        self.env_args = env_args
+        self.output = output
+        self.launch_prefix = launch_prefix
+        self.required = required
+        self.file_name = file_name
+        self.file_range = file_range
+        self.launch_context_arg = launch_context_arg
+        self.launch_name = launch_name
 
 
 class LaunchContent:

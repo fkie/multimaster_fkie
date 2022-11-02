@@ -45,6 +45,7 @@ from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import ros1_masteruri
 from fkie_node_manager_daemon.strings import utf8
+from .launch_xml_loader import XmlLoader
 
 
 class LaunchConfigException(Exception):
@@ -187,7 +188,9 @@ class LaunchConfig(object):
             self._capabilities = None
             self._robot_description = None
             roscfg = roslaunch.ROSLaunchConfig()
-            loader = roslaunch.XmlLoader()
+            # loader = roslaunch.XmlLoader()
+            # use custom loader to be able to get additional info
+            loader = XmlLoader()
             self.argv = self.resolve_args(argv)
             loader.ignore_unset_args = False
             loader.load(self.filename, roscfg, verbose=False, argv=self.argv)
@@ -195,10 +198,11 @@ class LaunchConfig(object):
             if 'arg' in loader.root_context.resolve_dict:
                 self.resolve_dict = loader.root_context.resolve_dict['arg']
             self.changed = True
-            # check for depricated parameter
+            # check for deprecated parameter
             diag_dep = DiagnosticArray()
             if self._monitor_servicer is not None:
                 diag_dep.header.stamp = rospy.Time.now()
+
             for n in roscfg.nodes:
                 node_fullname = names.ns_join(n.namespace, n.name)
                 associations_param = names.ns_join(

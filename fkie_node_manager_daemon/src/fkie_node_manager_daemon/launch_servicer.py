@@ -70,6 +70,7 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodelets
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchAssociations
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNode
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeInfo
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeReply
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathReply
@@ -922,9 +923,68 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             for name, arg in lc.argv2dict(lc.argv).items():
                 reply_lc.args.append(LaunchArgument(name, arg))
 
+            node_occurrence = {}
             for item in lc.roscfg.nodes:
                 node_fullname = roslib.names.ns_join(item.namespace, item.name)
-                reply_lc.nodes.append(node_fullname)
+                if item.launch_name not in node_occurrence:
+                    node_occurrence[item.launch_name] = 0
+                else:
+                    node_occurrence[item.launch_name] += 1
+
+                #  Search the line number of a given node in launch file
+                lines_with_node_name = []
+                with open(item.filename, 'r') as launch_file:
+                    for line_number, line_text in enumerate(launch_file):
+                        if f'name="{item.launch_name}"' in line_text:
+                            lines_with_node_name.append(
+                                [line_number + 1, line_text])
+
+                line_number = -1
+                start_column = 0
+                end_column = 0
+                line_text = ""
+                if len(lines_with_node_name) == 0:
+                    # no line found. TODO: Report error?
+                    line_number = 0
+                elif len(lines_with_node_name) == 1:
+                    line_number = lines_with_node_name[0][0]
+                    line_text = lines_with_node_name[0][1]
+                elif len(lines_with_node_name) > node_occurrence[item.launch_name]:
+                    # More than one occurrence, but Node are loaded from top to bottom
+                    # try to find the correct match
+                    line_number = lines_with_node_name[node_occurrence[item.launch_name]][0]
+                    line_text = lines_with_node_name[node_occurrence[item.launch_name]][1]
+
+                if len(line_text) > 0:
+                    start_column = line_text.index(
+                        f'name="{item.launch_name}"') + 7
+                    end_column = start_column + len(item.launch_name)
+
+                # range in text where the node appears
+                file_range = {"startLineNumber": line_number,
+                              "endLineNumber": line_number,
+                              "startColumn": start_column,
+                              "endColumn": end_column}
+
+                reply_lc.nodes.append(
+                    LaunchNodeInfo(node_fullname,
+                                   # remove last "/" character in namespace
+                                   item.namespace[:-1],
+                                   item.package,
+                                   item.type,
+                                   item.respawn,
+                                   item.respawn_delay,
+                                   item.args,
+                                   item.remap_args,
+                                   item.env_args,
+                                   item.output,
+                                   item.launch_prefix,
+                                   item.required,
+                                   item.filename,
+                                   file_range,
+                                   item.launch_context_arg,
+                                   item.launch_name)
+                )
 
             # Add parameter values
             for name, p in lc.roscfg.params.items():
