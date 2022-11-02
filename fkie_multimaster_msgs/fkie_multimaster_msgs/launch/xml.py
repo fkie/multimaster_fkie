@@ -307,13 +307,13 @@ def find_included_files(string: str,
     :rtype: iterator with IncludedFile
     '''
     re_filelist = EMPTY_PATTERN
-    pattern = ["\s*(\$\(find-pkg-share .*?\)[^\"]*)",
-               "\s*(\$\(find .*?\)[^\"]*)",
-               "\s*(pkg:\/\/.*?/[^\"]*)",
-               "\s*(package:\/\/.*?/[^\"]*)",
-               "textfile=\"(.*?)\"",
-               "binfile=\"(.*?)\"",
-               "file=\"(.*?)\""]
+    pattern = ["\s*(\$\(find-pkg-share .*?\)[^\n\t\"]*)",
+               "\s*(\$\(find .*?\)[^\n\t\"]*)",
+               "\s*(pkg:\/\/.*?/[^\n\t\"]*)",
+               "\s*(package:\/\/.*?/[^\n\t\"]*)",
+               "textfile=\"(.*?)\n\t\"",
+               "binfile=\"(.*?)\n\t\"",
+               "file=\"(.*?)\n\t\""]
     re_filelist = re.compile('|'.join(pattern))
     pwd = '.'
     content = string
