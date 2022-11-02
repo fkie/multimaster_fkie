@@ -1,0 +1,53 @@
+<launch>
+  <arg name="NS_1" value="namespace_1"/>
+  <arg name="NS_2" value="namespace_2"/>
+  <arg name="NS_3" value="namespace_3"/>
+  <arg name="NS_4" value="namespace_4"/>
+
+  <arg name="ROBOT_1" value="robot_1"/>
+  <arg name="ROBOT_2" value="robot_2"/>
+
+  <arg name="NODE_HOKUYO" value="hokuyo"/>
+  <arg name="NODE_VELODYNE" value="velodyne"/>
+
+  <group ns="$(arg NS_1)">
+    <node name="$(arg ROBOT_1)_$(arg NODE_HOKUYO)" pkg="rostopic" type="rostopic" args="pub hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
+      <param name="capability_group" value="Hokuyo"/>
+    </node>
+
+    <node name="$(arg ROBOT_2)_$(arg NODE_VELODYNE)" pkg="rostopic" type="rostopic" args="pub velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
+      <param name="capability_group" value="Velodyne"/>
+    </node>
+  </group>
+
+  <group ns="$(arg NS_2)">
+    <node name="$(arg ROBOT_1)_$(arg NODE_HOKUYO)" pkg="rostopic" type="rostopic" args="pub hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
+      <param name="capability_group" value="Hokuyo"/>
+    </node>
+
+    <node name="$(arg ROBOT_2)_$(arg NODE_VELODYNE)" pkg="rostopic" type="rostopic" args="pub velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
+      <param name="capability_group" value="Velodyne"/>
+    </node>
+  </group>
+
+  <group ns="$(arg NS_3)">
+    <node name="$(arg ROBOT_1)_$(arg NODE_HOKUYO)" pkg="rostopic" type="rostopic" args="pub hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
+      <param name="capability_group" value="Hokuyo"/>
+    </node>
+
+    <node name="$(arg ROBOT_2)_$(arg NODE_VELODYNE)" pkg="rostopic" type="rostopic" args="pub velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
+      <param name="capability_group" value="Velodyne"/>
+    </node>
+  </group>
+
+  <group ns="$(arg NS_4)">
+    <node name="$(arg ROBOT_1)_$(arg NODE_HOKUYO)" pkg="rostopic" type="rostopic" args="pub hokuyo_scan std_msgs/String -r 1 'hokuyo scan'">
+      <param name="capability_group" value="Hokuyo"/>
+    </node>
+
+    <node name="$(arg ROBOT_2)_$(arg NODE_VELODYNE)" pkg="rostopic" type="rostopic" args="pub velodyne_scan std_msgs/String -r 1 'velodyne scan :)'">
+      <param name="capability_group" value="Velodyne"/>
+    </node>
+  </group>
+
+</launch>
