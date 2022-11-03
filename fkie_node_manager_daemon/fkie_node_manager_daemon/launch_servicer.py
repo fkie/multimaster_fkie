@@ -36,6 +36,7 @@ from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent
 
+from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
@@ -53,7 +54,6 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
-from fkie_multimaster_msgs.launch import ros_pkg
 from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions

@@ -20,6 +20,7 @@
 from typing import Dict
 from typing import Text
 from typing import Tuple
+from typing import Any
 
 import os
 import pathlib
@@ -56,7 +57,6 @@ from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import host
-from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 
@@ -110,8 +110,7 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
         result.daemonuri = daemonuri
     # override host with machine tag
     if n.machine_name and n.machine_name in launchcfg.roscfg.machines:
-        result.daemonuri = ros1_grpcuri.create(
-            launchcfg.roscfg.machines[n.machine_name].address)
+        result.daemonuri = launchcfg.roscfg.machines[n.machine_name].address
     # set args
     result.args = n.args.split()
     # set cwd unchanged, it will be resolved on host
@@ -506,7 +505,7 @@ def _rosconsole_cfg_file(package, loglevel='INFO'):
     return result
 
 
-def _get_respawn_params(node: launch_ros.actions.node.Node) -> Dict[str: Any]:
+def _get_respawn_params(node: launch_ros.actions.node.Node) -> Dict[str, Any]:
     result = {'enabled': False, 'max': 0, 'min_runtime': 0, 'delay': 0}
     return result
     # TODO

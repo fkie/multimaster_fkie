@@ -28,7 +28,7 @@ import rclpy
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rcl_interfaces.msg import ParameterDescriptor
 from fkie_node_manager_daemon.server import Server
-from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.crossbar import server
 from fkie_multimaster_msgs.system.host import ros_host_suffix
 from fkie_multimaster_msgs.system.screen import test_screen
 import fkie_node_manager_daemon as nmd
@@ -119,7 +119,7 @@ class RosNodeLauncher(object):
         parser.add_argument('--name', nargs='?', type=str, default='',
                             help='changes the displayed name of the daemon. Default: hostname')
         parser.add_argument('--port', nargs='?', type=int,
-                            default=ros1_grpcuri.port(),  help='change port for gRPC server')
+                            default=server.port(),  help='change port for gRPC server')
         return parser
 
     def _load_launches(self):

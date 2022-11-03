@@ -29,7 +29,7 @@ from fkie_multimaster_msgs.msg import Endpoint
 from fkie_multimaster_msgs.srv import LoadLaunch, Task
 from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.names import ns_join
-from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_msgs.crossbar import server
 from fkie_multimaster_msgs.system.host import get_host_name
 import fkie_node_manager_daemon as nmd
 
@@ -45,7 +45,7 @@ class Server:
 
     def __init__(self, rosnode, *, default_domain_id=-1):
         self.rosnode = rosnode
-        self.crossbar_port = ros1_grpcuri.port()
+        self.crossbar_port = server.port()
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
         self.ros_domain_id = default_domain_id
@@ -54,8 +54,8 @@ class Server:
                                       (0, self.ros_domain_id))
         self.name = get_host_name()
         self.uri = ''
-        self.monitor_servicer = MonitorServicer(
-            self.settings_servicer.settings)
+        # self.monitor_servicer = MonitorServicer(
+        #     self.settings_servicer.settings)
         self.file_servicer = FileServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.screen_servicer = ScreenServicer(
@@ -96,7 +96,7 @@ class Server:
         port = self.crossbar_port
         # update name if port is not a default one
         self.insecure_port = port
-        if ros1_grpcuri.port() != port:
+        if server.port() != port:
             self.name = "%s_%d" % (self.name, port)
         self.uri = self.rosstate_servicer.uri  # nmduri('grpc://%s' % uri)
         endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=get_host_name(
@@ -118,7 +118,7 @@ class Server:
         self.screen_servicer.stop()
         self.launch_servicer.stop()
         self.file_servicer.stop()
-        self.monitor_servicer.stop()
+        # self.monitor_servicer.stop()
         self.rosstate_servicer.stop()
         self.rosnode.destroy_publisher(self.pub_endpoint)
 

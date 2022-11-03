@@ -4,6 +4,8 @@ import os
 import subprocess
 import shutil
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.defines import GRPC_SERVER_PORT_OFFSET
+from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
 
 
 CROSSBAR_PATH = os.path.join(os.path.join(
@@ -69,6 +71,19 @@ CROSSBAR_CONFIG_JSON = {
 }
 
 
+def port() -> int:
+    try:
+        # try import ROS1
+        from fkie_multimaster_msgs.system import ros1_grpcuri
+        return ros1_grpcuri().port() - GRPC_SERVER_PORT_OFFSET + 600
+    except ModuleNotFoundError:
+        # use defaults for ROS2
+        ros_domain_id = 0
+        if 'ROS_DOMAIN_ID' in os.environ:
+            ros_domain_id = int(os.environ['ROS_DOMAIN_ID'])
+        return NMD_DEFAULT_PORT + ros_domain_id
+
+
 def crossbar_create_config(port: int) -> None:
     global CROSSBAR_PATH
     CROSSBAR_PATH = os.path.join(os.path.join(os.path.expanduser(
@@ -87,7 +102,6 @@ def crossbar_start_server(port: int) -> str:
     crossbar_create_config(port)
     if shutil.which('crossbar') is None:
         try:
-            import rospy
             Log.error(
                 "shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
         except:
