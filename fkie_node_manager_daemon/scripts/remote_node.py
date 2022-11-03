@@ -120,13 +120,26 @@ def find_process_by_name(name: str, command: str, additional_args: List[str]):
                 # for ros nodes we check parameter for the name with namespace
                 if is_ros and arg_name in p.info['cmdline'] and arg_ns in p.info['cmdline']:
                     return [p]
+
+                # check if a screen process is already running
+                cmd_args = f'{" ".join(additional_args)}'.strip()
+                cmd_line_text = ' '.join(p.info['cmdline']).strip()
+
+                # both commands and arguments are present on container process
+                if f'/{command} ' in cmd_line_text and cmd_args in cmd_line_text:
+                    Log.info(
+                        f'Found [{command}] running with the same arguments: [{cmd_args}] in [{cmd_line_text}]')
+                    return [p]
+
             else:
                 # compare all parameter given to the executable
-                command_with_args = command + ' ' + ' '.join(additional_args)
-                if command_with_args == ' '.join(p.info['cmdline']):
+                cmd_args = f'{command} {" ".join(additional_args)}'.strip()
+                cmd_line_text = ' '.join(p.info['cmdline']).strip()
+                if cmd_args == cmd_line_text:
                     return [p]
                 else:
-                    print(command_with_args, " != ", ' '.join(p.info['cmdline']))
+                    Log.warn(
+                        f'Found node but with different arguments: [{cmd_args}] != [{cmd_line_text}]')
     return []
 
 
@@ -275,7 +288,8 @@ def main(argv=sys.argv):
     command = args.node_type
     if args.node_type is None:
         command = args.command
-    running_processes = find_process_by_name(args.name, command, additional_args)
+    running_processes = find_process_by_name(
+        args.name, command, additional_args)
     if len(running_processes) > 0:
         Log.warn(
             f'A process with the same name [{args.name}] is already running.',
