@@ -75,7 +75,7 @@ def port() -> int:
     try:
         # try import ROS1
         from fkie_multimaster_msgs.system import ros1_grpcuri
-        return ros1_grpcuri().port() - GRPC_SERVER_PORT_OFFSET + 600
+        return ros1_grpcuri.port() - GRPC_SERVER_PORT_OFFSET + 600
     except ModuleNotFoundError:
         # use defaults for ROS2
         ros_domain_id = 0
