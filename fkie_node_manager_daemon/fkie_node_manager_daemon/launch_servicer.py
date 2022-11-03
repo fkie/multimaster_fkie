@@ -48,6 +48,7 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodelets
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchAssociations
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNode
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeInfo
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeReply
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathReply
@@ -342,7 +343,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             print('provided_args', provided_args)
             # get the list with needed launch args
             req_args = LaunchConfig.get_args(launchfile, request.args)
-            #req_args_dict = launch_config.argv2dict(req_args)
+            # req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg in req_args:
                     if arg.name not in provided_args:
@@ -355,9 +356,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             # context=self.__launch_context
             launch_config = LaunchConfig(
                 launchfile, daemonuri=request.masteruri, launch_arguments=launch_arguments)
-            #_loaded, _res_argv = launch_config.load(argv)
+            # _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
-            #result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
+            # result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
             self._loaded_files[CfgId(
                 launchfile, request.masteruri)] = launch_config
             # notify changes to crossbar GUI
@@ -398,7 +399,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         Log.debug('Loading launch file: %s (package: %s, launch: %s), daemonuri: %s, host: %s, args: %s' % (
             request.path, request.ros_package, request.launch, daemonuri, request.host, request.args))
 
-        result.path.append(request.path)
+        result.paths.append(request.path)
         cfgid = CfgId(request.path, daemonuri)
         Log.debug("reload launch file: %s, daemonuri: %s",
                   request.path, daemonuri)
@@ -406,13 +407,14 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             try:
                 # use argv from already open file
                 cfg = self._loaded_files[cfgid]
-                launch_config = LaunchConfig(cfg.filename, daemonuri=request.daemonuri, launch_arguments=cfg.launch_arguments)
+                launch_config = LaunchConfig(
+                    cfg.filename, daemonuri=request.daemonuri, launch_arguments=cfg.launch_arguments)
                 self._loaded_files[cfgid] = launch_config
                 # stored_roscfg = cfg.roscfg
                 # argv = cfg.argv
                 # cfg.load(argv)
                 result.status.code = 'OK'
-                #TODO: added change detection for nodes parameters
+                # TODO: added change detection for nodes parameters
                 # notify changes to crossbar GUI
                 try:
                     self.publish('ros.launch.changed',
@@ -433,8 +435,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.status.code = 'FILE_NOT_FOUND'
             return result
         return result
-
-
 
     @wamp.register('ros.launch.unload')
     def unload_launch(self, request_json: LaunchFile) -> LaunchLoadReply:
@@ -485,30 +485,38 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
             nodes = lc.nodes()
             for item in nodes:
-                node_fullname = LaunchConfig.get_name_from_node(item.node)
+                node_fullname = item.node_name
                 is_executable = type(
                     item.node) == launch.actions.execute_process.ExecuteProcess
-                composable_container = ''
-                if item.composable_container is not None:
-                    # get composable container name
-                    composable_container = LaunchConfig.get_name_from_node(
-                        item.composable_container)
+                # composable_container = ''
+                # if item.composable_container is not None:
+                #     # get composable container name
+                #     composable_container = LaunchConfig.get_name_from_node(
+                #         item.composable_container)
                 # ni = lmsg.NodeInfo(name=node_fullname, is_executable=is_executable,
                 #                   composable_container=composable_container)
                 # add composable nodes to container
                 # for cn in item.composable_nodes:
                 #    ni.composable_nodes.extend(
                 #        [LaunchConfig.get_name_from_node(cn)])
-                reply_lc.nodes.append(node_fullname)
+                reply_lc.nodes.append(LaunchNodeInfo(node_fullname,
+                                                     nodeNamespace='',
+                                                     package=item.node_package,
+                                                     node_type=item.node_executable,
+                                                     respawn=item.respawn,
+                                                     respawn_delay=item.respawn_delay,
+                                                     launch_prefix=item.prefix,
+                                                     file_name=cfgid.path,
+                                                     launch_name=cfgid.path))
                 # TODO: add composable nodes to container
-                for cn in item.composable_nodes:
-                    reply_lc.nodes.append(LaunchConfig.get_name_from_node(cn))
+                #for cn in item.composable_nodes:
+                #    reply_lc.nodes.append(LaunchConfig.get_name_from_node(cn))
 
             # Add launch arguments
             for name, p in lc.launch_arguments:
                 reply_lc.args.append(LaunchArgument(name, p.value))
             # Add parameter values
-            #for name, p in lc.xxx:
+            # for name, p in lc.xxx:
             #    reply_lc.parameters.append(RosParameter(name, p.value))
             print('nodes', reply_lc.nodes)
             # TODO: add assosiations

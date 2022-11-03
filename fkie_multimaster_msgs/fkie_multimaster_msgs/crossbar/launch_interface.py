@@ -32,7 +32,9 @@
 
 import json
 
-from typing import List, Dict
+from typing import List
+from typing import Dict
+from typing import Tuple
 from numbers import Number
 
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
@@ -169,9 +171,15 @@ class LaunchNodeInfo:
     '''
 
     def __init__(self, nodeName: str, nodeNamespace: str, package: str, node_type: str,
-                 respawn: bool, respawn_delay: Number, args, remap_args, env_args, output: str,
-                 launch_prefix: str, required: bool, file_name: str, file_range,
-                 launch_context_arg: str, launch_name: str
+                 respawn: bool = False, respawn_delay: Number = 0, args: str = '',
+                 remap_args: List[Tuple[str, str]] = [],
+                 env_args: List[Tuple[str, str]] = [],
+                 output: str = '', launch_prefix: str = '', required: bool = False,
+                 file_name: str = '', file_range: Dict[str, Number] = {"startLineNumber": 0,
+                                                                       "endLineNumber": 0,
+                                                                       "startColumn": 0,
+                                                                       "endColumn": 0},
+                 launch_context_arg: str = '', launch_name: str = ''
                  ) -> None:
         self.nodeName = nodeName
         self.nodeNamespace = nodeNamespace
