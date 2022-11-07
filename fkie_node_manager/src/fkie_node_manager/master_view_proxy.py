@@ -188,6 +188,7 @@ class MasterViewProxy(QWidget):
         self.__last_selection = 0
         self.__last_node_activation = 0
         self.__last_question_start_nmd = 0
+        self.__do_shutdown = False
         self._on_stop_kill_roscore = False
         self._on_stop_poweroff = False
         self._start_nodes_after_load_cfg = dict()
@@ -3324,27 +3325,37 @@ class MasterViewProxy(QWidget):
                                     self, checkitem1='stop ROS',
                                     checkitem2='shutdown host',
                                     store_geometry='close_cfg')
-        cfgs, _, stop_nodes, shutdown = res[0], res[1], res[2], res[3]
+        cfgs, _, stop_nodes, self.__do_shutdown = res[0], res[1], res[2], res[3]
         # close configurations
         for config in cfgs:
             self._close_cfg(choices[config])
         if stop_nodes:
             self._on_stop_kill_roscore = True
-            # stop all nodes, system nodes at the end
-            ignore_nodes = [rospy.get_name(), '/node_manager_daemon',
-                            '/master_discovery', '/rosout']
-            self.stop_nodes_by_name(self.get_nodes_runningIfLocal(
-                remove_system_nodes=False), True, ignore_nodes)
-            if shutdown:
-                self.poweroff()
-            else:
-                self.stop_nodes_by_name(['/node_manager_daemon'], True)
-                self.stop_nodes_by_name(['/master_discovery'], True)
-            self.stop_nodes_by_name(['/node_manager'], True)
-        elif shutdown:
+            self.stop_all_nodes(self._on_stop_kill_roscore)
+        elif self.__do_shutdown:
             self.poweroff()
         self.updateButtons()
         self.update_robot_icon()
+
+    def stop_all_nodes(self, kill_ros_core: bool = False):
+        # stop all nodes, system nodes at the end
+        ignore_nodes = [rospy.get_name(), '/node_manager_daemon', '/master_discovery', '/rosout']
+        self.stop_nodes_by_name(self.get_nodes_runningIfLocal(remove_system_nodes=False), True, ignore_nodes)
+        if kill_ros_core:
+            self._on_stop_kill_roscore = True
+        QTimer.singleShot(200, self._test_for_finish)
+
+    def _test_for_finish(self):
+        # this method test on exit for running process queues with stopping jobs
+        if self.in_process():
+            QTimer.singleShot(200, self._test_for_finish)
+            return
+        self.stop_nodes_by_name(['/node_manager_daemon'], True)
+        self.stop_nodes_by_name(['/master_discovery'], True)
+        if self._on_stop_kill_roscore:
+            self.killall_roscore()
+        if self.__do_shutdown:
+            self.poweroff()
 
     def poweroff(self):
         try:

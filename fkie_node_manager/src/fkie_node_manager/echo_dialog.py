@@ -473,6 +473,8 @@ class EchoDialog(QDialog):
             if self.chars_limit != 0 and len(msg) > self.chars_limit:
                 msg = msg[0:self.chars_limit]
                 msg_cated = True
+            ver_srollbar = self.display.verticalScrollBar()
+            scroll_is_at_end = ver_srollbar.maximum() - ver_srollbar.value() <= 10
             # create a notification about scrapped messages
             if self._scrapped_msgs_sl > 0:
                 txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">scrapped %s message because of Hz-settings</pre>' % self._scrapped_msgs_sl
@@ -486,6 +488,8 @@ class EchoDialog(QDialog):
             if msg_cated:
                 txt = '<pre style="color:red; font-family:Fixedsys,Courier,monospace; padding:10px;">message has been cut off</pre>'
                 self.display.append(txt)
+            if scroll_is_at_end:
+                ver_srollbar.setValue(ver_srollbar.maximum()) # Scrolls to the bottom
         if store:
             self._print_status()
 

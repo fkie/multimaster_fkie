@@ -88,6 +88,7 @@ class ParameterValueItem(QStandardItem):
         self._value = value
         if isstring(value) and value.find('\n') > -1:
             self.setSizeHint(QSize(-1, 45))
+        self.setText(utf8(value))
 
     def type(self):
         return ParameterValueItem.ITEM_TYPE
@@ -214,8 +215,7 @@ class ParameterTypeItem(QStandardItem):
         @param value: the value of the parameter
         @type value: C{str}
         '''
-        QStandardItem.__init__(self, utf8(type(value)).replace(
-            "<type '", '').replace("'>", ''))
+        QStandardItem.__init__(self, utf8(type(value).__name__))
         self._name = name
         '''@ivar: the name of parameter '''
         self._value = value

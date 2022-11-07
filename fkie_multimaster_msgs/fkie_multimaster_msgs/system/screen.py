@@ -44,6 +44,7 @@ from typing import Tuple
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import SETTINGS_PATH
 from fkie_multimaster_msgs.defines import SCREEN
+from fkie_multimaster_msgs.defines import SCREEN_NAME_MAX_CHARS
 from fkie_multimaster_msgs.defines import SCREEN_SLASH_SEP
 from fkie_multimaster_msgs.names import ns_join
 from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
@@ -72,6 +73,8 @@ def create_session_name(node: str = '', namespace: str = '/') -> str:
     result = ns_join(namespace, node).replace(
         SCREEN_SLASH_SEP, '%s%s' % (SCREEN_SLASH_SEP, SCREEN_SLASH_SEP))
     result = result.replace('/', SCREEN_SLASH_SEP)
+    if len(result) > SCREEN_NAME_MAX_CHARS:
+        result = '_~%s' % result[len(result)-SCREEN_NAME_MAX_CHARS-2:]
     return result
 
 
@@ -87,6 +90,8 @@ def session_name2node_name(session: str) -> str:
         '%s%s' % (SCREEN_SLASH_SEP, SCREEN_SLASH_SEP), '//')
     node_name = node_name.replace(SCREEN_SLASH_SEP, '/')
     node_name = node_name.replace('//', SCREEN_SLASH_SEP)
+    if node_name.startswith('/~'):
+        node_name = node_name[2:]
     return node_name
 
 

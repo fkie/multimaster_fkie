@@ -45,6 +45,8 @@ SETTINGS_PATH = os.path.expanduser('~/.config/ros.fkie/')
 SCREEN = "/usr/bin/screen"
 ''':var SCREEN: Defines the path to screen binary.'''
 
+SCREEN_NAME_MAX_CHARS = 74
+
 try:
     import rospy
     SCREEN_SLASH_SEP = '_'
