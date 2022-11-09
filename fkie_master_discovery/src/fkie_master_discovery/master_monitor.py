@@ -264,6 +264,7 @@ class MasterMonitor(ApplicationSession):
             self.crossbar_port = rpcport + 300
 
         # Start Crossbar server only if requested
+        self.connect_crossbar = connect_crossbar
         if connect_crossbar:
             self.crossbar_loop = asyncio.get_event_loop()
             self._crossbarThread = threading.Thread(
@@ -1159,5 +1160,6 @@ class MasterMonitor(ApplicationSession):
         await asyncio.gather(task)
 
     def crossbar_reconnect(self):
-        asyncio.run_coroutine_threadsafe(
-            self.crossbar_connect(), self.crossbar_loop)
+        if self.connect_crossbar:
+            asyncio.run_coroutine_threadsafe(
+                self.crossbar_connect(), self.crossbar_loop)

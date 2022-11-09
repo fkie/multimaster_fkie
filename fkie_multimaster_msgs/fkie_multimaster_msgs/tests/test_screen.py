@@ -65,6 +65,25 @@ class TestScreen(unittest.TestCase):
         self.assertEqual(
             name, '', f"wrong name after screen split session `666.`, got: {name}, expected: ''")
 
+    def test_get_logfile(self):
+        nodename = '/master_discovery'
+        logfile = screen.get_logfile(node=nodename, for_new_screen=True)
+        logpath = f"{os.path.join(screen.LOG_PATH, nodename.replace('_', '__').replace('/', '_'))}.log"
+        self.assertEqual(
+            logfile, logpath, f"wrong logfile path for node `{nodename}`, got: {logfile}, expected: {logpath}")
+
+        session_name = screen.create_session_name(nodename)
+        logfile = screen.get_logfile(session=session_name, for_new_screen=True)
+        self.assertEqual(
+            logfile, logpath, f"wrong logfile path for session `{session_name}`, got: {logfile}, expected: {logpath}")
+
+    def test_get_ros_logfile(self):
+        nodename = '/master_discovery'
+        logfile = screen.get_ros_logfile(nodename, for_new_screen=True)
+        logpath = f"{os.path.join(screen.LOG_PATH, nodename.strip('/'))}.log"
+        self.assertEqual(
+            logfile, logpath, f"wrong ros logfile path for node `{nodename}`, got: {logfile}, expected: {logpath}")
+
     def test_rosclean(self):
         screen.ros_clean()
 

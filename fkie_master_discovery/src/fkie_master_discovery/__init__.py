@@ -56,7 +56,7 @@ PROCESS_NAME = "master_discovery"
 
 def get_default_rtcp_port(zeroconf=False):
     try:
-        from fkie_multimaster_msgs.system.masteruri import from_ros
+        from fkie_multimaster_msgs.system.ros1_masteruri import from_ros
         masteruri = from_ros()
         # Log.info(f'ROS Master URI: {masteruri}')
         return urlparse(masteruri).port + (600 if zeroconf else 300)

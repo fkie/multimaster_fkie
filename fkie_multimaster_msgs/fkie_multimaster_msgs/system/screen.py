@@ -188,17 +188,17 @@ def get_logfile(session: str = None, node: str = None, for_new_screen: bool = Fa
            for the log file (handle the node started using a launch file).
     '''
     if session is not None:
-        path = "%s%s.log" % (LOG_PATH, session)
-        if os.path.exists(path):
+        path = "%s.log" % os.path.join(LOG_PATH, session)
+        if os.path.exists(path) or for_new_screen:
             return path
     if node is not None:
-        path = "%s%s.log" % (LOG_PATH, create_session_name(node, namespace))
+        path = "%s.log" % os.path.join(LOG_PATH, create_session_name(node, namespace))
         if os.path.exists(path) or for_new_screen:
             return path
     return get_ros_logfile(node, namespace)
 
 
-def get_ros_logfile(node: str, namespace: str = '/') -> str:
+def get_ros_logfile(node: str, namespace: str = '/', for_new_screen: bool = False) -> str:
     '''
     Generates a log file name for the ROS log
 
@@ -209,9 +209,9 @@ def get_ros_logfile(node: str, namespace: str = '/') -> str:
     logfile = ''
     if node is not None:
         nodename = ns_join(namespace, node)
-        logfile = "%s%s.log" % (
+        logfile = "%s.log" % os.path.join(
             LOG_PATH, nodename.strip('/').replace('/', '_'))
-        if os.path.exists(logfile):
+        if os.path.exists(logfile) or for_new_screen:
             return logfile
         else:
             # search in latest subfolder
