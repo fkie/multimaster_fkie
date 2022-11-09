@@ -213,5 +213,5 @@ class GrpcServer:
         '''
         Callback for the ROS service to start a node.
         '''
-        self.launch_servicer.start_node(req.node)
+        self.launch_servicer.start_node_by_name(req.node)
         return []

@@ -525,7 +525,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         return json.dumps(reply, cls=SelfEncoder)
 
     @wamp.register('ros.launch.start_node')
-    def start_node(self, request_json: LaunchNode) -> LaunchNodeReply:
+    def start_node(self, request_json: LaunchNode, return_as_json: bool = True) -> LaunchNodeReply:
         Log.debug('Request to [ros.launch.start_node]')
 
         # Covert input dictionary into a proper python object
@@ -552,13 +552,13 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             if not launch_configs:
                 result.status.code = 'NODE_NOT_FOUND'
                 result.status.msg = "Node '%s' not found" % request.name
-                return json.dumps(result, cls=SelfEncoder)
+                return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             if len(launch_configs) > 1:
                 result.status.code = 'MULTIPLE_LAUNCHES'
                 result.status.msg = "Node '%s' found in multiple launch files" % request.name
                 result.launch_files.extend(
                     [lcfg.filename for lcfg in launch_configs])
-                return json.dumps(result, cls=SelfEncoder)
+                return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             try:
                 result.launch_files.append(launch_configs[0].filename)
                 n = launch_configs[0].get_node(request.name)
@@ -582,19 +582,33 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 result.status.msg = "multiple binaries found for node '%s': %s" % (
                     request.name, bsr.choices)
                 result.paths.extend(bsr.choices)
-                return json.dumps(result, cls=SelfEncoder)
+                return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         except exceptions.ResourceNotFound as err_nf:
             result.status.code = 'ERROR'
             result.status.msg = "Error while start node '%s': %s" % (
                 request.name, err_nf)
-            return json.dumps(result, cls=SelfEncoder)
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         except Exception as _errr:
             result.status.code = 'ERROR'
             result.status.msg = "Error while start node '%s': %s" % (
                 request.name, traceback.format_exc())
-            return json.dumps(result, cls=SelfEncoder)
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         finally:
-            return json.dumps(result, cls=SelfEncoder)
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
+
+    @wamp.register('ros.launch.start_nodes')
+    def start_nodes(self, request_json: List[LaunchNode], continue_on_error: bool = True) -> List[LaunchNodeReply]:
+        Log.debug('Request to [ros.launch.start_nodes]')
+
+        result = []
+        for request in request_json:
+            node_result = self.start_nodes(request, return_as_json=False)
+            result.append(node_result)
+            if not continue_on_error:
+                if result.status.code != 'OK':
+                    break
+
+        return json.dumps(result, cls=SelfEncoder)
 
     @wamp.register('ros.launch.get_included_files')
     def get_included_files(self, request_json: LaunchIncludedFilesRequest) -> List[LaunchIncludedFile]:

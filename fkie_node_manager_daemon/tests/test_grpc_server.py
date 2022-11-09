@@ -261,7 +261,7 @@ class TestGrpcServer(unittest.TestCase):
 
     def _test_run_node(self):
         #        self.test_load_launch(unload=False)
-        self.ls.start_node('/example/gps')
+        self.ls.start_node_by_name('/example/gps')
 
 
 if __name__ == '__main__':

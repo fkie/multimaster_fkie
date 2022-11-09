@@ -221,7 +221,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         else:
             Log.warn("load %s failed!" % (path))
 
-    def start_node(self, node_name):
+    def start_node_by_name(self, node_name):
         global IS_RUNNING
         if not IS_RUNNING:
             return
@@ -1163,6 +1163,20 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             return json.dumps(result, cls=SelfEncoder)
         finally:
             return json.dumps(result, cls=SelfEncoder)
+
+    @wamp.register('ros.launch.start_nodes')
+    def start_nodes(self, request_json: List[LaunchNode], continue_on_error: bool = True) -> List[LaunchNodeReply]:
+        Log.debug('Request to [ros.launch.start_nodes]')
+
+        result = []
+        for request in request_json:
+            node_result = self.start_nodes(request, return_as_json=False)
+            result.append(node_result)
+            if not continue_on_error:
+                if result.status.code != 'OK':
+                    break
+
+        return json.dumps(result, cls=SelfEncoder)
 
     def StartStandaloneNode(self, request, context):
         Log.debug('StartStandaloneNode request:\n%s' % str(request))
