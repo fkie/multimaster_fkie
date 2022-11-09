@@ -187,6 +187,7 @@ class MasterMonitor(ApplicationSession):
         self.__mastername = None
         self.__cached_nodes = dict()
         self.__cached_services = dict()
+        self._on_shutdown = False
         self.ros_node_name = str(rospy.get_name())
         if rospy.has_param('~name'):
             self.__mastername = rospy.get_param('~name')
@@ -317,6 +318,7 @@ class MasterMonitor(ApplicationSession):
         '''
         Shutdown the RPC Server.
         '''
+        self._on_shutdown = True
         if self._timer_update_launch_uris is not None:
             try:
                 self._timer_update_launch_uris.cancel()
@@ -362,7 +364,7 @@ class MasterMonitor(ApplicationSession):
             finally:
                 socket.setdefaulttimeout(None)
                 # create the new timer
-                if not rospy.is_shutdown():
+                if not self._on_shutdown:
                     self._timer_update_launch_uris = threading.Timer(
                         self.INTERVAL_UPDATE_LAUNCH_URIS, self._update_launch_uris)
                     self._timer_update_launch_uris.start()
@@ -979,7 +981,7 @@ class MasterMonitor(ApplicationSession):
     def onDisconnect(self):
         Log.info('Autobahn disconnected')
         self.crossbar_connected = False
-        if not rospy.is_shutdown():
+        if not self._on_shutdown:
             self.crossbar_reconnect()
 
     @wamp.register('ros.nodes.get_list')
@@ -1078,7 +1080,7 @@ class MasterMonitor(ApplicationSession):
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 
     def checkMultipleScreens(self):
-        while not rospy.is_shutdown():
+        while not self._on_shutdown:
             if self._multiple_screen_do_check:
                 screen.wipe()
                 self._multiple_screen_do_check = False

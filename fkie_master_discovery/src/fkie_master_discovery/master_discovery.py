@@ -698,8 +698,6 @@ class Discoverer(object):
         with self.__lock:
             # tell other loops to finish
             self.do_finish = True
-            # finish the RPC server and timer
-            self.master_monitor.shutdown()
             for (_, master) in self.masters.items():
                 if master.mastername is not None:
                     self.publish_masterstate(MasterState(MasterState.STATE_REMOVED,
@@ -718,6 +716,10 @@ class Discoverer(object):
                               int(self.HEARTBEAT_HZ * 10), -1, -1,
                               self.master_monitor.rpcport, -1, -1)
             self._publish_current_state(msg=msg)
+            self.masters.clear()
+            self._crossbar_publish_masters()
+            # finish the RPC server and timer
+            self.master_monitor.shutdown()
             time.sleep(0.2)
 
     def finish(self):
@@ -930,6 +932,8 @@ class Discoverer(object):
                     "Remove master discovery: http://%s:%s" % (r[0][0], r[1]))
                 self._rem_address(r[0][0])
                 del self.masters[r]
+            if to_remove:
+                self._crossbar_publish_masters()
 
     def _recv_loop_from_queue(self):
         while not self.do_finish:
@@ -1000,6 +1004,7 @@ class Discoverer(object):
                                     address[0], monitor_port, master.masteruri))
                                 self._rem_address(address[0])
                                 del self.masters[master_key]
+                                self._crossbar_publish_masters()
                         elif master_key in self.masters:
                             # update the timestamp of existing master
                             Log.debug(
@@ -1039,9 +1044,9 @@ class Discoverer(object):
             for (addr, port), master in self.masters.items():
                 # TODO: Check provider port
                 cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
-                                       host=addr[0],
-                                       port=port + 300,
-                                       masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
+                                    host=addr[0],
+                                    port=port + 300,
+                                    masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
                 result.append(cbmaster)
             self.master_monitor.setProviderList(result)
         except Exception as cpe:
@@ -1151,7 +1156,7 @@ class Discoverer(object):
                                   self.rosservice_list_masters)
                     rospy.Service('~refresh', std_srvs.srv.Empty,
                                   self.rosservice_refresh)
-                if master_state.state != MasterState.STATE_CHANGED:
+                if master_state.state == MasterState.STATE_NEW:
                     self._crossbar_publish_masters()
             except:
                 traceback.print_exc()
