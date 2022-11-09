@@ -51,18 +51,13 @@ CROSSBAR_CONFIG_JSON = {
             ],
             "transports": [
                 {
-                    "type": "web",
+                    "type": "websocket",
                     "endpoint": {
                         "type": "tcp",
-                        "port": 11111
+                        "port": 11911
                     },
-                    "paths": {
-                        "ws": {
-                            "type": "websocket"
-                        },
-                        "lp": {
-                            "type": "longpoll"
-                        }
+                    "options": {
+                        "echo_close_codereason": True
                     }
                 }
             ]

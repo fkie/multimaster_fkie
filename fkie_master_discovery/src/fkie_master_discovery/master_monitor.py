@@ -322,6 +322,7 @@ class MasterMonitor(ApplicationSession):
                 self._timer_update_launch_uris.cancel()
             except Exception:
                 pass
+        self.disconnect()
         if hasattr(self, 'rpcServer'):
             if self._master is not None:
                 Log.info("Unsubscribe from parameter `/roslaunch/uris`")
@@ -887,7 +888,7 @@ class MasterMonitor(ApplicationSession):
                 entry = (ttype, roslib.message.get_message_class(ttype)._md5sum)
                 topic_list.append(entry)
             except Exception as err:
-                Log.warn(err)
+                Log.warn(f"{err}")
         return topic_list
 
     def getUser(self):
@@ -978,6 +979,8 @@ class MasterMonitor(ApplicationSession):
     def onDisconnect(self):
         Log.info('Autobahn disconnected')
         self.crossbar_connected = False
+        if not rospy.is_shutdown():
+            self.crossbar_reconnect()
 
     @wamp.register('ros.nodes.get_list')
     def get_node_list(self) -> str:
@@ -1136,7 +1139,7 @@ class MasterMonitor(ApplicationSession):
                 self.crossbar_connected = True
                 self.crossbar_connecting = False
             except Exception as err:
-                Log.warn(err)
+                Log.warn(f"Error while connect to crossbar @ ws://localhost:{self.crossbar_port}/ws: {err}")
 
                 # try to start the crossbar server
                 try:

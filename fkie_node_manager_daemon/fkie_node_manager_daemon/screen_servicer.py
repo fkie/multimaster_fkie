@@ -48,6 +48,7 @@ class ScreenServicer(CrossbarBaseSession):
 
     def stop(self):
         self._is_running = False
+        self.shutdown()
 
     def _check_multiple_screens(self):
         last_check = 0

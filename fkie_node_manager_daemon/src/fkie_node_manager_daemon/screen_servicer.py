@@ -58,6 +58,7 @@ class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
     def stop(self):
         global IS_RUNNING
         IS_RUNNING = False
+        self.shutdown()
 
     def GetScreens(self, request, context):
         screens = screen.get_active_screens(request.node)

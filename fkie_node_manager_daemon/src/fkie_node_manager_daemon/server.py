@@ -83,6 +83,10 @@ class GrpcServer:
             self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.parameter_servicer = ParameterServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        self.file_servicer = FileServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        self.screen_servicer = ScreenServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
 
         rospy.Service('~start_launch', LoadLaunch,
                       self._rosservice_start_launch)
@@ -96,6 +100,8 @@ class GrpcServer:
         self.monitor_servicer = None
         self.settings_servicer = None
         self.parameter_servicer = None
+        self.file_servicer = None
+        self.screen_servicer = None
 
     def _update_grpc_parameter(self, settings):
         old_verbosity = self._grpc_verbosity
@@ -123,6 +129,7 @@ class GrpcServer:
             restart_timer.start()
 
     def restart(self):
+        Log.info("Invoke restart...")
         self.crossbar_loop.stop()
         self.shutdown()
         del self.server
@@ -154,14 +161,14 @@ class GrpcServer:
             time.sleep(2.)
             insecure_port = self.server.add_insecure_port(url)
         if insecure_port > 0:
-            fgrpc.add_FileServiceServicer_to_server(FileServicer(
-                self.crossbar_loop, self.crossbar_realm, self.crossbar_port), self.server)
+            fgrpc.add_FileServiceServicer_to_server(
+                self.file_servicer, self.server)
             lgrpc.add_LaunchServiceServicer_to_server(
                 self.launch_servicer, self.server)
             mgrpc.add_MonitorServiceServicer_to_server(
                 self.monitor_servicer, self.server)
-            sgrpc.add_ScreenServiceServicer_to_server(ScreenServicer(
-                self.crossbar_loop, self.crossbar_realm, self.crossbar_port), self.server)
+            sgrpc.add_ScreenServiceServicer_to_server(
+                self.screen_servicer, self.server)
             stgrpc.add_SettingsServiceServicer_to_server(
                 self.settings_servicer, self.server)
             vgrpc.add_VersionServiceServicer_to_server(
@@ -181,10 +188,14 @@ class GrpcServer:
         self.crossbar_loop.stop()
         self.launch_servicer.stop()
         self.monitor_servicer.stop()
+        self.parameter_servicer.shutdown()
+        self.file_servicer.shutdown()
+        self.screen_servicer.stop()
         self.server.stop(3)
 
     def load_launch_file(self, path, autostart=False):
-        self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
+        self.launch_servicer.load_launch_file(
+            xml.interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request):
         Log.info("Service request to load and start %s" % request.path)

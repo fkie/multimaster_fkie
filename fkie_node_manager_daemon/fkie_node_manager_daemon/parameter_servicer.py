@@ -22,6 +22,9 @@ class ParameterServicer(CrossbarBaseSession):
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self._handler = ROS2Parameters(nmd.ros_node)
 
+    def stop(self):
+        self.shutdown()
+
     @wamp.register('ros.parameters.get_list')
     def getParameterList(self):
         '''

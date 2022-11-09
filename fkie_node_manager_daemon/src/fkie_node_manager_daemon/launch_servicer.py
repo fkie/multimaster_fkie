@@ -185,6 +185,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         '''
         global IS_RUNNING
         IS_RUNNING = False
+        self.shutdown()
         self._watchdog_observer.stop()
 
     def on_any_event(self, event: FileSystemEvent):

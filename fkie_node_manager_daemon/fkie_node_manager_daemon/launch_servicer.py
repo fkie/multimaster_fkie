@@ -146,6 +146,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         Stop watchdog and cancel the autostart of the nodes.
         '''
         self._is_running = False
+        self.shutdown()
         self._watchdog_observer.stop()
 
     def on_any_event(self, event: FileSystemEvent):

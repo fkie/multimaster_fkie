@@ -595,7 +595,7 @@ class SyncThread(object):
                                             topictype, lmd5sum)
                     except Exception as err:
                         import traceback
-                        Log.warn(err)
+                        Log.warn(f"{err}")
                         Log.warn(traceback.format_exc())
         except:
             import traceback
@@ -620,7 +620,7 @@ class SyncThread(object):
                                             own_topictype, topictype)
                     except Exception as err:
                         import traceback
-                        Log.warn(err)
+                        Log.warn(f"{err}")
                         Log.warn(traceback.format_exc())
         except:
             import traceback

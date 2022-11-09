@@ -51,7 +51,7 @@ class FileServicer(CrossbarBaseSession):
     def stop(self):
         '''
         '''
-        pass
+        self.shutdown()
 
     @wamp.register('ros.packages.get_list')
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:

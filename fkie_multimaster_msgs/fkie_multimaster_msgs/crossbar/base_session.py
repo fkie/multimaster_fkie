@@ -34,7 +34,6 @@
 import time
 
 from json import JSONEncoder
-import json
 
 # crossbar-io dependencies
 import asyncio
@@ -42,9 +41,8 @@ from autobahn.wamp.types import ComponentConfig
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from asyncio import coroutine
 
-# ros
-#import rospy
 
+from fkie_multimaster_msgs.logging.logging import Log
 from .server import crossbar_start_server, CROSSBAR_PATH
 
 
@@ -58,6 +56,7 @@ class CrossbarBaseSession(ApplicationSession):
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False) -> None:
         self.port = port
         self.crossbar_loop = loop
+        self._on_shutdown = False
         if test_env:
             return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
@@ -68,21 +67,29 @@ class CrossbarBaseSession(ApplicationSession):
         task = asyncio.run_coroutine_threadsafe(
             self.crossbar_connect(), self.crossbar_loop)
 
+    def shutdown(self):
+        self._on_shutdown = True
+        self.disconnect()
+
     def onConnect(self):
-        #Log.info("%s: autobahn connected" % self.__class__.__name__)
-        print(f"{self.__class__.__name__}: autobahn connected")
+        Log.info(f"{self.__class__.__name__}: autobahn connected")
         self.join(self.config.realm)
 
     def onDisconnect(self):
-        #Log.info('%s: autobahn disconnected' % self.__class__.__name__)
-        print(f"{self.__class__.__name__}: autobahn disconnected")
+        Log.info(f"{self.__class__.__name__}: autobahn disconnected")
         self.crossbar_connected = False
         self.crossbar_connecting = False
+        if not self._on_shutdown:
+            self.crossbar_reconnect()
+
+    def onLeave(self, details):
+        ApplicationSession.onLeave(self, details)
+        Log.info(f"{self.__class__.__name__}.onLeave: {details}")
 
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
-        print(f"{self.__class__.__name__}: {len(res)} crossbar procedures registered!")
+        Log.info(f"{self.__class__.__name__}: {len(res)} crossbar procedures registered!")
 
         # notify node changes to remote GUIs
         self.publish('ros.system.changed', "")
@@ -98,16 +105,16 @@ class CrossbarBaseSession(ApplicationSession):
                 self.crossbar_connected = True
                 self.crossbar_connecting = False
             except Exception as err:
-                print(err)
+                Log.debug(f"{err}")
 
                 # try to start the crossbar server
                 try:
                     config_path = crossbar_start_server(self.port)
-                    print(
+                    Log.info(
                         f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
                 except:
                     import traceback
-                    print(traceback.format_exc())
+                    Log.debug(traceback.format_exc())
 
                 self.crossbar_connecting = False
                 self.crossbar_connected = False
@@ -122,5 +129,6 @@ class CrossbarBaseSession(ApplicationSession):
         await asyncio.gather(task)
 
     def crossbar_reconnect(self):
+        Log.info(f"reconnect to crossbar @ {self.uri}")
         asyncio.run_coroutine_threadsafe(
             self.crossbar_connect(), self.crossbar_loop)

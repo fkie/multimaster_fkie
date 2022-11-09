@@ -120,6 +120,8 @@ class Server:
         self.file_servicer.stop()
         # self.monitor_servicer.stop()
         self.rosstate_servicer.stop()
+        self.screen_servicer.stop()
+        self.parameter_servicer.stop()
         self.rosnode.destroy_publisher(self.pub_endpoint)
 
     def load_launch_file(self, path, autostart=False):
