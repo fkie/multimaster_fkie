@@ -20,6 +20,7 @@
 from typing import Text
 import os
 import threading
+import time
 
 # crossbar-io dependencies
 import asyncio
@@ -112,6 +113,7 @@ class Server:
         loop.run_forever()
 
     def shutdown(self):
+        WAIT_TIMEOUT = 3
         endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=get_host_name(
         ), ros_domain_id=self.ros_domain_id, on_shutdown=True, pid=os.getpid())
         self.pub_endpoint.publish(endpoint_msg)
@@ -122,7 +124,15 @@ class Server:
         self.rosstate_servicer.stop()
         self.screen_servicer.stop()
         self.parameter_servicer.stop()
+        shutdown_task = self.crossbar_loop.create_task(self.crossbar_loop.shutdown_asyncgens())
         self.rosnode.destroy_publisher(self.pub_endpoint)
+        sleep_time = 0.5
+        while not shutdown_task.done() or self.parameter_servicer.crossbar_connected:
+            time.sleep(sleep_time)
+            sleep_time += 0.5
+            if sleep_time > WAIT_TIMEOUT:
+                break
+
 
     def load_launch_file(self, path, autostart=False):
         pass

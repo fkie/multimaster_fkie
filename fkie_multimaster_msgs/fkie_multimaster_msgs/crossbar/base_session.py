@@ -84,7 +84,7 @@ class CrossbarBaseSession(ApplicationSession):
 
     def onLeave(self, details):
         ApplicationSession.onLeave(self, details)
-        Log.info(f"{self.__class__.__name__}.onLeave: {details}")
+        Log.debug(f"{self.__class__.__name__}.onLeave: {details}")
 
     @coroutine
     def onJoin(self, details):

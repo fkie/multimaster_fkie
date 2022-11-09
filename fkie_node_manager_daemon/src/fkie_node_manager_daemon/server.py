@@ -94,14 +94,14 @@ class GrpcServer:
         rospy.Service('~run', Task, self._rosservice_start_node)
 
     def __del__(self):
-        self.crossbar_loop.stop()
-        self.server.stop(3)
         self.launch_servicer = None
         self.monitor_servicer = None
         self.settings_servicer = None
         self.parameter_servicer = None
         self.file_servicer = None
         self.screen_servicer = None
+        self.crossbar_loop.stop()
+        self.server.stop(3)
 
     def _update_grpc_parameter(self, settings):
         old_verbosity = self._grpc_verbosity
@@ -185,13 +185,21 @@ class GrpcServer:
         loop.run_forever()
 
     def shutdown(self):
-        self.crossbar_loop.stop()
+        WAIT_TIMEOUT = 3
+        shutdown_task = self.crossbar_loop.create_task(self.crossbar_loop.shutdown_asyncgens())
         self.launch_servicer.stop()
         self.monitor_servicer.stop()
         self.parameter_servicer.shutdown()
         self.file_servicer.shutdown()
         self.screen_servicer.stop()
-        self.server.stop(3)
+        self.server.stop(WAIT_TIMEOUT)
+        sleep_time = 0.5
+        while not shutdown_task.done() or self.screen_servicer.crossbar_connected:
+            time.sleep(sleep_time)
+            sleep_time += 0.5
+            if sleep_time > WAIT_TIMEOUT:
+                print("break")
+                break
 
     def load_launch_file(self, path, autostart=False):
         self.launch_servicer.load_launch_file(
