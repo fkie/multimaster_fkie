@@ -324,7 +324,8 @@ class MasterMonitor(ApplicationSession):
                 self._timer_update_launch_uris.cancel()
             except Exception:
                 pass
-        self.disconnect()
+        if self.connect_crossbar:
+            self.disconnect()
         if hasattr(self, 'rpcServer'):
             if self._master is not None:
                 Log.info("Unsubscribe from parameter `/roslaunch/uris`")
