@@ -30,6 +30,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from typing import Callable
 
 import time
 
@@ -59,6 +60,7 @@ class CrossbarBaseSession(ApplicationSession):
         self._on_shutdown = False
         if test_env:
             return
+        self._crossbar_subscriptions = []  # list of tuples (topic, handler)
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
         self.crossbar_connected = False
         self.crossbar_connecting = False
@@ -67,6 +69,23 @@ class CrossbarBaseSession(ApplicationSession):
         task = asyncio.run_coroutine_threadsafe(
             self.crossbar_connect(), self.crossbar_loop)
 
+    '''
+    Subscribes to a crossbar topic in async way.
+    Subscribed topics in this way are subscribed after reconnection.
+    '''
+    def subscribe_to(self, topic: str, handler: Callable):
+        self._crossbar_subscriptions.append((topic, handler))
+        if self.crossbar_connected:
+            asyncio.run_coroutine_threadsafe(
+                self.subcribe_async(topic, handler), self.crossbar_loop)
+
+    async def subcribe_async(self, topic: str, handler: Callable):
+        try:
+            await self.subscribe(handler, topic)
+            Log.info(f"{self.__class__.__name__}: subscribed to crossbar topic 'ros.nodes.abort'")
+        except Exception as e:
+            Log.warn(f"{self.__class__.__name__}: could not subscribe to 'ros.nodes.abort': {0}".format(e))
+
     def shutdown(self):
         self._on_shutdown = True
         self.disconnect()
@@ -74,6 +93,9 @@ class CrossbarBaseSession(ApplicationSession):
     def onConnect(self):
         Log.info(f"{self.__class__.__name__}: autobahn connected")
         self.join(self.config.realm)
+        for (topic, handler) in self._crossbar_subscriptions:
+            asyncio.run_coroutine_threadsafe(
+                self.subcribe_async(topic, handler), self.crossbar_loop)
 
     def onDisconnect(self):
         Log.info(f"{self.__class__.__name__}: autobahn disconnected")
@@ -89,8 +111,11 @@ class CrossbarBaseSession(ApplicationSession):
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
-        Log.info(f"{self.__class__.__name__}: {len(res)} crossbar procedures registered!")
-
+        Log.info(
+            f"{self.__class__.__name__}: {len(self._registrations)} crossbar procedures registered!")
+        Log.info(f"{self.__class__.__name__}: list of registered uri's:")
+        for _session_id, reg in self._registrations.items():
+            Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
         # notify node changes to remote GUIs
         self.publish('ros.system.changed', "")
 
