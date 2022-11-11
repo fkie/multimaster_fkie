@@ -200,7 +200,7 @@ class RosStateServicer(CrossbarBaseSession):
 
                 for rn in rp.node_entities:
                     n_guid = self._guid_to_str(rp.guid)
-                    ros_node = RosNode(n_guid, rn.name)
+                    ros_node = RosNode(f"{n_guid}_{rn.name}", rn.name)
                     ros_node.name = os.path.join(rn.ns, rn.name)
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
