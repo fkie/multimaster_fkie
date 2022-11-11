@@ -54,6 +54,8 @@ from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosProvider
+from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarning
+from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarningGroup
 from fkie_multimaster_msgs.logging.logging import Log
 
 
@@ -72,7 +74,7 @@ class DiscoveredMaster(object):
     connection to remote discoverer will be established to get additional
     information about the ROS master.
 
-    :param monitoruri: The URI of the remote RPC server, which moniter the ROS master
+    :param monitoruri: The URI of the remote RPC server, which monitor the ROS master
 
     :type monitoruri:  str
 
@@ -1044,9 +1046,9 @@ class Discoverer(object):
             for (addr, port), master in self.masters.items():
                 # TODO: Check provider port
                 cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
-                                    host=addr[0],
-                                    port=port + 300,
-                                    masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
+                                       host=addr[0],
+                                       port=port + 300,
+                                       masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
                 result.append(cbmaster)
             self.master_monitor.setProviderList(result)
         except Exception as cpe:
@@ -1178,6 +1180,16 @@ class Discoverer(object):
 
     def update_master_errors(self):
         result = []
+        crossbar_w_ip_mismatch = SystemWarningGroup(
+            SystemWarningGroup.ID_ADDR_MISMATCH)
+        crossbar_w_resolve = SystemWarningGroup(
+            SystemWarningGroup.ID_RESOLVE_FAILED)
+        crossbar_w_udp_send = SystemWarningGroup(
+            SystemWarningGroup.ID_UDP_SEND)
+        crossbar_w_exception = SystemWarningGroup(
+            SystemWarningGroup.ID_EXCEPTION)
+        crossbar_warnings = [crossbar_w_ip_mismatch, crossbar_w_resolve,
+                             crossbar_w_udp_send, crossbar_w_exception]
         with self.__lock:
             try:
                 current_errors = self.master_monitor.getMasterErrors()[1]
@@ -1189,8 +1201,9 @@ class Discoverer(object):
                     if v.mastername is not None and not v.errors and v.masteruri != self.master_monitor.getMasteruri():
                         try:
                             if v.masteruriaddr != v.monitor_hostname:
-                                msg = "Resolved host of ROS_MASTER_URI %s=%s and origin discovered IP=%s are different. Fix your network settings and restart master_discovery!" % (
-                                    v.master_hostname, v.masteruriaddr, v.monitor_hostname)
+                                msg_err = f"Resolved host of ROS_MASTER_URI {v.master_hostname}={v.masteruriaddr} and origin discovered IP={v.monitor_hostname} are different"
+                                msg_hint = f"Fix your network settings (e.g. /etc/hosts) and restart master_discovery!"
+                                msg = f"{msg_err} {msg_hint}"
                                 if v.masteruriaddr is None or not v.masteruriaddr.startswith('127.'):
                                     local_addresses = [
                                         'localhost'] + get_local_addresses()
@@ -1199,19 +1212,27 @@ class Discoverer(object):
                                         if msg not in current_errors:
                                             Log.warn(msg)
                                         result.append(msg)
+                                        crossbar_w_ip_mismatch.append(
+                                            SystemWarning(msg=msg_err, hint=msg_hint))
                         except Exception as e:
-                            result.append("%s" % e)
-                            Log.warn(
-                                "Error while resolve address for %s: %s" % (v.masteruri, e))
+                            msg_err = f"Error while resolve address for {v.masteruri}: {str(e)}"
+                            result.append(msg_err)
+                            crossbar_w_resolve.append(
+                                SystemWarning(msg=msg_err))
+                            Log.warn(msg_err)
                 try:
                     for _addr, msg in SEND_ERRORS.items():
                         result.append('%s' % msg)
+                        crossbar_w_udp_send.append(SystemWarning(msg=msg))
                 except:
                     pass
             except Exception as e:
-                result.append("%s" % e)
-                Log.warn("%s" % e)
+                msg_err = f"{str(e)}"
+                result.append(msg_err)
+                Log.warn(msg_err)
+                crossbar_w_exception.append(SystemWarning(msg=msg_err))
         self.master_monitor.update_master_errors(result)
+        self.master_monitor.update_errors_crossbar(crossbar_warnings)
 
     def rosservice_list_masters(self, req):
         '''

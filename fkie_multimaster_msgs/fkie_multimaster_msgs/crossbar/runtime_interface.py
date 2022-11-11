@@ -135,10 +135,56 @@ class ScreenRepetitions:
     :param str name: full node name
     :param [str] screens: list the screen names associated with given node.
     '''
-
     def __init__(self, name: str, screens: List[str]) -> None:
         self.name = name
         self.screens = screens
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class SystemWarning:
+    '''
+    :param str msg: short warning message.
+    :param str details: long description.
+    :param str hint: note on the possible solution.
+    '''
+    def __init__(self, msg: str, details: str='', hint: str='') -> None:
+        self.msg = msg
+        self.details = details
+        self.hint = hint
+
+
+class SystemWarningGroup:
+
+    ID_ADDR_MISMATCH='ADDR_MISMATCH'
+    ID_RESOLVE_FAILED='RESOLVE_FAILED'
+    ID_UDP_SEND='UDP_SEND'
+    ID_EXCEPTION='EXCEPTION'
+    ID_TIME_JUMP='TIME_JUMP'
+
+    '''
+    :param str id: id of the warning group, on of ID_*.
+    :param list[SystemWarning] warnings: list of warnings.
+    '''
+    def __init__(self, id: str, warnings: List[SystemWarning]=None) -> None:
+        self.id = id
+        self.warnings = [] if warnings is None else warnings
+
+    def append(self, warning: SystemWarning):
+        self.warnings.append(warning)
+
+    def __eq__(self, other) -> bool:
+        if self.id != other.id:
+            return False
+        if len(self.warnings) != len(other.warnings):
+            return False
+        for my_warning in self.warnings:
+            found = False
+            for other_warning in other.warnings:
+                if my_warning.msg == other_warning.msg:
+                    found = True
+                    break
+            if not found:
+                return False
+        return True

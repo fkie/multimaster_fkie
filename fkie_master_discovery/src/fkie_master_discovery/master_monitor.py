@@ -76,6 +76,8 @@ from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
+from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarning
+from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarningGroup
 from fkie_multimaster_msgs.crossbar.server import crossbar_start_server, CROSSBAR_PATH
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system import ros1_masteruri
@@ -201,6 +203,7 @@ class MasterMonitor(ApplicationSession):
 
         self._printed_errors = dict()
         self._last_clearup_ts = time.time()
+        self._crossbar_warning_groups = {}
 
         self._master_errors = list()
         # Create an XML-RPC server
@@ -930,6 +933,11 @@ class MasterMonitor(ApplicationSession):
                     result = True
                     timejump_msg = "Timejump into past detected! Restart all ROS nodes, includes master_discovery, please!"
                     Log.warn(timejump_msg)
+                    crossbar_w_timejump = SystemWarningGroup(
+                        SystemWarningGroup.ID_TIME_JUMP)
+                    crossbar_w_timejump.append(SystemWarning(
+                        msg='Timejump into past detected!', hint='Restart all ROS nodes, includes master_discovery, please! master_discovery shutting down in 5 seconds!'))
+                    self.update_errors_crossbar([crossbar_w_timejump])
                     if timejump_msg not in self._master_errors:
                         self._master_errors.append(timejump_msg)
                     self._exit_timer = threading.Timer(
@@ -971,8 +979,25 @@ class MasterMonitor(ApplicationSession):
                 del self.__master_state
             self.__master_state = None
 
-    def update_master_errors(self, error_list):
+    def update_master_errors(self, error_list: List[str]):
         self._master_errors = list(error_list)
+
+    def update_errors_crossbar(self, crossbar_warnings: List[SystemWarningGroup]):
+        updated = False
+        for group in crossbar_warnings:
+            if group.id not in self._crossbar_warning_groups:
+                updated = True
+                self._crossbar_warning_groups[group.id] = group
+            elif not self._crossbar_warning_groups[group.id] == group:
+                updated = True
+                self._crossbar_warning_groups[group.id] = group
+        if updated:
+            print(list(self._crossbar_warning_groups.values()))
+            try:
+                self.publish('ros.provider.warnings', json.dumps(
+                    list(self._crossbar_warning_groups.values()), cls=SelfEncoder))
+            except Exception:
+                pass
 
     ### Crossbar - AUTOBAHN
     def onConnect(self):
@@ -1142,7 +1167,8 @@ class MasterMonitor(ApplicationSession):
                 self.crossbar_connected = True
                 self.crossbar_connecting = False
             except Exception as err:
-                Log.warn(f"Error while connect to crossbar @ ws://localhost:{self.crossbar_port}/ws: {err}")
+                Log.warn(
+                    f"Error while connect to crossbar @ ws://localhost:{self.crossbar_port}/ws: {err}")
 
                 # try to start the crossbar server
                 try:
