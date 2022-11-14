@@ -1003,6 +1003,8 @@ class MasterMonitor(ApplicationSession):
     def onConnect(self):
         print("Autobahn connected")
         self.join(self.config.realm)
+        # notify node changes to remote GUIs
+        self.publish('ros.system.changed', "")
 
     def onDisconnect(self):
         Log.info('Autobahn disconnected')
@@ -1147,9 +1149,6 @@ class MasterMonitor(ApplicationSession):
     def onJoin(self, details):
         res = yield from self.register(self)
         Log.info("Crossbar: {} procedures registered!".format(len(res)))
-
-        # notify node changes to remote GUIs
-        self.publish('ros.system.changed', "")
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
