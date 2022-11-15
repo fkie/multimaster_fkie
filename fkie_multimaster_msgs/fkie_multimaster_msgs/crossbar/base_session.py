@@ -59,11 +59,11 @@ class CrossbarBaseSession(ApplicationSession):
         self.crossbar_loop = loop
         self._on_shutdown = False
         self._crossbar_subscriptions = []  # list of tuples (topic, handler)
+        self.crossbar_connected = False
+        self.crossbar_connecting = False
         if test_env:
             return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
-        self.crossbar_connected = False
-        self.crossbar_connecting = False
         self.uri = f"ws://localhost:{self.port}/ws"
         self.crossbar_runner = ApplicationRunner(self.uri, self.config.realm)
         task = asyncio.run_coroutine_threadsafe(
