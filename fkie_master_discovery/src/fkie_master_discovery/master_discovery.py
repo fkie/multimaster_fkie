@@ -1158,7 +1158,7 @@ class Discoverer(object):
                                   self.rosservice_list_masters)
                     rospy.Service('~refresh', std_srvs.srv.Empty,
                                   self.rosservice_refresh)
-                if master_state.state == MasterState.STATE_NEW:
+                if master_state.state in [MasterState.STATE_NEW, MasterState.STATE_CHANGED]:
                     self._crossbar_publish_masters()
             except:
                 traceback.print_exc()
