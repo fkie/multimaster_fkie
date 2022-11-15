@@ -1133,11 +1133,10 @@ class MasterMonitor(ApplicationSession):
 
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
-        Log.info("setProviderList: {0}".format(
-            json.dumps(provider_list, cls=SelfEncoder)))
+        provider_list_json = json.dumps(provider_list, cls=SelfEncoder)
+        Log.info(f"setProviderList: {provider_list_json}")
         # notify changes
-        self.publish('ros.provider.list', json.dumps(
-            provider_list, cls=SelfEncoder))
+        self.publish('ros.provider.list', provider_list_json)
 
     @wamp.register('ros.provider.get_list')
     def getProviderList(self) -> str:

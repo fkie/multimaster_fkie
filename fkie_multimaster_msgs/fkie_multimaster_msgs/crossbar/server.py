@@ -49,7 +49,6 @@ CROSSBAR_CONFIG_JSON = {
                     ],
                     "store": {
                         "type": "memory",
-                        "limit": 10,
                         "event-history": [
                             {
                                 "uri": "ros.provider.warnings",

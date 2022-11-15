@@ -557,6 +557,7 @@ class Discoverer(object):
         # this parameter stores the state of the remote nodes. If the state is changed
         # the cache for contacts of remote nodes will be cleared.
         self._changed = False
+        self._crossbar_reported_masters = set()
         self._last_datetime = time.time()
         self.ROSMASTER_HZ = rospy.get_param(
             '~rosmaster_hz', Discoverer.ROSMASTER_HZ)
@@ -1042,17 +1043,23 @@ class Discoverer(object):
 
     def _crossbar_publish_masters(self):
         try:
+            crossbar_reported_masters = set()
             result = []
             for (addr, port), master in self.masters.items():
                 # TODO: Check provider port
-                cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
-                                       host=addr[0],
-                                       port=port + 300,
-                                       masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
-                result.append(cbmaster)
-            self.master_monitor.setProviderList(result)
+                if master.online:
+                    cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
+                                        host=addr[0],
+                                        port=port + 300,
+                                        masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
+                    result.append(cbmaster)
+                    crossbar_reported_masters.add(master.masteruri)
+            if not (crossbar_reported_masters == self._crossbar_reported_masters):
+                self.master_monitor.setProviderList(result)
+                self._crossbar_reported_masters = crossbar_reported_masters
         except Exception as cpe:
-            pass
+            import traceback
+            Log.warn(traceback.format_exc())
 
     def _check_timejump(self):
         if self._last_datetime > time.time():
