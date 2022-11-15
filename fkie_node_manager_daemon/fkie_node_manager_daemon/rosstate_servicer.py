@@ -197,11 +197,12 @@ class RosStateServicer(CrossbarBaseSession):
                         else:
                             service_by_id[t_guid] = service_objs[(
                                 srv_name, srv_type)]
-
+                parent_node = None
                 for rn in rp.node_entities:
                     n_guid = self._guid_to_str(rp.guid)
-                    ros_node = RosNode(f"{n_guid}_{rn.name}", rn.name)
-                    ros_node.name = os.path.join(rn.ns, rn.name)
+                    full_name = os.path.join(rn.ns, rn.name)
+                    ros_node = RosNode(f"{n_guid}|{full_name}", rn.name)
+                    ros_node.name = full_name
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
                         gid = self._guid_to_str(ntp)
@@ -229,5 +230,9 @@ class RosStateServicer(CrossbarBaseSession):
                                 ros_node.services.append(srv)
                             except KeyError:
                                 pass
+                    if parent_node is not None:
+                        ros_node.parent_id = parent_node.id
+                    else:
+                        parent_node = ros_node
                     result.append(ros_node)
             return result

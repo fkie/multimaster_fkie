@@ -89,14 +89,6 @@ struct TopicInfo
 using paricipant_map_t = std::map<eprosima::fastrtps::rtps::GUID_t, ParticipantInfo>;
 using topic_map_t = std::map<eprosima::fastrtps::rtps::GUID_t, TopicInfo>;
 
-fkie_multimaster_msgs::msg::Guid guid_to_msg(const eprosima::fastrtps::rtps::GUID_t &guid)
-{
-    fkie_multimaster_msgs::msg::Guid result;
-    rmw_gid_t rmw_gid = {};
-    rmw_fastrtps_shared_cpp::copy_from_fastrtps_guid_to_byte_array(guid, rmw_gid.data);
-    std::memcpy(&result.data, rmw_gid.data, 24);
-    return result;
-}
 
 /**
  * Get a value from a environment variable
@@ -302,6 +294,7 @@ public:
             }
             // create a new list with all nodes
             participant.nodes.clear();
+            RCLCPP_INFO(get_logger(), "add discovered nodes for guid=%s", to_string(guid).c_str());
             for (auto &node : msg.node_entities_info_seq)
             {
                 NodeInfo &ni = _get_node(participant, node.node_name, node.node_namespace);
@@ -310,14 +303,14 @@ public:
                 for (auto &writer_gid : node.writer_gid_seq)
                 {
                     fkie_multimaster_msgs::msg::Guid guid;
-                    std::memcpy(&guid.data, &writer_gid, 24);
+                    std::memcpy(&guid.data, &writer_gid, sizeof(guid.data));
                     ni.publisher.push_back(guid);
                 }
                 // ni.subscriber.clear();
                 for (auto &reader_gid : node.reader_gid_seq)
                 {
                     fkie_multimaster_msgs::msg::Guid guid;
-                    std::memcpy(&guid.data, &reader_gid, 24);
+                    std::memcpy(&guid.data, &reader_gid, sizeof(guid.data));
                     ni.subscriber.push_back(guid);
                 }
                 infoUpdated_ = true;
@@ -578,6 +571,15 @@ public:
     {
         auto time = std::chrono::high_resolution_clock::now();
         return std::chrono::duration_cast<std::chrono::nanoseconds>(time.time_since_epoch()).count();
+    }
+
+    fkie_multimaster_msgs::msg::Guid guid_to_msg(const eprosima::fastrtps::rtps::GUID_t &guid)
+    {
+        fkie_multimaster_msgs::msg::Guid result;
+        rmw_gid_t rmw_gid = {};
+        rmw_fastrtps_shared_cpp::copy_from_fastrtps_guid_to_byte_array(guid, rmw_gid.data);
+        std::memcpy(&result.data, rmw_gid.data, sizeof(rmw_gid.data));
+        return result;
     }
 
 private:

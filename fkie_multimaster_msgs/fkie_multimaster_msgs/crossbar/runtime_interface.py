@@ -81,6 +81,7 @@ class RosParameter:
 class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
+        self.parent_id = ''
         self.name = get_node_name(name)
         self.namespace = names.namespace(name, with_sep_suffix=False)
         self.status = 'running'
