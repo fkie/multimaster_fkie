@@ -58,9 +58,9 @@ class CrossbarBaseSession(ApplicationSession):
         self.port = port
         self.crossbar_loop = loop
         self._on_shutdown = False
+        self._crossbar_subscriptions = []  # list of tuples (topic, handler)
         if test_env:
             return
-        self._crossbar_subscriptions = []  # list of tuples (topic, handler)
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
         self.crossbar_connected = False
         self.crossbar_connecting = False
