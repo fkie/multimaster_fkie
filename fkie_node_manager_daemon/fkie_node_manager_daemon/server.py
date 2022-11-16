@@ -123,7 +123,6 @@ class Server:
         while not registration_finished:
             registration_finished = True
             registration_finished &= self.launch_servicer.crossbar_registered
-            registration_finished &= self.monitor_servicer.crossbar_registered
             registration_finished &= self.screen_servicer.crossbar_registered
             registration_finished &= self.rosstate_servicer.crossbar_registered
             registration_finished &= self.parameter_servicer.crossbar_registered
