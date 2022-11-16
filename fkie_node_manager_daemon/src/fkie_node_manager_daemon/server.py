@@ -33,6 +33,7 @@
 
 from concurrent import futures
 import grpc
+import json
 import rospy
 import os
 import threading
@@ -49,6 +50,7 @@ from fkie_multimaster_msgs.defines import GRPC_SERVER_PORT_OFFSET
 from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.crossbar import server
+from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 
 
 # crossbar-io dependencies
@@ -139,6 +141,10 @@ class GrpcServer:
             self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.parameter_servicer = ParameterServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        self.file_servicer = FileServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+        self.screen_servicer = ScreenServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.start(self._launch_url)
 
     def start(self, url='[::]:12311'):
@@ -179,14 +185,40 @@ class GrpcServer:
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
+        self._crossbarNotificationThread = threading.Thread(
+            target=self._crossbar_notify_if_regsitered, daemon=True)
+        self._crossbarNotificationThread.start()
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
+    def _crossbar_notify_if_regsitered(self):
+        registration_finished = False
+        while not registration_finished:
+            registration_finished = True
+            registration_finished &= self.launch_servicer.crossbar_registered
+            registration_finished &= self.screen_servicer.crossbar_registered
+            registration_finished &= self.file_servicer.crossbar_registered
+            registration_finished &= self.parameter_servicer.crossbar_registered
+            time.sleep(0.5)
+        self._crossbar_send_status(True)
+
+    def _crossbar_send_status(self, status: bool):
+        try:
+            # try to send notification to crossbar subscribers
+            Log.debug(f"ros.discovery.ready({status})")
+            self.launch_servicer.publish(
+                'ros.daemon.ready', json.dumps({'status': status}, cls=SelfEncoder))
+        except Exception:
+            import traceback
+            Log.warning(traceback.format_exc())
+
     def shutdown(self):
         WAIT_TIMEOUT = 3
-        shutdown_task = self.crossbar_loop.create_task(self.crossbar_loop.shutdown_asyncgens())
+        self._crossbar_send_status(False)
+        shutdown_task = self.crossbar_loop.create_task(
+            self.crossbar_loop.shutdown_asyncgens())
         self.launch_servicer.stop()
         self.monitor_servicer.stop()
         self.parameter_servicer.shutdown()

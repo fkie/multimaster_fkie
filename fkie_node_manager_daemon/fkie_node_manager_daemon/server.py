@@ -24,6 +24,7 @@ import time
 
 # crossbar-io dependencies
 import asyncio
+import json
 
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import Endpoint
@@ -32,6 +33,8 @@ from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.names import ns_join
 from fkie_multimaster_msgs.crossbar import server
 from fkie_multimaster_msgs.system.host import get_host_name
+from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_msgs.logging.logging import Log
 import fkie_node_manager_daemon as nmd
 
 from fkie_node_manager_daemon.file_servicer import FileServicer
@@ -106,14 +109,40 @@ class Server:
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
+        self._crossbarNotificationThread = threading.Thread(
+            target=self._crossbar_notify_if_regsitered, daemon=True)
+        self._crossbarNotificationThread.start()
         return True
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
+    def _crossbar_notify_if_regsitered(self):
+        registration_finished = False
+        while not registration_finished:
+            registration_finished = True
+            registration_finished &= self.launch_servicer.crossbar_registered
+            registration_finished &= self.monitor_servicer.crossbar_registered
+            registration_finished &= self.screen_servicer.crossbar_registered
+            registration_finished &= self.rosstate_servicer.crossbar_registered
+            registration_finished &= self.parameter_servicer.crossbar_registered
+            time.sleep(0.5)
+        self._crossbar_send_status(True)
+
+    def _crossbar_send_status(self, status: bool):
+        try:
+            # try to send notification to crossbar subscribers
+            Log.debug(f"ros.discovery.ready({status})")
+            self.rosstate_servicer.publish(
+                'ros.daemon.ready', json.dumps({'status': status}, cls=SelfEncoder))
+        except Exception:
+            import traceback
+            Log.warning(traceback.format_exc())
+
     def shutdown(self):
         WAIT_TIMEOUT = 3
+        self._crossbar_send_status(False)
         endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=get_host_name(
         ), ros_domain_id=self.ros_domain_id, on_shutdown=True, pid=os.getpid())
         self.pub_endpoint.publish(endpoint_msg)
@@ -124,7 +153,8 @@ class Server:
         self.rosstate_servicer.stop()
         self.screen_servicer.stop()
         self.parameter_servicer.stop()
-        shutdown_task = self.crossbar_loop.create_task(self.crossbar_loop.shutdown_asyncgens())
+        shutdown_task = self.crossbar_loop.create_task(
+            self.crossbar_loop.shutdown_asyncgens())
         self.rosnode.destroy_publisher(self.pub_endpoint)
         sleep_time = 0.5
         while not shutdown_task.done() or self.parameter_servicer.crossbar_connected:
@@ -132,7 +162,6 @@ class Server:
             sleep_time += 0.5
             if sleep_time > WAIT_TIMEOUT:
                 break
-
 
     def load_launch_file(self, path, autostart=False):
         pass

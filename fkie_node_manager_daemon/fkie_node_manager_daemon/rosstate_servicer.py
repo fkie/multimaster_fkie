@@ -100,6 +100,8 @@ class RosStateServicer(CrossbarBaseSession):
         if hasattr(self, 'sub_endpoints') and self.sub_endpoints is not None:
             nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
+        self.publish('ros.discovery.ready', json.dumps({'status': False}, cls=SelfEncoder))
+        self.publish('ros.daemon.ready', json.dumps({'status': False}, cls=SelfEncoder))
 
     def _on_msg_state(self, msg: DiscoveredState):
         '''
@@ -110,7 +112,7 @@ class RosStateServicer(CrossbarBaseSession):
         nmd.ros_node.get_logger().info('new message on %s' % self.topic_name_state)
         self._ros_state = msg
         try:
-            self.publish('ros.system.changed', "")
+            self.publish('ros.discovery.ready', json.dumps({'status': True}, cls=SelfEncoder))
         except Exception:
             pass
 
