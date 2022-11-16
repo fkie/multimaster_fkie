@@ -61,6 +61,7 @@ class CrossbarBaseSession(ApplicationSession):
         self._crossbar_subscriptions = []  # list of tuples (topic, handler)
         self.crossbar_connected = False
         self.crossbar_connecting = False
+        self.crossbar_registered = False
         if test_env:
             return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
@@ -96,13 +97,12 @@ class CrossbarBaseSession(ApplicationSession):
         for (topic, handler) in self._crossbar_subscriptions:
             asyncio.run_coroutine_threadsafe(
                 self.subcribe_async(topic, handler), self.crossbar_loop)
-        # notify node changes to remote GUIs
-        self.publish('ros.system.changed', "")
 
     def onDisconnect(self):
         Log.info(f"{self.__class__.__name__}: autobahn disconnected")
         self.crossbar_connected = False
         self.crossbar_connecting = False
+        self.crossbar_registered = False
         if not self._on_shutdown:
             self.crossbar_reconnect()
 
@@ -118,6 +118,7 @@ class CrossbarBaseSession(ApplicationSession):
         Log.info(f"{self.__class__.__name__}: list of registered uri's:")
         for _session_id, reg in self._registrations.items():
             Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
+        self.crossbar_registered = True
 
     async def crossbar_connect_async(self):
         self.crossbar_connected = False

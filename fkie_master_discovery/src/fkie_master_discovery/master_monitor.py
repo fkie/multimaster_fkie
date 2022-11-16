@@ -992,7 +992,10 @@ class MasterMonitor(ApplicationSession):
                 updated = True
                 self._crossbar_warning_groups[group.id] = group
         if updated:
-            print(list(self._crossbar_warning_groups.values()))
+            count_warnings = 0
+            for wg in self._crossbar_warning_groups.values():
+                count_warnings += len(wg.warnings)
+            Log.debug(f"ros.provider.warnings with {count_warnings} warnings in {len(self._crossbar_warning_groups)} groups")
             try:
                 self.publish('ros.provider.warnings', json.dumps(
                     list(self._crossbar_warning_groups.values()), cls=SelfEncoder))
@@ -1001,10 +1004,8 @@ class MasterMonitor(ApplicationSession):
 
     ### Crossbar - AUTOBAHN
     def onConnect(self):
-        print("Autobahn connected")
+        Log.info("Autobahn connected")
         self.join(self.config.realm)
-        # notify node changes to remote GUIs
-        self.publish('ros.system.changed', "")
 
     def onDisconnect(self):
         Log.info('Autobahn disconnected')
@@ -1134,9 +1135,13 @@ class MasterMonitor(ApplicationSession):
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
         provider_list_json = json.dumps(provider_list, cls=SelfEncoder)
-        Log.info(f"setProviderList: {provider_list_json}")
         # notify changes
-        self.publish('ros.provider.list', provider_list_json)
+        if self._on_shutdown or not self.provider_list:
+            Log.debug(f"ros.discovery.ready(False)")
+            self.publish('ros.discovery.ready', json.dumps({'status': False}, cls=SelfEncoder))
+        else:
+            Log.debug(f"ros.provider.list: {provider_list}")
+            self.publish('ros.provider.list', provider_list_json)
 
     @wamp.register('ros.provider.get_list')
     def getProviderList(self) -> str:
@@ -1146,8 +1151,15 @@ class MasterMonitor(ApplicationSession):
 
     @coroutine
     def onJoin(self, details):
-        res = yield from self.register(self)
-        Log.info("Crossbar: {} procedures registered!".format(len(res)))
+        _res = yield from self.register(self)
+        Log.info(
+            f"{self.__class__.__name__}: {len(self._registrations)} crossbar procedures registered!")
+        Log.info(f"{self.__class__.__name__}: list of registered uri's:")
+        for _session_id, reg in self._registrations.items():
+            Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
+        # notify GUI about start of master_discovery node
+        Log.debug(f"ros.discovery.ready(True)")
+        self.publish('ros.discovery.ready', json.dumps({'status': True}, cls=SelfEncoder))
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
