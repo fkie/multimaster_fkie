@@ -997,7 +997,8 @@ class MainWindow(QMainWindow):
 
     def on_master_monitor_crossbar(self, state):
         if not state:
-            self.own_master_monitor._master_monitor.crossbar_reconnect()
+            if self.own_master_monitor._master_monitor.connect_crossbar:
+                self.own_master_monitor._master_monitor.crossbar_reconnect()
 
     def on_master_info_retrieved(self, minfo):
         '''

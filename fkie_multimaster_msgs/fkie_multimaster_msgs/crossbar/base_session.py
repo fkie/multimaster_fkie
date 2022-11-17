@@ -30,16 +30,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from typing import Any
 from typing import Callable
+from typing import Union
 
 import time
 
-from json import JSONEncoder
+import json
 
 # crossbar-io dependencies
 import asyncio
 from autobahn.wamp.types import ComponentConfig
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
+from autobahn.wamp.exception import TransportLost
 from asyncio import coroutine
 
 
@@ -47,7 +50,7 @@ from fkie_multimaster_msgs.logging.logging import Log
 from .server import crossbar_start_server, CROSSBAR_PATH
 
 
-class SelfEncoder(JSONEncoder):
+class SelfEncoder(json.JSONEncoder):
     def default(self, obj):
         return obj.__dict__
 
@@ -59,13 +62,14 @@ class CrossbarBaseSession(ApplicationSession):
         self.crossbar_loop = loop
         self._on_shutdown = False
         self._crossbar_subscriptions = []  # list of tuples (topic, handler)
+        self._crossbar_failed_publications = {}  # (topic, message)
         self.crossbar_connected = False
         self.crossbar_connecting = False
         self.crossbar_registered = False
+        self.uri = f"ws://localhost:{self.port}/ws"
         if test_env:
             return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
-        self.uri = f"ws://localhost:{self.port}/ws"
         self.crossbar_runner = ApplicationRunner(self.uri, self.config.realm)
         task = asyncio.run_coroutine_threadsafe(
             self.crossbar_connect(), self.crossbar_loop)
@@ -83,9 +87,29 @@ class CrossbarBaseSession(ApplicationSession):
     async def subcribe_async(self, topic: str, handler: Callable):
         try:
             await self.subscribe(handler, topic)
-            Log.info(f"{self.__class__.__name__}: subscribed to crossbar topic 'ros.nodes.abort'")
+            Log.info(
+                f"{self.__class__.__name__}: subscribed to crossbar topic 'ros.nodes.abort'")
         except Exception as e:
-            Log.warn(f"{self.__class__.__name__}: could not subscribe to 'ros.nodes.abort': {0}".format(e))
+            Log.warn(
+                f"{self.__class__.__name__}: could not subscribe to 'ros.nodes.abort': {0}".format(e))
+
+    '''
+    Publishes message to given topic without throw an exception on connection problems.
+    Last failed message will be send on connect.
+    '''
+    def publish_to(self, topic: str, msg: Union[str, Any]):
+        encoded_msg = msg
+        if not isinstance(msg, str):
+            encoded_msg = json.dumps(msg, cls=SelfEncoder)
+        try:
+            Log.debug(f"Publish '{topic}': {encoded_msg}")
+            self.publish(topic, encoded_msg)
+        except TransportLost as e:
+            Log.info(f"add {topic}: {encoded_msg}")
+            self._crossbar_failed_publications[topic] = encoded_msg
+        except Exception:
+            import traceback
+            Log.warn(f"Error while publish to {topic}: {traceback.format_exc()}")
 
     def shutdown(self):
         self._on_shutdown = True
@@ -97,6 +121,9 @@ class CrossbarBaseSession(ApplicationSession):
         for (topic, handler) in self._crossbar_subscriptions:
             asyncio.run_coroutine_threadsafe(
                 self.subcribe_async(topic, handler), self.crossbar_loop)
+        for topic, msg in self._crossbar_failed_publications.items():
+            self.publish_to(topic, msg)
+        self._crossbar_failed_publications.clear()
 
     def onDisconnect(self):
         Log.info(f"{self.__class__.__name__}: autobahn disconnected")

@@ -154,8 +154,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             change_event = {event.event_type: event.src_path}
             Log.debug("observed change %s on %s" %
                       (event.event_type, event.src_path))
-            self.publish('ros.path.changed', json.dumps(
-                change_event, cls=SelfEncoder))
+            self.publish_to('ros.path.changed', change_event)
 
     def _add_file_to_observe(self, path):
         directory = os.path.dirname(path)
@@ -363,12 +362,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             self._loaded_files[CfgId(
                 launchfile, request.masteruri)] = launch_config
             # notify changes to crossbar GUI
-            try:
-                self.publish('ros.launch.changed',
-                             json.dumps({}, cls=SelfEncoder))
-                self._add_launch_to_observer(launchfile)
-            except Exception as cpe:
-                pass
+            self.publish_to('ros.launch.changed', {})
+            self._add_launch_to_observer(launchfile)
             Log.debug('..load complete!')
         except Exception as e:
             import traceback
@@ -417,12 +412,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 result.status.code = 'OK'
                 # TODO: added change detection for nodes parameters
                 # notify changes to crossbar GUI
-                try:
-                    self.publish('ros.launch.changed',
-                                 json.dumps({}, cls=SelfEncoder))
-                    self._add_launch_to_observer(request.path)
-                except Exception as cpe:
-                    pass
+                self.publish_to('ros.launch.changed', {})
+                self._add_launch_to_observer(request.path)
             except Exception as e:
                 print(traceback.format_exc())
                 self._add_launch_to_observer(request.path)
@@ -459,11 +450,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 result.status.code = 'OK'
 
                 # notify changes to crossbar GUI
-                try:
-                    self.publish('ros.launch.changed',
-                                 json.dumps({}, cls=SelfEncoder))
-                except Exception as cpe:
-                    pass
+                self.publish_to('ros.launch.changed', {})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, e)

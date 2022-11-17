@@ -61,24 +61,20 @@ import json
 from typing import List, Dict
 
 # crossbar-io dependencies
-from twisted.internet.defer import inlineCallbacks
 import asyncio
 from autobahn import wamp
-from autobahn.wamp.types import ComponentConfig
-from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
-from asyncio import coroutine
 
 from .common import get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
 from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarning
 from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarningGroup
-from fkie_multimaster_msgs.crossbar.server import crossbar_start_server, CROSSBAR_PATH
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system import ros1_masteruri
 
@@ -135,7 +131,7 @@ class RPCThreadingV6(ThreadingMixIn, SimpleXMLRPCServer):
                                     logRequests=logRequests, allow_none=allow_none, encoding=encoding, bind_and_activate=bind_and_activate)
 
 
-class MasterMonitor(ApplicationSession):
+class MasterMonitor(CrossbarBaseSession):
     '''
     This class provides methods to get the state from the ROS master using his
     RPC API and test for changes. Furthermore an XML-RPC server will be created
@@ -259,8 +255,6 @@ class MasterMonitor(ApplicationSession):
         self._re_hide_services = gen_pattern(
             rospy.get_param('~hide_services', []), 'hide_services')
 
-        self.crossbar_connected = False
-        self.crossbar_connecting = False
         self.provider_list = []
         self.crossbar_realm = "ros"
         self.crossbar_port = 11911
@@ -275,13 +269,8 @@ class MasterMonitor(ApplicationSession):
             self._crossbarThread = threading.Thread(
                 target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
             self._crossbarThread.start()
-
-            ApplicationSession.__init__(
-                self, ComponentConfig(self.crossbar_realm, {}))
-            self.crossbar_runner = ApplicationRunner(
-                f"ws://localhost:{self.crossbar_port}/ws", self.crossbar_realm)
-            task = asyncio.run_coroutine_threadsafe(
-                self.crossbar_connect(), self.crossbar_loop)
+            CrossbarBaseSession.__init__(
+                self, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
 
         # === UPDATE THE LAUNCH URIS Section ===
         # subscribe to get parameter updates
@@ -307,6 +296,7 @@ class MasterMonitor(ApplicationSession):
             self._multiple_screen_thread = threading.Thread(
                 target=self.checkMultipleScreens, daemon=True)
             self._multiple_screen_thread.start()
+            self.publish_to('ros.discovery.ready', {'status': True})
 
     def __update_param(self, key, value):
         # updates the /roslaunch/uris parameter list
@@ -957,12 +947,8 @@ class MasterMonitor(ApplicationSession):
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
             if result and self.connect_crossbar:
-                try:
-                    result = {"timestamp": self.__new_master_state.timestamp}
-                    self.publish('ros.nodes.changed',
-                                 json.dumps(result, cls=SelfEncoder))
-                except Exception as cpe:
-                    pass
+                result = {"timestamp": self.__new_master_state.timestamp}
+                self.publish_to('ros.nodes.changed', result)
                 self._multiple_screen_do_check = True
             return result
 
@@ -1001,22 +987,8 @@ class MasterMonitor(ApplicationSession):
                 count_warnings += len(wg.warnings)
             Log.debug(
                 f"ros.provider.warnings with {count_warnings} warnings in {len(self._crossbar_warning_groups)} groups")
-            try:
-                self.publish('ros.provider.warnings', json.dumps(
-                    list(self._crossbar_warning_groups.values()), cls=SelfEncoder))
-            except Exception:
-                pass
-
-    ### Crossbar - AUTOBAHN
-    def onConnect(self):
-        Log.info("Autobahn connected")
-        self.join(self.config.realm)
-
-    def onDisconnect(self):
-        Log.info('Autobahn disconnected')
-        self.crossbar_connected = False
-        if not self._on_shutdown:
-            self.crossbar_reconnect()
+            self.publish_to('ros.provider.warnings', list(
+                self._crossbar_warning_groups.values()))
 
     @wamp.register('ros.nodes.get_list')
     def get_node_list(self) -> str:
@@ -1133,14 +1105,10 @@ class MasterMonitor(ApplicationSession):
                     if len(msg.screens) > 1:
                         crossbar_msg.append(msg)
                 if crossbar_msg or notified_about_multiple:
-                    try:
-                        Log.debug(
-                            f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
-                        self.publish('ros.screen.multiple', json.dumps(
-                            crossbar_msg, cls=SelfEncoder))
-                        notified_about_multiple = len(crossbar_msg) > 0
-                    except Exception:
-                        pass
+                    Log.debug(
+                        f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
+                    self.publish_to('ros.screen.multiple', crossbar_msg)
+                    notified_about_multiple = len(crossbar_msg) > 0
                 last_check = 0
             else:
                 last_check += 1
@@ -1150,15 +1118,11 @@ class MasterMonitor(ApplicationSession):
         self.provider_list = provider_list
         if not self.connect_crossbar:
             return
-        provider_list_json = json.dumps(provider_list, cls=SelfEncoder)
         # notify changes
         if self._on_shutdown or not self.provider_list:
-            Log.debug(f"ros.discovery.ready(False)")
-            self.publish('ros.discovery.ready', json.dumps(
-                {'status': False}, cls=SelfEncoder))
+            self.publish_to('ros.discovery.ready', {'status': False})
         else:
-            Log.debug(f"ros.provider.list: {provider_list}")
-            self.publish('ros.provider.list', provider_list_json)
+            self.publish_to('ros.provider.list', provider_list)
 
     @wamp.register('ros.provider.get_list')
     def getProviderList(self) -> str:
@@ -1166,60 +1130,7 @@ class MasterMonitor(ApplicationSession):
         # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
         return json.dumps(self.provider_list, cls=SelfEncoder)
 
-    @coroutine
-    def onJoin(self, details):
-        _res = yield from self.register(self)
-        Log.info(
-            f"{self.__class__.__name__}: {len(self._registrations)} crossbar procedures registered!")
-        Log.info(f"{self.__class__.__name__}: list of registered uri's:")
-        for _session_id, reg in self._registrations.items():
-            Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
-        # notify GUI about start of master_discovery node
-        Log.debug(f"ros.discovery.ready(True)")
-        self.publish('ros.discovery.ready', json.dumps(
-            {'status': True}, cls=SelfEncoder))
-
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
         loop.run_forever()
         print("run_forever_exited")
-
-    async def crossbar_connect_async(self):
-        self.crossbar_connected = False
-        while not self.crossbar_connected:
-            try:
-                # try to connect to the crossbar server
-                self.crossbar_connecting = True
-                coro = await self.crossbar_runner.run(self, start_loop=False)
-                (self.__crossbar_transport, self.__crossbar_protocol) = coro
-                self.crossbar_connected = True
-                self.crossbar_connecting = False
-            except Exception as err:
-                Log.warn(
-                    f"Error while connect to crossbar @ ws://localhost:{self.crossbar_port}/ws: {err}")
-
-                # try to start the crossbar server
-                try:
-                    config_path = crossbar_start_server(self.crossbar_port)
-                    if len(config_path) > 0:
-                        Log.info(
-                            f"start crossbar server @ ws://localhost:{self.crossbar_port}/ws realm: {self.config.realm}, config: {config_path}")
-                except:
-                    import traceback
-                    print(traceback.format_exc())
-                self.crossbar_connecting = False
-                self.crossbar_connected = False
-                time.sleep(2.0)
-
-    async def crossbar_connect(self) -> None:
-        current_task = asyncio.current_task()
-        if not self.crossbar_connecting:
-            task = asyncio.create_task(self.crossbar_connect_async())
-        else:
-            task = current_task
-        await asyncio.gather(task)
-
-    def crossbar_reconnect(self):
-        if self.connect_crossbar:
-            asyncio.run_coroutine_threadsafe(
-                self.crossbar_connect(), self.crossbar_loop)

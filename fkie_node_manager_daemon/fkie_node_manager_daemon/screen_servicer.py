@@ -70,13 +70,9 @@ class ScreenServicer(CrossbarBaseSession):
                     if len(msg.screens) > 1:
                         crossbar_msg.append(msg)
                 if crossbar_msg or notified_about_multiple:
-                    try:
-                        Log.debug(f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
-                        self.publish('ros.screen.multiple', json.dumps(
-                            crossbar_msg, cls=SelfEncoder))
-                        notified_about_multiple = len(crossbar_msg) > 0
-                    except Exception:
-                        pass
+                    Log.debug(f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
+                    self.publish_to('ros.screen.multiple', crossbar_msg)
+                    notified_about_multiple = len(crossbar_msg) > 0
                 last_check = 0
             else:
                 last_check += 1

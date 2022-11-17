@@ -194,8 +194,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             change_event = {event.event_type: event.src_path}
             Log.debug("observed change %s on %s" %
                       (event.event_type, event.src_path))
-            self.publish('ros.path.changed', json.dumps(
-                change_event, cls=SelfEncoder))
+            self.publish_to('ros.path.changed', change_event)
 
     def load_launch_file(self, path, autostart=False):
         '''
@@ -460,12 +459,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             Log.debug("..load complete!")
 
             # notify changes to crossbar GUI
-            try:
-                self.publish('ros.launch.changed',
-                             json.dumps({}, cls=SelfEncoder))
-                self._add_launch_to_observer(launchfile)
-            except Exception as cpe:
-                pass
+            self.publish_to('ros.launch.changed', {})
+            self._add_launch_to_observer(launchfile)
         except Exception as e:
             err_text = "%s loading failed!" % launchfile
             err_details = "%s: %s" % (err_text, utf8(e))
@@ -565,12 +560,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             Log.debug('..load complete!')
 
             # notify changes to crossbar GUI
-            try:
-                self.publish('ros.launch.changed',
-                             json.dumps({}, cls=SelfEncoder))
-                self._add_launch_to_observer(launchfile)
-            except Exception as cpe:
-                pass
+            self.publish_to('ros.launch.changed', {})
+            self._add_launch_to_observer(launchfile)
         except Exception as e:
             err_text = '%s loading failed!' % launchfile
             err_details = '%s: %s' % (err_text, utf8(e))
@@ -637,12 +628,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
 #                    result.changed_nodes.extend([n for n in nodes2start if not re.search(r"\d{3,6}_\d{10,}", n)])
 
                 # notify changes to crossbar GUI
-                try:
-                    self.publish('ros.launch.changed',
-                                 json.dumps({}, cls=SelfEncoder))
-                    self._add_launch_to_observer(request.path)
-                except Exception as cpe:
-                    pass
+                self.publish_to('ros.launch.changed', {})
+                self._add_launch_to_observer(request.path)
             except Exception as e:
                 print(traceback.format_exc())
                 self._add_launch_to_observer(request.path)
@@ -724,12 +711,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                             result.changed_nodes.append(n)
 
                 # notify changes to crossbar GUI
-                try:
-                    self.publish('ros.launch.changed',
-                                 json.dumps({}, cls=SelfEncoder))
-                    self._add_launch_to_observer(request.path)
-                except Exception as cpe:
-                    pass
+                self.publish_to('ros.launch.changed', {})
+                self._add_launch_to_observer(request.path)
             except Exception as e:
                 print(traceback.format_exc())
                 self._add_launch_to_observer(request.path)
@@ -756,11 +739,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 result.status.code = OK
 
                 # notify changes to crossbar GUI
-                try:
-                    self.publish('ros.launch.changed',
-                                 json.dumps({}, cls=SelfEncoder))
-                except Exception as cpe:
-                    pass
+                self.publish_to('ros.launch.changed', {})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))
@@ -793,11 +772,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 result.status.code = 'OK'
 
                 # notify changes to crossbar GUI
-                try:
-                    self.publish('ros.launch.changed',
-                                 json.dumps({}, cls=SelfEncoder))
-                except Exception as cpe:
-                    pass
+                self.publish_to('ros.launch.changed', {})
             except Exception as e:
                 err_text = "%s unloading failed!" % request.path
                 err_details = "%s: %s" % (err_text, utf8(e))

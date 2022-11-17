@@ -383,7 +383,8 @@ class OwnMasterMonitoring(QObject):
         @param monitor_port: the port of the XML-RPC Server created by monitoring class.
         @type monitor_port: C{int}
         '''
-        self._master_monitor = MasterMonitor(monitor_port, False)
+        self._master_monitor = MasterMonitor(
+            monitor_port, False, connect_crossbar=False)
         self._do_pause = True
         self._do_finish = False
         self._masteruri = self._master_monitor.getMasteruri()
@@ -441,7 +442,7 @@ class OwnMasterMonitoring(QObject):
                         current_check_hz = float(current_check_hz) / 2.0
                     elif current_check_hz * cputime < 0.10 and current_check_hz < OwnMasterMonitoring.ROSMASTER_HZ:
                         current_check_hz = float(current_check_hz) * 2.0
-                    if not self._master_monitor.crossbar_connected:
+                    if self._master_monitor.connect_crossbar:
                         self.crossbar_signal.emit(False)
             except MasterConnectionException as mce:
                 self._handle_exception(

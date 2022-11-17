@@ -25,6 +25,8 @@ import json
 from types import SimpleNamespace
 import asyncio
 from autobahn import wamp
+import threading
+import time
 
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
@@ -68,6 +70,9 @@ class RosStateServicer(CrossbarBaseSession):
                                        self.topic_name_endpoint)
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_profile)
+        self._checkDiscoveryNodeThread = threading.Thread(
+            target=self._check_discovery_node, daemon=True)
+        self._checkDiscoveryNodeThread.start()
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
@@ -79,16 +84,20 @@ class RosStateServicer(CrossbarBaseSession):
 
     def _crossbar_publish_masters(self):
         result = self._endpoints_to_provider(self._endpoints)
-        try:
-            self.publish('ros.provider.list',
-                         json.dumps(result, cls=SelfEncoder))
-        except Exception as cpe:
-            pass
+        self.publish_to('ros.provider.list', result)
 
     def get_publisher_count(self):
         if hasattr(self, 'topic_name_endpoint') and self.topic_name_endpoint is not None:
             return nmd.ros_node.count_publishers(self.topic_name_endpoint)
         return -1
+
+    def _check_discovery_node(self):
+        while not self._on_shutdown:
+            if self._ros_state is not None:
+                if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
+                    self._ros_state = None
+                    self.publish_to('ros.discovery.ready', {'status': False})
+            time.sleep(1)
 
     def stop(self):
         '''
@@ -100,8 +109,8 @@ class RosStateServicer(CrossbarBaseSession):
         if hasattr(self, 'sub_endpoints') and self.sub_endpoints is not None:
             nmd.ros_node.destroy_subscription(self.sub_endpoints)
             del self.sub_endpoints
-        self.publish('ros.discovery.ready', json.dumps({'status': False}, cls=SelfEncoder))
-        self.publish('ros.daemon.ready', json.dumps({'status': False}, cls=SelfEncoder))
+        self.publish_to('ros.discovery.ready', {'status': False})
+        self.publish_to('ros.daemon.ready', {'status': False})
 
     def _on_msg_state(self, msg: DiscoveredState):
         '''
@@ -111,10 +120,7 @@ class RosStateServicer(CrossbarBaseSession):
         '''
         nmd.ros_node.get_logger().info('new message on %s' % self.topic_name_state)
         self._ros_state = msg
-        try:
-            self.publish('ros.discovery.ready', json.dumps({'status': True}, cls=SelfEncoder))
-        except Exception:
-            pass
+        self.publish_to('ros.discovery.ready', {'status': True})
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
