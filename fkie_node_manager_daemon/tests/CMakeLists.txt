@@ -11,5 +11,5 @@ catkin_add_nosetests(test_launch_servicer.py)
 # Unit tests using nose, but needing a running ROS core.
 find_package(rostest)
 if (rostest_FOUND)
-  add_rostest(test_grpc_server.test)
+  # add_rostest(test_grpc_server.test)
 endif()
