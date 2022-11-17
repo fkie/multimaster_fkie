@@ -16,6 +16,9 @@ if ( ament_cmake_FOUND )
     message(STATUS "------------------------------------------")
     message(STATUS "FKIE multimaster is being built using AMENT.")
     message(STATUS "------------------------------------------")
+    # only to avoid warnings while build
+    message(STATUS "install prefix: ${CATKIN_INSTALL_INTO_PREFIX_ROOT}")
+    message(STATUS "symlink install: ${CATKIN_SYMLINK_INSTALL}")
     # find dependencies
     find_package(ament_cmake REQUIRED)
     ament_package()

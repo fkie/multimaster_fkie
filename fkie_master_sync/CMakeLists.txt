@@ -14,6 +14,9 @@ if ( ament_cmake_FOUND )
     message(STATUS "------------------------------------------")
     message(STATUS "FKIE master sync is being ignore using AMENT.")
     message(STATUS "------------------------------------------")
+    # only to avoid warnings while build
+    message(STATUS "install prefix: ${CATKIN_INSTALL_INTO_PREFIX_ROOT}")
+    message(STATUS "symlink install: ${CATKIN_SYMLINK_INSTALL}")
 
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
