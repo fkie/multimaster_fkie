@@ -67,11 +67,12 @@ from .parameter_servicer import ParameterServicer
 
 class GrpcServer:
 
-    def __init__(self):
+    def __init__(self, test_env=False):
         self.crossbar_port = server.port()
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
         self.server = None
+        self._test_env = test_env
         self.settings_servicer = SettingsServicer()
         self._grpc_verbosity = self.settings_servicer.settings.param(
             'global/grpc_verbosity', 'INFO')
@@ -82,13 +83,13 @@ class GrpcServer:
         self.monitor_servicer = MonitorServicer(
             self.settings_servicer.settings)
         self.launch_servicer = LaunchServicer(
-            self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.parameter_servicer = ParameterServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.file_servicer = FileServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.screen_servicer = ScreenServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
 
         rospy.Service('~start_launch', LoadLaunch,
                       self._rosservice_start_launch)
@@ -138,13 +139,13 @@ class GrpcServer:
         self.monitor_servicer = MonitorServicer(
             self.settings_servicer.settings)
         self.launch_servicer = LaunchServicer(
-            self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.monitor_servicer, self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.parameter_servicer = ParameterServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.file_servicer = FileServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.screen_servicer = ScreenServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.start(self._launch_url)
 
     def start(self, url='[::]:12311'):

@@ -53,7 +53,7 @@ class TestGrpcServer(unittest.TestCase):
     '''
     '''
 
-    server = GrpcServer()
+    server = GrpcServer(test_env=True)
 
     @classmethod
     def setUpClass(cls):
