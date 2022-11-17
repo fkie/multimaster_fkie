@@ -206,14 +206,8 @@ class GrpcServer:
         self._crossbar_send_status(True)
 
     def _crossbar_send_status(self, status: bool):
-        try:
-            # try to send notification to crossbar subscribers
-            Log.debug(f"ros.discovery.ready({status})")
-            self.launch_servicer.publish(
-                'ros.daemon.ready', json.dumps({'status': status}, cls=SelfEncoder))
-        except Exception:
-            import traceback
-            Log.warning(traceback.format_exc())
+        # try to send notification to crossbar subscribers
+        self.launch_servicer.publish_to('ros.daemon.ready', {'status': status})
 
     def shutdown(self):
         WAIT_TIMEOUT = 3
