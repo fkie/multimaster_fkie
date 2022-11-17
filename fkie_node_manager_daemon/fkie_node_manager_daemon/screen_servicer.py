@@ -52,6 +52,7 @@ class ScreenServicer(CrossbarBaseSession):
 
     def _check_multiple_screens(self):
         last_check = 0
+        notified_about_multiple = True
         while self._is_running:
             if self._multiple_screen_do_check or last_check >= self._multiple_screen_check_force_after:
                 screen.wipe()
@@ -68,11 +69,14 @@ class ScreenServicer(CrossbarBaseSession):
                 for node_name, msg in screen_dict.items():
                     if len(msg.screens) > 1:
                         crossbar_msg.append(msg)
-                try:
-                    self.publish('ros.screen.multiple', json.dumps(
-                        crossbar_msg, cls=SelfEncoder))
-                except Exception:
-                    pass
+                if crossbar_msg or notified_about_multiple:
+                    try:
+                        Log.debug(f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
+                        self.publish('ros.screen.multiple', json.dumps(
+                            crossbar_msg, cls=SelfEncoder))
+                        notified_about_multiple = len(crossbar_msg) > 0
+                    except Exception:
+                        pass
                 last_check = 0
             else:
                 last_check += 1

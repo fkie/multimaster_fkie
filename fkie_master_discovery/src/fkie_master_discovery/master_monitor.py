@@ -190,6 +190,7 @@ class MasterMonitor(ApplicationSession):
         self.__cached_nodes = dict()
         self.__cached_services = dict()
         self._on_shutdown = False
+        self._multiple_screen_check_force_after = 10
         self.ros_node_name = str(rospy.get_name())
         if rospy.has_param('~name'):
             self.__mastername = rospy.get_param('~name')
@@ -302,9 +303,10 @@ class MasterMonitor(ApplicationSession):
         self._update_launch_uris()
         # === END: UPDATE THE LAUNCH URIS Section ===
         self._multiple_screen_do_check = False
-        self._multiple_screen_thread = threading.Thread(
-            target=self.checkMultipleScreens, daemon=True)
-        self._multiple_screen_thread.start()
+        if self.connect_crossbar:
+            self._multiple_screen_thread = threading.Thread(
+                target=self.checkMultipleScreens, daemon=True)
+            self._multiple_screen_thread.start()
 
     def __update_param(self, key, value):
         # updates the /roslaunch/uris parameter list
@@ -954,7 +956,7 @@ class MasterMonitor(ApplicationSession):
                     self.__master_state.timestamp_local = ts_local
                     result = True
             self.__master_state.check_ts = self.__new_master_state.timestamp
-            if result:
+            if result and self.connect_crossbar:
                 try:
                     result = {"timestamp": self.__new_master_state.timestamp}
                     self.publish('ros.nodes.changed',
@@ -983,6 +985,8 @@ class MasterMonitor(ApplicationSession):
         self._master_errors = list(error_list)
 
     def update_errors_crossbar(self, crossbar_warnings: List[SystemWarningGroup]):
+        if not self.connect_crossbar:
+            return
         updated = False
         for group in crossbar_warnings:
             if group.id not in self._crossbar_warning_groups:
@@ -995,7 +999,8 @@ class MasterMonitor(ApplicationSession):
             count_warnings = 0
             for wg in self._crossbar_warning_groups.values():
                 count_warnings += len(wg.warnings)
-            Log.debug(f"ros.provider.warnings with {count_warnings} warnings in {len(self._crossbar_warning_groups)} groups")
+            Log.debug(
+                f"ros.provider.warnings with {count_warnings} warnings in {len(self._crossbar_warning_groups)} groups")
             try:
                 self.publish('ros.provider.warnings', json.dumps(
                     list(self._crossbar_warning_groups.values()), cls=SelfEncoder))
@@ -1109,8 +1114,10 @@ class MasterMonitor(ApplicationSession):
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 
     def checkMultipleScreens(self):
+        notified_about_multiple = True
+        last_check = 0
         while not self._on_shutdown:
-            if self._multiple_screen_do_check:
+            if self._multiple_screen_do_check or last_check >= self._multiple_screen_check_force_after:
                 screen.wipe()
                 self._multiple_screen_do_check = False
                 screens = screen.get_active_screens()
@@ -1125,20 +1132,30 @@ class MasterMonitor(ApplicationSession):
                 for node_name, msg in screen_dict.items():
                     if len(msg.screens) > 1:
                         crossbar_msg.append(msg)
-                try:
-                    self.publish('ros.screen.multiple', json.dumps(
-                        crossbar_msg, cls=SelfEncoder))
-                except Exception:
-                    pass
+                if crossbar_msg or notified_about_multiple:
+                    try:
+                        Log.debug(
+                            f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
+                        self.publish('ros.screen.multiple', json.dumps(
+                            crossbar_msg, cls=SelfEncoder))
+                        notified_about_multiple = len(crossbar_msg) > 0
+                    except Exception:
+                        pass
+                last_check = 0
+            else:
+                last_check += 1
             time.sleep(1.0)
 
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
+        if not self.connect_crossbar:
+            return
         provider_list_json = json.dumps(provider_list, cls=SelfEncoder)
         # notify changes
         if self._on_shutdown or not self.provider_list:
             Log.debug(f"ros.discovery.ready(False)")
-            self.publish('ros.discovery.ready', json.dumps({'status': False}, cls=SelfEncoder))
+            self.publish('ros.discovery.ready', json.dumps(
+                {'status': False}, cls=SelfEncoder))
         else:
             Log.debug(f"ros.provider.list: {provider_list}")
             self.publish('ros.provider.list', provider_list_json)
@@ -1159,7 +1176,8 @@ class MasterMonitor(ApplicationSession):
             Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
         # notify GUI about start of master_discovery node
         Log.debug(f"ros.discovery.ready(True)")
-        self.publish('ros.discovery.ready', json.dumps({'status': True}, cls=SelfEncoder))
+        self.publish('ros.discovery.ready', json.dumps(
+            {'status': True}, cls=SelfEncoder))
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
         asyncio.set_event_loop(loop)
