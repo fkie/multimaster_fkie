@@ -33,7 +33,7 @@ import types
 import launch
 
 import launch_ros
-from launch_ros.utilities import evaluate_parameters
+from launch_ros.utilities.evaluate_parameters import evaluate_parameters, evaluate_parameter_dict
 from launch_ros.utilities import to_parameters_list
 from launch.utilities import perform_substitutions
 from launch.utilities import normalize_to_list_of_substitutions
@@ -46,7 +46,8 @@ import composition_interfaces.srv
 
 from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_config import LaunchConfig
-from .launch_context import LaunchContext
+from .launch_config import LaunchNode
+from launch.launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead
 from .startcfg import StartConfig
 import fkie_node_manager_daemon as nmd
@@ -112,7 +113,7 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
     if n.machine_name and n.machine_name in launchcfg.roscfg.machines:
         result.daemonuri = launchcfg.roscfg.machines[n.machine_name].address
     # set args
-    result.args = n.args.split()
+    result.args = n.arguments
     # set cwd unchanged, it will be resolved on host
     result.cwd = n.cwd
     # add params and clear_params
@@ -130,21 +131,21 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
     return result
 
 
-def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: LaunchConfig, *, executable: Text = '', loglevel: Text = '', logformat: Text = '', cmd_prefix: Text = '') -> StartConfig:
+def from_node(node: LaunchNode, launchcfg: LaunchConfig, *, executable: Text = '', loglevel: Text = '', logformat: Text = '', cmd_prefix: Text = '') -> StartConfig:
     lc = launchcfg.context
     pkg_exec = ('', '')
-    if type(node) in [launch_ros.actions.node.Node, launch_ros.actions.composable_node_container.ComposableNodeContainer]:
-        pkg_exec = get_package_exec(node, lc)
+    if type(node.node) in [launch_ros.actions.node.Node, launch_ros.actions.composable_node_container.ComposableNodeContainer]:
+        pkg_exec = get_package_exec(node.node, lc)
     result = StartConfig(*pkg_exec)
     result.config_path = launchcfg.filename
     if executable:
         result.binary_path = executable
-    result.fullname = LaunchConfig.get_name_from_node(node)
+    result.fullname = node.node_name
     result.namespace = names.namespace(result.fullname, with_sep_suffix=False)
     result.name = os.path.basename(result.fullname)
 
     # set launch prefix
-    prefix = perform_substitutions(lc, node._ExecuteProcess__prefix)
+    prefix = perform_substitutions(lc, node.node._ExecuteProcess__prefix)
     if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
         nmd.ros_node.get_logger().info("SCREEN prefix removed before start!")
         prefix = ''
@@ -152,17 +153,16 @@ def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: La
 
     # set remapings
     result.remaps = {}
-    if hasattr(node, '_Node__expanded_remappings'):
-        if node._Node__expanded_remappings is not None:
-            for remapping_from, remapping_to in node._Node__expanded_remappings:
+    if hasattr(node.node, '_Node__expanded_remappings'):
+        if node.node._Node__expanded_remappings is not None:
+            for remapping_from, remapping_to in node.node._Node__expanded_remappings:
                 result.remaps[remapping_from] = remapping_to
 
-    # set respawn parameter, not supported by ROS2
-    respawn_params = _get_respawn_params(node)
-    result.respawn = respawn_params['enabled']
-    result.respawn_max = respawn_params['max']
-    result.respawn_min_runtime = respawn_params['min_runtime']
-    result.respawn_delay = respawn_params['delay']
+    # set respawn parameter supported by ROS2
+    result.respawn = node.respawn
+    #result.respawn_max = respawn_params['max']
+    #result.respawn_min_runtime = respawn_params['min_runtime']
+    result.respawn_delay = node.respawn_delay
     # set log level
     result.loglevel = loglevel
     result.logformat = logformat
@@ -176,18 +176,36 @@ def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: La
     # TODO: which args?
     # result.args = n.args.split()
     # add params
-    if hasattr(node, '_Node__parameters'):
-        if node._Node__parameters is not None:
-            evaluated_parameters = evaluate_parameters(
-                lc, node._Node__parameters)
-            for params in evaluated_parameters:
-                if isinstance(params, dict):
-                    result.params.update(params)
-                elif isinstance(params, pathlib.Path):
-                    result.param_files.append(str(params))
-                else:
-                    raise RuntimeError(
-                        'invalid normalized parameters {}'.format(repr(params)))
+    parameter_args = node.parameter_arguments
+    for param in parameter_args:
+        if isinstance(param, dict):
+            result.params.update(param)
+        elif isinstance(param, pathlib.Path):
+            result.param_files.append(str(param))
+        elif isinstance(param, Tuple) and param[1]:
+            result.param_files.append(param[0])
+        else:
+            raise RuntimeError(
+                'invalid normalized parameters {}'.format(repr(param)))
+    # if hasattr(node.node, '_Node__parameters'):
+    #     if node.node._Node__parameters is not None:
+    #         print("node.node._Node__parameters", node.node._Node__parameters)
+    #         if isinstance(node.node._Node__parameters, dict):
+    #             evaluated_parameters = evaluate_parameter_dict(
+    #                 lc, node.node._Node__parameters)
+    #             result.params.update(evaluated_parameters)
+    #             #for name, value in evaluated_parameters.items():
+    #         else:
+    #             evaluated_parameters = evaluate_parameters(
+    #                 lc, node.node._Node__parameters)
+    #             for params in evaluated_parameters:
+    #                 if isinstance(params, dict):
+    #                     result.params.update(params)
+    #                 elif isinstance(params, pathlib.Path):
+    #                     result.param_files.append(str(params))
+    #                 else:
+    #                     raise RuntimeError(
+    #                         'invalid normalized parameters {}'.format(repr(params)))
     nmd.ros_node.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
         val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
 
@@ -213,22 +231,25 @@ def from_node(node: launch.actions.execute_process.ExecuteProcess, launchcfg: La
     #     _global_process_counter += 1
     #     node._ExecuteProcess__name = '{}-{}'.format(name, _global_process_counter)
     result.cwd = None
-    if node._ExecuteProcess__cwd is not None:
+    if node.node._ExecuteProcess__cwd is not None:
         result.cwd = ''.join([lc.perform_substitution(x)
-                              for x in node._ExecuteProcess__cwd])
+                              for x in node.node._ExecuteProcess__cwd])
 
+    result.args = node.arguments
+    #TODO parse and include launch arguments, see ros_ign_gazebo_demos // diff_drive.launch.py
     env = {}
-    if node._ExecuteProcess__env is not None:
-        for key, value in node._ExecuteProcess__env:
+    if node.node._ExecuteProcess__env is not None:
+        for key, value in node.node._ExecuteProcess__env:
             env[''.join([lc.perform_substitution(x) for x in key])] = \
                 ''.join([lc.perform_substitution(x) for x in value])
-    if node._ExecuteProcess__additional_env is not None:
-        for key, value in node._ExecuteProcess__additional_env:
+    if node.node._ExecuteProcess__additional_env is not None:
+        for key, value in node.node._ExecuteProcess__additional_env:
             env[''.join([lc.perform_substitution(x) for x in key])] = \
                 ''.join([lc.perform_substitution(x) for x in value])
     result.env = env
-    if type(node) == launch.actions.execute_process.ExecuteProcess:
-        result.cmd = [perform_substitutions(lc, x) for x in node.cmd]
+    if type(node.node) == launch.actions.execute_process.ExecuteProcess:
+        result.cmd = [perform_substitutions(lc, x) for x in node.node.cmd]
+    print("CMD from NODE: ", node.cmd)
     return result
 
 
@@ -502,28 +523,6 @@ def _rosconsole_cfg_file(package, loglevel='INFO'):
         cfg_file.write('log4j.logger.ros=%s\n' % loglevel)
         cfg_file.write('log4j.logger.ros.roscpp=INFO\n')
         cfg_file.write('log4j.logger.ros.roscpp.superdebug=WARN\n')
-    return result
-
-
-def _get_respawn_params(node: launch_ros.actions.node.Node) -> Dict[str, Any]:
-    result = {'enabled': False, 'max': 0, 'min_runtime': 0, 'delay': 0}
-    return result
-    # TODO
-    respawn_max = rospy.names.ns_join(node, 'respawn/max')
-    respawn_min_runtime = rospy.names.ns_join(node, 'respawn/min_runtime')
-    respawn_delay = rospy.names.ns_join(node, 'respawn/delay')
-    try:
-        result['max'] = int(params[respawn_max].value)
-    except Exception:
-        pass
-    try:
-        result['min_runtime'] = int(params[respawn_min_runtime].value)
-    except Exception:
-        pass
-    try:
-        result['delay'] = int(params[respawn_delay].value)
-    except Exception:
-        pass
     return result
 
 

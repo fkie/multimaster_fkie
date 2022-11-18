@@ -190,8 +190,9 @@ def get_internal_args(content: str, path: str = '', only_default: bool = False) 
                     if aname and add_arg:
                         resolve_args_intern[aname] = aval
     except Exception as err:
-        print(f"error while get_internal_args for {path}: {err}")
-        Log.debug(f"error while get_internal_args for {path}: {err}")
+        import traceback
+        Log.debug(f"error while get_internal_args for {path}: {traceback.format_exc()}")
+
     return resolve_args_intern
 
 

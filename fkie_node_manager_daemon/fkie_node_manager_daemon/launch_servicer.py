@@ -19,6 +19,7 @@
 
 
 import os
+import shlex
 import sys
 import traceback
 
@@ -31,6 +32,7 @@ from types import SimpleNamespace
 import asyncio
 from autobahn import wamp
 
+from typing import Dict
 from typing import List
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
@@ -129,7 +131,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self._included_dirs = []
         self._is_running = True
         self._peers = {}
-        self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
+        self._loaded_files: Dict[CfgId, LaunchConfig] = dict()
+        self._observed_launch_files: Dict[str, List[str]] = {}
         self._watchdog_observer.start()
 
     def _terminated(self):
@@ -181,38 +184,27 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         except ValueError:
             pass
 
-    def _add_launch_to_observer(self, path):
+    def _add_launch_to_observer(self, launch_config: LaunchConfig):
+        added = []
         try:
-            self._add_file_to_observe(path)
-            search_in_ext = SEARCH_IN_EXT
-            # search for loaded file and get the arguments
-            resolve_args = {}
-            for cfg_id, cfg in self._loaded_files.items():
-                if cfg_id.path == path:
-                    resolve_args.update(cfg.resolve_dict)
-                    break
-            # replay each file
-            for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
-                if inc_file.exists:
-                    self._add_file_to_observe(inc_file.inc_path)
+            self._add_file_to_observe(launch_config.filename)
+            added.append(launch_config.filename)
+            for inc_discription in launch_config._included_files:
+                self._add_file_to_observe(inc_discription._get_launch_file())
+                added.append(inc_discription._get_launch_file())
         except Exception as e:
-            Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
+            Log.error('_add_launch_to_observer %s:\n%s' %
+                      (str(launch_config.filename), e))
+        self._observed_launch_files[launch_config.filename] = added
 
-    def _remove_launch_from_observer(self, path):
+    def _remove_launch_from_observer(self, launch_config: LaunchConfig):
         try:
-            self._remove_file_from_observe(path)
-            search_in_ext = SEARCH_IN_EXT
-            # search for loaded file and get the arguments
-            resolve_args = {}
-            for cfg_id, cfg in self._loaded_files.items():
-                if cfg_id.path == path:
-                    resolve_args.update(cfg.resolve_dict)
-                    break
-            # replay each file
-            for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
-                self._remove_file_from_observe(inc_file.inc_path)
+            for path in self._observed_launch_files[launch_config.filename]:
+                self._remove_file_from_observe(path)
+            del self._observed_launch_files[launch_config.filename]
         except Exception as e:
-            Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
+            Log.error('_add_launch_to_observer %s:\n%s' %
+                      (str(launch_config.filename), e))
 
     # def start_node(self, node_name):
     #     global IS_RUNNING
@@ -353,17 +345,18 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                         return json.dumps(result, cls=SelfEncoder)
             # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
             launch_arguments = [(arg.name, arg.value) for arg in request.args]
+            print('launch_arguments', launch_arguments)
             # context=self.__launch_context
             launch_config = LaunchConfig(
-                launchfile, daemonuri=request.masteruri, launch_arguments=launch_arguments)
+                launchfile, daemonuri=daemonuri, launch_arguments=launch_arguments)
+            print('daemonuri', daemonuri)
             # _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
             # result.args.extend([lmsg.Argument(name=name, value=value) for name, value in launch_config.resolve_dict.items()])
-            self._loaded_files[CfgId(
-                launchfile, request.masteruri)] = launch_config
+            self._loaded_files[CfgId(launchfile, daemonuri)] = launch_config
             # notify changes to crossbar GUI
             self.publish_to('ros.launch.changed', {})
-            self._add_launch_to_observer(launchfile)
+            self._add_launch_to_observer(launch_config)
             Log.debug('..load complete!')
         except Exception as e:
             import traceback
@@ -413,20 +406,20 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # TODO: added change detection for nodes parameters
                 # notify changes to crossbar GUI
                 self.publish_to('ros.launch.changed', {})
-                self._add_launch_to_observer(request.path)
+                self._remove_launch_from_observer(launch_config)
+                self._add_launch_to_observer(launch_config)
             except Exception as e:
                 print(traceback.format_exc())
-                self._add_launch_to_observer(request.path)
                 err_text = f"{request.path} loading failed!"
                 err_details = f"{err_text}: {e}"
                 Log.warn("Loading launch file: %s", err_details)
                 result.status.code = 'ERROR'
                 result.status.msg = err_details
-                return result
+                return json.dumps(result, cls=SelfEncoder)
         else:
             result.status.code = 'FILE_NOT_FOUND'
-            return result
-        return result
+            return json.dumps(result, cls=SelfEncoder)
+        return json.dumps(result, cls=SelfEncoder)
 
     @wamp.register('ros.launch.unload')
     def unload_launch(self, request_json: LaunchFile) -> LaunchLoadReply:
@@ -445,7 +438,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         cfgid = CfgId(request.path, '')
         if cfgid in self._loaded_files:
             try:
-                self._remove_launch_from_observer(request.path)
+                self._remove_launch_from_observer(self._loaded_files[cfgid])
                 del self._loaded_files[cfgid]
                 result.status.code = 'OK'
 
@@ -491,18 +484,19 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                                                      nodeNamespace='',
                                                      package=item.node_package,
                                                      node_type=item.node_executable,
+                                                     args=shlex.join(item.arguments),
                                                      respawn=item.respawn,
                                                      respawn_delay=item.respawn_delay,
                                                      launch_prefix=item.prefix,
                                                      file_name=cfgid.path,
                                                      launch_name=cfgid.path))
                 # TODO: add composable nodes to container
-                #for cn in item.composable_nodes:
+                # for cn in item.composable_nodes:
                 #    reply_lc.nodes.append(LaunchConfig.get_name_from_node(cn))
 
             # Add launch arguments
             for name, p in lc.launch_arguments:
-                reply_lc.args.append(LaunchArgument(name, p.value))
+                reply_lc.args.append(LaunchArgument(name, p.value if hasattr(p, 'value') else p))
             # Add parameter values
             # for name, p in lc.xxx:
             #    reply_lc.parameters.append(RosParameter(name, p.value))
@@ -560,7 +554,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                             n.node, container_name=container_name, context=launch_configs[0].context)
                     else:
                         startcfg = launcher.from_node(
-                            n.node, launchcfg=launch_configs[0], executable=request.opt_binary, loglevel=request.loglevel, logformat=request.logformat, cmd_prefix=request.cmd_prefix)
+                            n, launchcfg=launch_configs[0], executable=request.opt_binary, loglevel=request.loglevel, logformat=request.logformat, cmd_prefix=request.cmd_prefix)
                         launcher.run_node(startcfg)
                         Log.debug('Node=%s; start finished' % (request.name))
                     result.status.code = 'OK'
@@ -579,6 +573,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.status.code = 'ERROR'
             result.status.msg = "Error while start node '%s': %s" % (
                 request.name, traceback.format_exc())
+            Log.warn(result.status.msg)
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         finally:
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result

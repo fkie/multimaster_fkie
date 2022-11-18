@@ -33,8 +33,10 @@ from launch.launch_description_sources import get_launch_description_from_any_la
 from launch.frontend.parser import Parser
 from launch.launch_description_sources import get_launch_description_from_frontend_launch_file
 from launch.launch_description_sources import AnyLaunchDescriptionSource
+from launch.actions.include_launch_description import IncludeLaunchDescription
 from launch.utilities import perform_substitutions
 from launch.utilities import normalize_to_list_of_substitutions
+from launch.launch_description import LaunchDescription
 import launch_ros
 
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
@@ -44,7 +46,8 @@ from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.defines import SEP
 import fkie_node_manager_daemon as nmd
 
-from .launch_context import LaunchContext
+#from .launch_context import LaunchContext
+from launch.launch_context import LaunchContext
 
 
 class LaunchConfigException(Exception):
@@ -53,10 +56,13 @@ class LaunchConfigException(Exception):
 
 class LaunchNode():
 
-    def __init__(self, node):
+    def __init__(self, node, context: LaunchContext = None):
         self.node = node
+        self.context = context
         self.__node_name = ''
         self.composable_container = ''
+        if isinstance(self.node, launch_ros.actions.Node) and self.context is not None:
+            self.node._perform_substitutions(self.context)
 
     @property
     def node_package(self):
@@ -91,6 +97,7 @@ class LaunchNode():
 
     @property
     def node_name(self):
+        #        print("_Node__expanded_node_name", self.node._Node__expanded_node_name)
         if not self.__node_name:
             self.__node_name = self.get_name_from_node(self.node)
         return self.__node_name
@@ -109,6 +116,29 @@ class LaunchNode():
     @property
     def respawn_delay(self):
         return self.node._ExecuteProcess__respawn_delay
+
+    @property
+    def parameter_arguments(self):
+        if hasattr(self.node, '_Node__expanded_parameter_arguments'):
+            print("_Node__expanded_parameter_arguments",
+                  self.node._Node__expanded_parameter_arguments)
+            return self.node._Node__expanded_parameter_arguments
+        return ''
+
+    @property
+    def arguments(self):
+        if hasattr(self.node, '_Node__expanded_parameter_arguments'):
+            print("_Node__expanded_parameter_arguments",
+                  self.node._Node__expanded_parameter_arguments)
+        if hasattr(self.node, '_Node__arguments'):
+            print("_Node__arguments",
+                  self.node._Node__arguments)
+            return self.node._Node__arguments
+        if hasattr(self.node, '_Node__expanded_remappings'):
+            print("_Node__expanded_remappings",
+                  self.node._Node__expanded_remappings)
+        #'_Node__arguments', '_Node__expanded_node_name', '_Node__expanded_node_namespace', '_Node__expanded_parameter_arguments', '_Node__expanded_remappings'
+        return []
 
     @classmethod
     def get_name_from_node(cls, node: launch_ros.actions.node.Node) -> str:
@@ -189,11 +219,35 @@ class LaunchNode():
                     print('      + CMD OTHER:', cmd, dir(cmd))
                 if count > 0:
                     break
-                result += '_'
+                if len(cmd_list) < count + 1:
+                    result += '_'
             count += 1
             if count > 1:
                 break
+        return result.replace(' ', '_')
+
+    def _cmd_to_str(self, cmd: List) -> List[str]:
+        result = []
+        for entry in cmd:
+            if isinstance(entry, list):
+                result.extend(self._cmd_to_str(entry))
+            elif isinstance(entry, launch.substitutions.text_substitution.TextSubstitution):
+                result.append(entry.text)
+            elif isinstance(entry, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
+                pass
+                #result.extend(self._cmd_to_str(entry.package))
+                #result.extend(self._cmd_to_str(entry.executable))
+            elif isinstance(entry, launch.substitutions.launch_configuration.LaunchConfiguration):
+                result.append(self._cmd_to_str(entry.variable_name))
+            else:
+                print("NOT known type while convert cmd to string:", type(entry))
         return result
+
+    @property
+    def cmd(self):
+        if hasattr(self.node, "cmd"):
+            return self._cmd_to_str(self.node.cmd)
+        return []
 
 
 class LaunchConfig(object):
@@ -228,6 +282,7 @@ class LaunchConfig(object):
             argv=argv)
         self.__launch_description = get_launch_description_from_any_launch_file(
             self.filename)
+            
         # self.__launch_description = launch.LaunchDescription([
         #     launch.actions.IncludeLaunchDescription(
         #         launch.launch_description_sources.AnyLaunchDescriptionSource(
@@ -239,6 +294,7 @@ class LaunchConfig(object):
         # for ent in self.__launch_description.entities:
         #    ent.execute(self.__launch_context)
         print("LD", dir(self.__launch_description))
+        self._included_files: List[IncludeLaunchDescription] = []
         self._load()
         self.argv = None
         if self.argv is None:
@@ -287,6 +343,7 @@ class LaunchConfig(object):
     def _load(self, sub_obj=None) -> None:
         if sub_obj is None:
             sub_obj = self.__launch_description
+
         entities = None
         if hasattr(sub_obj, 'get_sub_entities'):
             entities = getattr(sub_obj, 'get_sub_entities')()
@@ -322,8 +379,19 @@ class LaunchConfig(object):
                     print('  perform ARG:', entity.name)
                     entity.execute(self.__launch_context)
                 elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
+                    #launch.actions.declare_launch_argument.DeclareLaunchArgument
                     try:
                         entity.execute(self.__launch_context)
+                        self._included_files.append(entity)
+                        print("IncludeLaunchDescription", dir(), entity)
+                        for a in dir(entity):
+                            # if not a.startswith('_')
+                            print(f"  {a}: {getattr(entity, a)}")
+                        print("_get_launch_file", entity._get_launch_file())
+                        print("_get_launch_file_directory",
+                              entity._get_launch_file_directory())
+                        print("get_launch_arguments - ",
+                              entity.launch_arguments)
                     except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
                         print('err', dir(err))
                         print('launch_description_source', dir(
@@ -333,7 +401,14 @@ class LaunchConfig(object):
                 elif hasattr(entity, 'execute'):
                     print("TY2", type(entity), dir(entity))
                     entity.execute(self.__launch_context)
+                else:
+                    print("unknown entity:", entity, dir(entity))
+                    for a in dir(entity):
+                        # if not a.startswith('_')
+                        print(f"  {a}: {getattr(entity, a)}")
                 self._load(entity)
+        print("get_launch_arguments",
+              self.__launch_description.get_launch_arguments())
 
     def nodes(self, sub_obj=None) -> List[LaunchNode]:
         result = []
@@ -347,38 +422,20 @@ class LaunchConfig(object):
         if entities is not None:
             for entity in entities:
                 if isinstance(entity, launch_ros.actions.composable_node_container.ComposableNodeContainer):
-                    container = LaunchNode(entity)
+                    container = LaunchNode(entity, self.__launch_context)
                     cnodes = []
                     for cn in entity._ComposableNodeContainer__composable_node_descriptions:
-                        node = LaunchNode(cn, entity)
+                        node = LaunchNode(cn, self.__launch_context)
                         container.composable_nodes.append(cn)
                         cnodes.append(node)
                     result.append(container)
                     result.extend(cnodes)
                 elif isinstance(entity, launch_ros.actions.node.Node):
-                    # for cmds in entity.cmd:
-                    #     for cmd in cmds:
-                    #         if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
-                    #             print('  - CMD InExc:', cmd.describe(), dir(cmd.describe))
-                    #             print('      + CMD exe:', cmd.executable[0].text)
-                    #             print('      + CMD package:', cmd.package[0].text)
-                    #             print('      + perform:', cmd.perform(self.__launch_context))
-                    #         elif isinstance(cmd, launch.substitutions.text_substitution.TextSubstitution):
-                    #             print('      + CMD:', cmd.text, dir(cmd))
-                    #             print('      + perform:', cmd.perform(self.__launch_context))
-                    #         elif isinstance(cmd, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
-                    #             print('      + CMD:', cmd.describe(), dir(cmd))
-                    #         elif isinstance(cmd, launch.substitutions.local_substitution.LocalSubstitution):
-                    #             print('      + CMD Subst:', cmd.expression, dir(cmd.expression))
-                    #             # print('      + perform:', cmd.perform(self.__launch_context))
-                    #         else:
-                    #             print('      + CMD OTHER:', cmd, dir(cmd))
-                    #                    entity._perform_substitutions(self.context)
-                    result.append(LaunchNode(entity))
+                    result.append(LaunchNode(entity, self.__launch_context))
                 elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
                     print("EXEC", type(entity), dir(entity))
                     # entity._perform_substitutions(self.context)
-                    result.append(LaunchNode(entity))
+                    result.append(LaunchNode(entity, self.__launch_context))
                 elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
                     print('  perform ARG:', entity.name)
 #                    entity.execute(self.__launch_context)
@@ -507,6 +564,9 @@ class LaunchConfig(object):
             # parser = Parser.get_parser_from_extension('.launch')
             # self.__launch_context = LaunchContext(argv=sys.argv[1:])
             #launch_description = get_launch_description_from_frontend_launch_file(self.filename)
+            print("Launch arguments:")
+            for la in launch_description.get_launch_arguments():
+                print(la.name, la.default_value)
             print("roscfg", launch_description, type(
                 launch_description), dir(launch_description))
 #            launch_description.execute(self.__launch_context)
@@ -819,96 +879,96 @@ class LaunchConfig(object):
         :rtype: :class:`launch_ros.actions.node.Node` or None
         '''
         for item in self.nodes():
-            nodename = self.get_name_from_node(item.node)
+            nodename = LaunchNode.get_name_from_node(item.node)
             if (nodename == name):
                 return item
         nmd.ros_node.get_logger().debug("Node '%s' NOT found" % name)
         return None
 
-    @classmethod
-    def get_name_from_node(cls, node: launch_ros.actions.node.Node) -> str:
-        result = ''
-        if hasattr(node, 'name') and node.name:
-            if isinstance(node.name, str):
-                result = node.name
-            else:
-                result = SEP.join([n.text for n in node.name])
-            if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
-                result = ''
-            if result:
-                nmd.ros_node.get_logger().debug("Nodename '%s' from name" % result)
-        if not result and hasattr(node, 'node_name') and node.node_name:
-            if isinstance(node.node_name, str):
-                result = node.node_name
-            else:
-                result = SEP.join([n.text for n in node.node_name])
-            if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
-                result = ''
-            if result:
-                nmd.ros_node.get_logger().debug("Nodename '%s' from node_name" % result)
-        if not result and hasattr(node, '_Node__executable'):
-            # use executable
-            if isinstance(node._Node__executable, str):
-                result = node._Node__executable
-            else:
-                result = SEP.join([n.text for n in node._Node__executable])
-            if result:
-                nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__executable" % result)
-        if not result and hasattr(node, '_Node__node_executable'):
-            # use node_executable; before foxy
-            if isinstance(node._Node__node_executable, str):
-                result = node._Node__node_executable
-            else:
-                result = SEP.join(
-                    [n.text for n in node._Node__node_executable])
-            if result:
-                nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__node_executable" % result)
-        if not result and hasattr(node, 'cmd'):
-            result = cls.cmd_to_name(node.cmd)
-            if result:
-                nmd.ros_node.get_logger().debug("Nodename '%s' from cmd" % result)
-        if result:
-            ns = SEP
-            if not result.startswith(SEP) and hasattr(node, 'expanded_node_namespace') and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
-                ns = node.expanded_node_namespace
-            result = names.ns_join(ns, result)
-        else:
-            nmd.ros_node.get_logger().debug("No name for node found: %s %s" %
-                                            (type(node), dir(node)))
-            # print("describe", node.describe(), dir(node.describe()), str(node.describe()))
-            # print("'cmd'", " ".join([str(n) for n in node.cmd]))
+    # @classmethod
+    # def get_name_from_node(cls, node: launch_ros.actions.node.Node) -> str:
+    #     result = ''
+    #     if hasattr(node, 'name') and node.name:
+    #         if isinstance(node.name, str):
+    #             result = node.name
+    #         else:
+    #             result = SEP.join([n.text for n in node.name])
+    #         if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
+    #             result = ''
+    #         if result:
+    #             nmd.ros_node.get_logger().debug("Nodename '%s' from name" % result)
+    #     if not result and hasattr(node, 'node_name') and node.node_name:
+    #         if isinstance(node.node_name, str):
+    #             result = node.node_name
+    #         else:
+    #             result = SEP.join([n.text for n in node.node_name])
+    #         if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
+    #             result = ''
+    #         if result:
+    #             nmd.ros_node.get_logger().debug("Nodename '%s' from node_name" % result)
+    #     if not result and hasattr(node, '_Node__executable'):
+    #         # use executable
+    #         if isinstance(node._Node__executable, str):
+    #             result = node._Node__executable
+    #         else:
+    #             result = SEP.join([n.text for n in node._Node__executable])
+    #         if result:
+    #             nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__executable" % result)
+    #     if not result and hasattr(node, '_Node__node_executable'):
+    #         # use node_executable; before foxy
+    #         if isinstance(node._Node__node_executable, str):
+    #             result = node._Node__node_executable
+    #         else:
+    #             result = SEP.join(
+    #                 [n.text for n in node._Node__node_executable])
+    #         if result:
+    #             nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__node_executable" % result)
+    #     if not result and hasattr(node, 'cmd'):
+    #         result = cls.cmd_to_name(node.cmd)
+    #         if result:
+    #             nmd.ros_node.get_logger().debug("Nodename '%s' from cmd" % result)
+    #     if result:
+    #         ns = SEP
+    #         if not result.startswith(SEP) and hasattr(node, 'expanded_node_namespace') and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
+    #             ns = node.expanded_node_namespace
+    #         result = names.ns_join(ns, result)
+    #     else:
+    #         nmd.ros_node.get_logger().debug("No name for node found: %s %s" %
+    #                                         (type(node), dir(node)))
+    #         # print("describe", node.describe(), dir(node.describe()), str(node.describe()))
+    #         # print("'cmd'", " ".join([str(n) for n in node.cmd]))
 
-        return result
+    #     return result
 
-    @classmethod
-    def cmd_to_name(cls, cmd_list):
-        result = ''
-        count = 0
-        for cmds in cmd_list:
-            for cmd in cmds:
-                if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
-                    print('  - CMD InExc:', cmd.describe(), dir(cmd.describe))
-                    print('      + CMD exe:', cmd.executable[0].text)
-                    print('      + CMD package:', cmd.package[0].text)
-                    #print('      + perform:', cmd.perform(self.__launch_context))
-                elif isinstance(cmd, launch.substitutions.text_substitution.TextSubstitution):
-                    result += cmd.text
-                    #print('      + perform:', cmd.perform(self.__launch_context))
-                elif isinstance(cmd, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
-                    print('      + CMD:', cmd.describe(), dir(cmd))
-                elif isinstance(cmd, launch.substitutions.local_substitution.LocalSubstitution):
-                    print('      + CMD Subst:',
-                          cmd.expression, dir(cmd.expression))
-                    # print('      + perform:', cmd.perform(self.__launch_context))
-                else:
-                    print('      + CMD OTHER:', cmd, dir(cmd))
-                if count > 0:
-                    break
-                result += '_'
-            count += 1
-            if count > 1:
-                break
-        return result
+    # @classmethod
+    # def cmd_to_name(cls, cmd_list):
+    #     result = ''
+    #     count = 0
+    #     for cmds in cmd_list:
+    #         for cmd in cmds:
+    #             if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
+    #                 print('  - CMD InExc:', cmd.describe(), dir(cmd.describe))
+    #                 print('      + CMD exe:', cmd.executable[0].text)
+    #                 print('      + CMD package:', cmd.package[0].text)
+    #                 #print('      + perform:', cmd.perform(self.__launch_context))
+    #             elif isinstance(cmd, launch.substitutions.text_substitution.TextSubstitution):
+    #                 result += cmd.text
+    #                 #print('      + perform:', cmd.perform(self.__launch_context))
+    #             elif isinstance(cmd, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
+    #                 print('      + CMD:', cmd.describe(), dir(cmd))
+    #             elif isinstance(cmd, launch.substitutions.local_substitution.LocalSubstitution):
+    #                 print('      + CMD Subst:',
+    #                       cmd.expression, dir(cmd.expression))
+    #                 # print('      + perform:', cmd.perform(self.__launch_context))
+    #             else:
+    #                 print('      + CMD OTHER:', cmd, dir(cmd))
+    #             if count > 0:
+    #                 break
+    #             result += '_'
+    #         count += 1
+    #         if count > 1:
+    #             break
+    #     return result
 
     def get_robot_icon(self):
         '''
