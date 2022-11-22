@@ -119,8 +119,10 @@ class RosStateServicer(CrossbarBaseSession):
         :type msg: fkie_multimaster_msgs.DiscoveredState<XXX>
         '''
         nmd.ros_node.get_logger().info('new message on %s' % self.topic_name_state)
+        if self._ros_state is None:
+            self.publish_to('ros.discovery.ready', {'status': True})
         self._ros_state = msg
-        self.publish_to('ros.discovery.ready', {'status': True})
+        self.publish_to('ros.nodes.changed', {"timestamp": time.time()})
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
