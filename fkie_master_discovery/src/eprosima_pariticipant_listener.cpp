@@ -191,6 +191,7 @@ public:
                     {
                         rosnd.subscriber.push_back(*uns);
                     }
+                    RCLCPP_INFO(get_logger(), "add node to participant; guid=%s, node=%s", to_string(itdp->first).c_str(), rosnd.name.c_str());
                     rospt.node_entities.push_back(rosnd);
                 }
                 for (auto itdt = discoveredTopics_.begin(); itdt != discoveredTopics_.end(); itdt++)
@@ -271,14 +272,15 @@ public:
         eprosima::fastrtps::SampleInfo_t info;
         if (sub->readNextData(&data, &info))
         {
-            if (info.sampleKind != eprosima::fastrtps::rtps::ALIVE)
-            {
-                return;
-            }
             rmw_gid_t rmw_gid;
             rmw_dds_common::convert_msg_to_gid(&msg.gid, &rmw_gid);
             eprosima::fastrtps::rtps::GUID_t guid;
             rmw_fastrtps_shared_cpp::copy_from_byte_array_to_fastrtps_guid(rmw_gid.data, &guid);
+            if (info.sampleKind != eprosima::fastrtps::rtps::ALIVE)
+            {
+                RCLCPP_INFO(get_logger(), "new participant discovered is not alive, ignore; guid=%s", to_string(guid).c_str());
+                return;
+            }
             auto itp = discoveredParticipants_.find(guid);
             if (itp == discoveredParticipants_.end())
             {
@@ -481,7 +483,7 @@ public:
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
         {
-            RCLCPP_DEBUG(get_logger(), "new participant %s", participant_guid.c_str());
+            RCLCPP_INFO(get_logger(), "new participant %s", participant_guid.c_str());
             auto itp = discoveredParticipants_.find(info.info.m_guid);
             if (itp == discoveredParticipants_.end())
             {
@@ -495,6 +497,7 @@ public:
             if (enclave_found != map.end())
             {
                 pi.enclave = std::string(enclave_found->second.begin(), enclave_found->second.end());
+                RCLCPP_INFO(get_logger(), "  enclave '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
             }
             else
             {
@@ -502,15 +505,16 @@ public:
                 NodeInfo ni;
                 auto name_found = map.find("name");
                 auto ns_found = map.find("namespace");
+                RCLCPP_INFO(get_logger(), " no enclave found for %s, pname: %s", participant_guid.c_str(), info.info.m_participantName);
                 if (name_found != map.end())
                 {
                     ni.name = std::string(name_found->second.begin(), name_found->second.end());
+                    if (ns_found != map.end())
+                    {
+                        ni.ns = std::string(ns_found->second.begin(), ns_found->second.end());
+                    }
+                    pi.nodes.push_back(ni);
                 }
-                if (ns_found != map.end())
-                {
-                    ni.ns = std::string(ns_found->second.begin(), ns_found->second.end());
-                }
-                pi.nodes.push_back(ni);
             }
             for (auto i = info.info.default_locators.unicast.begin(); i != info.info.default_locators.unicast.end(); ++i)
             {
