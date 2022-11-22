@@ -18,6 +18,7 @@
 # limitations under the License.
 
 from typing import List
+from typing import Iterable
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -39,7 +40,7 @@ from launch.utilities import normalize_to_list_of_substitutions
 from launch.launch_description import LaunchDescription
 import launch_ros
 
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs import names
 from fkie_multimaster_msgs import ros_pkg
@@ -235,9 +236,14 @@ class LaunchNode():
                 result.append(entry.text)
             elif isinstance(entry, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
                 pass
-                #result.extend(self._cmd_to_str(entry.package))
-                #result.extend(self._cmd_to_str(entry.executable))
+                # result.extend(self._cmd_to_str(entry.package))
+                # result.extend(self._cmd_to_str(entry.executable))
             elif isinstance(entry, launch.substitutions.launch_configuration.LaunchConfiguration):
+                launch.substitutions.launch_configuration.LaunchConfiguration
+                print("  LCFG", self._cmd_to_str(
+                    entry.variable_name), dir(entry))
+
+                print("  LCFG", entry.perform(self.context))
                 result.append(self._cmd_to_str(entry.variable_name))
             else:
                 print("NOT known type while convert cmd to string:", type(entry))
@@ -246,6 +252,10 @@ class LaunchNode():
     @property
     def cmd(self):
         if hasattr(self.node, "cmd"):
+            print("NN ofCMD", self.node, dir(self.node))
+            for a in dir(self.node):
+                # if not a.startswith('_')
+                print(f"  {a}: {getattr(self.node, a)}")
             return self._cmd_to_str(self.node.cmd)
         return []
 
@@ -282,7 +292,7 @@ class LaunchConfig(object):
             argv=argv)
         self.__launch_description = get_launch_description_from_any_launch_file(
             self.filename)
-            
+
         # self.__launch_description = launch.LaunchDescription([
         #     launch.actions.IncludeLaunchDescription(
         #         launch.launch_description_sources.AnyLaunchDescriptionSource(
@@ -293,7 +303,7 @@ class LaunchConfig(object):
         # ])
         # for ent in self.__launch_description.entities:
         #    ent.execute(self.__launch_context)
-        print("LD", dir(self.__launch_description))
+        #print("LD", dir(self.__launch_description))
         self._included_files: List[IncludeLaunchDescription] = []
         self._load()
         self.argv = None
@@ -379,7 +389,7 @@ class LaunchConfig(object):
                     print('  perform ARG:', entity.name)
                     entity.execute(self.__launch_context)
                 elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
-                    #launch.actions.declare_launch_argument.DeclareLaunchArgument
+                    # launch.actions.declare_launch_argument.DeclareLaunchArgument
                     try:
                         entity.execute(self.__launch_context)
                         self._included_files.append(entity)
@@ -423,21 +433,27 @@ class LaunchConfig(object):
             for entity in entities:
                 if isinstance(entity, launch_ros.actions.composable_node_container.ComposableNodeContainer):
                     container = LaunchNode(entity, self.__launch_context)
+                    print("Container node: ", container.node_name)
                     cnodes = []
                     for cn in entity._ComposableNodeContainer__composable_node_descriptions:
                         node = LaunchNode(cn, self.__launch_context)
                         container.composable_nodes.append(cn)
+                        print("Composable Node: ", node.node_name)
                         cnodes.append(node)
                     result.append(container)
                     result.extend(cnodes)
                 elif isinstance(entity, launch_ros.actions.node.Node):
-                    result.append(LaunchNode(entity, self.__launch_context))
+                    ln = LaunchNode(entity, self.__launch_context)
+                    print("Node: ", ln.node_name)
+                    result.append(ln)
                 elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
-                    print("EXEC", type(entity), dir(entity))
+                    #print("EXEC", type(entity), dir(entity))
                     # entity._perform_substitutions(self.context)
-                    result.append(LaunchNode(entity, self.__launch_context))
+                    ln = LaunchNode(entity, self.__launch_context)
+                    print("EXEC Node: ", ln.node_name)
+                    result.append(ln)
                 elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
-                    print('  perform ARG:', entity.name)
+                    print('  DeclareLaunchArgument ARG:', entity.name)
 #                    entity.execute(self.__launch_context)
                 else:
                     print("TY2", type(entity), dir(entity))
@@ -696,15 +712,16 @@ class LaunchConfig(object):
             arg_match = re.search(r"\$\(\s*arg\s*", value)
 
     @classmethod
-    def get_args(cls, filename: str, provided_args: list) -> List[RosParameter]:
+    def get_launch_arguments(cls, filename: str, provided_args: list) -> List[LaunchArgument]:
         '''
         :param list(fkie_multimaster_msgs.crossbar.runtime_interface.RosParameter) provided_args: provided args used to set 'value' in returned args
         :return: a list with args being used in the roslaunch file.
         :rtype: list(kie_multimaster_msgs.crossbar.runtime_interface.RosParameter)
         '''
+        context = LaunchContext()
         launch_description = get_launch_description_from_any_launch_file(
             filename)
-        launch_arguments = launch_description.get_launch_arguments()
+        launch_arguments: List[launch.actions.declare_launch_argument.DeclareLaunchArgument] = launch_description.get_launch_arguments()
         result = []
         for argument_action in launch_arguments:
             value = ''
@@ -712,41 +729,17 @@ class LaunchConfig(object):
                 if argument_action.name == parg.name:
                     value = parg.value
                     break
-            default_str = ''
+
+            default_value = None
             if argument_action.default_value is not None:
-                default_str = ' + '.join([token.describe()
-                                          for token in argument_action.default_value])
-            arg = RosParameter(name=argument_action.name,
-                               value=value)  # ,
-            # default_value=default_str,
-            # description=argument_action.description,
-            # conditionally_included=argument_action._conditionally_included)
+                default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
+            arg = LaunchArgument(name=argument_action.name,
+                                 value=value,
+                                 default_value=default_value,
+                                 description=argument_action.description,
+                                 choices=argument_action.choices)
             result.append(arg)
         return result
-        # # get only the args in the top launch file
-        # for filename in [self.filename]:
-        #     try:
-        #         if filename.endswith('.launch') or filename.endswith('.launch.xml') > 0:
-        #             args[len(args):-1] = parse(filename).getElementsByTagName('arg')
-        #         elif filename.endswith('.launch.py'):
-        #             pass # TODO
-        #     except Exception as e:
-        #         raise roslaunch.XmlParseException("Invalid roslaunch XML syntax: %s" % e)
-        #     for arg in args:
-        #         arg_name = arg.getAttribute("name")
-        #         if not arg_name:
-        #             raise roslaunch.XmlParseException("arg tag needs a name, xml is %s" % arg.toxml())
-        #         # we only want argsargs at top level:
-        #         if not arg.parentNode.tagName == "launch":
-        #             continue
-        #         arg_default = arg.getAttribute("default")
-        #         arg_value = arg.getAttribute("value")
-        #         arg_sub = ''.join([arg_name, ':=', arg_default])
-        #         if (not arg_value) and arg_sub not in arg_subs:
-        #             arg_subs.append(arg_sub)
-        #         elif arg_valu_decodee:
-        #             self.__argv_values[arg_name] = arg_value
-        # return arg_subs
 
     def _decode(self, val: str) -> str:
         '''
@@ -884,91 +877,6 @@ class LaunchConfig(object):
                 return item
         nmd.ros_node.get_logger().debug("Node '%s' NOT found" % name)
         return None
-
-    # @classmethod
-    # def get_name_from_node(cls, node: launch_ros.actions.node.Node) -> str:
-    #     result = ''
-    #     if hasattr(node, 'name') and node.name:
-    #         if isinstance(node.name, str):
-    #             result = node.name
-    #         else:
-    #             result = SEP.join([n.text for n in node.name])
-    #         if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
-    #             result = ''
-    #         if result:
-    #             nmd.ros_node.get_logger().debug("Nodename '%s' from name" % result)
-    #     if not result and hasattr(node, 'node_name') and node.node_name:
-    #         if isinstance(node.node_name, str):
-    #             result = node.node_name
-    #         else:
-    #             result = SEP.join([n.text for n in node.node_name])
-    #         if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
-    #             result = ''
-    #         if result:
-    #             nmd.ros_node.get_logger().debug("Nodename '%s' from node_name" % result)
-    #     if not result and hasattr(node, '_Node__executable'):
-    #         # use executable
-    #         if isinstance(node._Node__executable, str):
-    #             result = node._Node__executable
-    #         else:
-    #             result = SEP.join([n.text for n in node._Node__executable])
-    #         if result:
-    #             nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__executable" % result)
-    #     if not result and hasattr(node, '_Node__node_executable'):
-    #         # use node_executable; before foxy
-    #         if isinstance(node._Node__node_executable, str):
-    #             result = node._Node__node_executable
-    #         else:
-    #             result = SEP.join(
-    #                 [n.text for n in node._Node__node_executable])
-    #         if result:
-    #             nmd.ros_node.get_logger().debug("Nodename '%s' from _Node__node_executable" % result)
-    #     if not result and hasattr(node, 'cmd'):
-    #         result = cls.cmd_to_name(node.cmd)
-    #         if result:
-    #             nmd.ros_node.get_logger().debug("Nodename '%s' from cmd" % result)
-    #     if result:
-    #         ns = SEP
-    #         if not result.startswith(SEP) and hasattr(node, 'expanded_node_namespace') and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
-    #             ns = node.expanded_node_namespace
-    #         result = names.ns_join(ns, result)
-    #     else:
-    #         nmd.ros_node.get_logger().debug("No name for node found: %s %s" %
-    #                                         (type(node), dir(node)))
-    #         # print("describe", node.describe(), dir(node.describe()), str(node.describe()))
-    #         # print("'cmd'", " ".join([str(n) for n in node.cmd]))
-
-    #     return result
-
-    # @classmethod
-    # def cmd_to_name(cls, cmd_list):
-    #     result = ''
-    #     count = 0
-    #     for cmds in cmd_list:
-    #         for cmd in cmds:
-    #             if isinstance(cmd, launch_ros.substitutions.executable_in_package.ExecutableInPackage):
-    #                 print('  - CMD InExc:', cmd.describe(), dir(cmd.describe))
-    #                 print('      + CMD exe:', cmd.executable[0].text)
-    #                 print('      + CMD package:', cmd.package[0].text)
-    #                 #print('      + perform:', cmd.perform(self.__launch_context))
-    #             elif isinstance(cmd, launch.substitutions.text_substitution.TextSubstitution):
-    #                 result += cmd.text
-    #                 #print('      + perform:', cmd.perform(self.__launch_context))
-    #             elif isinstance(cmd, launch.actions.pop_launch_configurations.PopLaunchConfigurations):
-    #                 print('      + CMD:', cmd.describe(), dir(cmd))
-    #             elif isinstance(cmd, launch.substitutions.local_substitution.LocalSubstitution):
-    #                 print('      + CMD Subst:',
-    #                       cmd.expression, dir(cmd.expression))
-    #                 # print('      + perform:', cmd.perform(self.__launch_context))
-    #             else:
-    #                 print('      + CMD OTHER:', cmd, dir(cmd))
-    #             if count > 0:
-    #                 break
-    #             result += '_'
-    #         count += 1
-    #         if count > 1:
-    #             break
-    #     return result
 
     def get_robot_icon(self):
         '''

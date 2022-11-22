@@ -91,7 +91,7 @@ else:
         data_files=[
             ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
             (f'share/{package_name}', ['package.xml']),
-            (f'share/{package_name}/launch', ['launch/autostart.launch.xml']),
+            (f'share/{package_name}/launch', ['launch/autostart.launch.xml', 'launch/diff_drive.launch.py']),
             #(f'share/{package_name}/tests/resources', resource_files),
             (f'lib/{package_name}', ['scripts/remote_node.py', 'scripts/respawn'])
         ],

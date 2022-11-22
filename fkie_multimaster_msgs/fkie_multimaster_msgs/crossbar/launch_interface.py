@@ -32,6 +32,7 @@
 
 import json
 
+from typing import Any
 from typing import List
 from typing import Dict
 from typing import Tuple
@@ -66,9 +67,12 @@ class LaunchReturnStatus:
 
 class LaunchArgument:
 
-    def __init__(self, name: str, value: str) -> None:
+    def __init__(self, name: str, value: str, default_value: Any = None, description: str = '', choices: List[str] = []) -> None:
         self.name = name
         self.value = value
+        self.default_value = default_value
+        self.description = description
+        self.choices = choices
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

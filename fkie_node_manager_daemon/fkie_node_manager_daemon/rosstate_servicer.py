@@ -209,6 +209,7 @@ class RosStateServicer(CrossbarBaseSession):
                 for rn in rp.node_entities:
                     n_guid = self._guid_to_str(rp.guid)
                     full_name = os.path.join(rn.ns, rn.name)
+                    Log.info(f"add node: {n_guid}|{full_name}, {rp.enclave}, {rp.unicast_locators}")
                     ros_node = RosNode(f"{n_guid}|{full_name}", rn.name)
                     ros_node.name = full_name
                     ros_node.namespace = rn.ns

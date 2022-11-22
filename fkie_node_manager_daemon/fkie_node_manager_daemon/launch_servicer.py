@@ -332,20 +332,18 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             self.xml_validator.validate(launchfile)
             # test for required args
             provided_args = [arg.name for arg in request.args]
-            print('provided_args', provided_args)
             # get the list with needed launch args
-            req_args = LaunchConfig.get_args(launchfile, request.args)
+            req_args = LaunchConfig.get_launch_arguments(launchfile, request.args)
             # req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg in req_args:
                     if arg.name not in provided_args:
                         result.args.extend(req_args)
                         result.status.code = 'PARAMS_REQUIRED'
-                        Log.debug('..load aborted, PARAMS_REQUIRED')
+                        Log.debug(f"..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; privided args {provided_args}")
                         return json.dumps(result, cls=SelfEncoder)
             # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
             launch_arguments = [(arg.name, arg.value) for arg in request.args]
-            print('launch_arguments', launch_arguments)
             # context=self.__launch_context
             launch_config = LaunchConfig(
                 launchfile, daemonuri=daemonuri, launch_arguments=launch_arguments)
