@@ -247,9 +247,15 @@ def from_node(node: LaunchNode, launchcfg: LaunchConfig, *, executable: Text = '
             env[''.join([lc.perform_substitution(x) for x in key])] = \
                 ''.join([lc.perform_substitution(x) for x in value])
     result.env = env
+    print("CMD ENV: ", env)
     if type(node.node) == launch.actions.execute_process.ExecuteProcess:
+        for x in node.node.cmd:
+            print("x:", x)
+            print("perform_substitutions(lc, x):", perform_substitutions(lc, x))
+
         result.cmd = [perform_substitutions(lc, x) for x in node.node.cmd]
     print("CMD from NODE: ", node.cmd)
+    print("CMD result: ", result.cmd)
     return result
 
 
@@ -313,13 +319,15 @@ def run_node(startcfg):
                 args.append('--params-file "%s"' % fname)
         cmd_type = startcfg.binary_path
         if startcfg.cmd:
-            cmd_type = ''
-            for cmd_part in startcfg.cmd:
-                if ' ' in cmd_type:
-                    cmd_type += shlex.quote(cmd_part)
-                else:
-                    cmd_type += cmd_part
-                cmd_type += ' '
+            cmd_type = ' '.join(startcfg.cmd)
+            #for cmd_part in startcfg.cmd:
+            #    if ' ' in cmd_type:
+            #        print("shlex", cmd_part)
+            #        cmd_type += shlex.quote(cmd_part)
+            #    else:
+            #        print("w/o shlex", cmd_part)
+            #        cmd_type += cmd_part
+            #    cmd_type += ' '
             cwd = startcfg.cwd
         # get binary path from package
         elif not cmd_type:

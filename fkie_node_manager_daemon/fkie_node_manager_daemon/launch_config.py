@@ -239,7 +239,6 @@ class LaunchNode():
                 # result.extend(self._cmd_to_str(entry.package))
                 # result.extend(self._cmd_to_str(entry.executable))
             elif isinstance(entry, launch.substitutions.launch_configuration.LaunchConfiguration):
-                launch.substitutions.launch_configuration.LaunchConfiguration
                 print("  LCFG", self._cmd_to_str(
                     entry.variable_name), dir(entry))
 
@@ -284,25 +283,31 @@ class LaunchConfig(object):
         self.__package = ros_pkg.get_name(os.path.dirname(self.__launchfile))[
             0] if package is None else package
         self.__nmduri = daemonuri
-        self.launch_arguments = launch_arguments
+        self.provided_launch_arguments = launch_arguments
+        self.launch_arguments: List[LaunchArgument] = []
         argv = sys.argv[1:]
         argv.extend(["%s:=%s" % (name, value)
                      for (name, value) in launch_arguments])
-        self.__launch_context = context if context is not None else LaunchContext(
-            argv=argv)
+        self.__launch_context = context
+        if context is None:
+            self.__launch_context = LaunchContext(argv=argv)
+        for (name, value) in launch_arguments:
+            self.__launch_context.launch_configurations[name] = value
         self.__launch_description = get_launch_description_from_any_launch_file(
             self.filename)
+        # self.__launch_description.visit(self.__launch_context)
+        #self.ldsource = launch.LaunchDescriptionSource(launch_description=self.__launch_description, location=launch_file)
+        #self.__launch_description = self.ldsource.get_launch_description(self.__launch_context)
+        #ild = IncludeLaunchDescription(launch_description_source=self.ldsource, launch_arguments=launch_arguments)
+        #rr = ild.execute(self.__launch_context)
+        # for key in rr:
+        #    print("r", key, type(key))
+        #    if isinstance(key, launch.launch_description.LaunchDescription):
+        #        print("apply ld")
+        #        self.__launch_description = key
+#        for key, val in self.__launch_context.launch_configurations.items():
+#            print("KK", key, val)
 
-        # self.__launch_description = launch.LaunchDescription([
-        #     launch.actions.IncludeLaunchDescription(
-        #         launch.launch_description_sources.AnyLaunchDescriptionSource(
-        #             self.filename
-        #         ),
-        #         launch_arguments=launch_arguments,
-        #     ),
-        # ])
-        # for ent in self.__launch_description.entities:
-        #    ent.execute(self.__launch_context)
         #print("LD", dir(self.__launch_description))
         self._included_files: List[IncludeLaunchDescription] = []
         self._load()
@@ -354,6 +359,12 @@ class LaunchConfig(object):
         if sub_obj is None:
             sub_obj = self.__launch_description
 
+        # import traceback
+        # print(traceback.format_stack())
+        # print("Launch arguments:")
+        # for la in self.__launch_description.get_launch_arguments():
+        #     print(la.name, launch.utilities.perform_substitutions(self.context, la.default_value))
+
         entities = None
         if hasattr(sub_obj, 'get_sub_entities'):
             entities = getattr(sub_obj, 'get_sub_entities')()
@@ -382,12 +393,18 @@ class LaunchConfig(object):
                     entity._perform_substitutions(self.context)
                     if entity.expanded_node_namespace == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
                         entity.__expanded_node_namespace = ''
+                    if entity.condition is not None:
+                        print("CONDITION: ",
+                              entity.condition.evaluate(self.context))
                 elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
                     print("EXEC", type(entity), dir(entity))
                     # entity._perform_substitutions(self.context)
                 elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
-                    print('  perform ARG:', entity.name)
+                    print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
+                        self.context, entity.default_value))
                     entity.execute(self.__launch_context)
+                    print('  perform ARG after execute:', entity.name, launch.utilities.perform_substitutions(
+                        self.context, entity.default_value))
                 elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
                     # launch.actions.declare_launch_argument.DeclareLaunchArgument
                     try:
@@ -402,6 +419,11 @@ class LaunchConfig(object):
                               entity._get_launch_file_directory())
                         print("get_launch_arguments - ",
                               entity.launch_arguments)
+                        print("launch_configurations - ",
+                              self.__launch_context.launch_configurations)
+                        for (name, value) in entity.launch_arguments:
+                            self.__launch_context.launch_configurations[name] = value
+                            print(name, value)
                     except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
                         print('err', dir(err))
                         print('launch_description_source', dir(
@@ -417,8 +439,8 @@ class LaunchConfig(object):
                         # if not a.startswith('_')
                         print(f"  {a}: {getattr(entity, a)}")
                 self._load(entity)
-        print("get_launch_arguments",
-              self.__launch_description.get_launch_arguments())
+        print("get_launch_arguments", [launch.utilities.perform_substitutions(
+            self.context, l.default_value) for l in self.__launch_description.get_launch_arguments()])
 
     def nodes(self, sub_obj=None) -> List[LaunchNode]:
         result = []
@@ -431,6 +453,10 @@ class LaunchConfig(object):
             entities = getattr(sub_obj, 'entities')
         if entities is not None:
             for entity in entities:
+                if hasattr(entity, 'condition') and entity.condition is not None:
+                    print("CONDITION: ", entity.condition.evaluate(self.context))
+                    if not entity.condition.evaluate(self.context):
+                        continue
                 if isinstance(entity, launch_ros.actions.composable_node_container.ComposableNodeContainer):
                     container = LaunchNode(entity, self.__launch_context)
                     print("Container node: ", container.node_name)
@@ -555,7 +581,7 @@ class LaunchConfig(object):
                 return index
         return -1
 
-    def load(self, argv):
+    def NO_load(self, argv):
         '''
         :param argv: a list with argv parameter needed to load the launch file.
                      The name and value are separated by `:=`
@@ -732,7 +758,8 @@ class LaunchConfig(object):
 
             default_value = None
             if argument_action.default_value is not None:
-                default_value = launch.utilities.perform_substitutions(context, argument_action.default_value)
+                default_value = launch.utilities.perform_substitutions(
+                    context, argument_action.default_value)
             arg = LaunchArgument(name=argument_action.name,
                                  value=value,
                                  default_value=default_value,

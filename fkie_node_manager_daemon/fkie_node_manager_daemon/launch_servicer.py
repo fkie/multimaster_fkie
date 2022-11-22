@@ -395,7 +395,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # use argv from already open file
                 cfg = self._loaded_files[cfgid]
                 launch_config = LaunchConfig(
-                    cfg.filename, daemonuri=request.daemonuri, launch_arguments=cfg.launch_arguments)
+                    cfg.filename, daemonuri=request.daemonuri, launch_arguments=cfg.provided_launch_arguments)
                 self._loaded_files[cfgid] = launch_config
                 # stored_roscfg = cfg.roscfg
                 # argv = cfg.argv
@@ -462,6 +462,10 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.daemonuri, host='',  # lc.host,
                                      nodes=[], parameters=[], nodelets=[], associations=[])
 
+            # Add launch arguments
+            for name, p in lc.provided_launch_arguments:
+                reply_lc.args.append(LaunchArgument(name, p.value if hasattr(p, 'value') else p))
+
             nodes = lc.nodes()
             for item in nodes:
                 node_fullname = item.node_name
@@ -492,9 +496,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # for cn in item.composable_nodes:
                 #    reply_lc.nodes.append(LaunchConfig.get_name_from_node(cn))
 
-            # Add launch arguments
-            for name, p in lc.launch_arguments:
-                reply_lc.args.append(LaunchArgument(name, p.value if hasattr(p, 'value') else p))
             # Add parameter values
             # for name, p in lc.xxx:
             #    reply_lc.parameters.append(RosParameter(name, p.value))
@@ -502,6 +503,86 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             # TODO: add assosiations
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)
+
+
+        Log.debug('Request to [ros.launch.get_list]')
+        requested_files = list(self._loaded_files.keys())
+        reply = []
+        for cfgid in requested_files:
+            lc = self._loaded_files[cfgid]
+            reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host,
+                                     nodes=[], parameters=[], nodelets=[], associations=[])
+
+            # Add launch arguments
+            for name, arg in lc.argv2dict(lc.argv).items():
+                reply_lc.args.append(LaunchArgument(name, arg))
+
+            node_occurrence = {}
+            for item in lc.roscfg.nodes:
+                node_fullname = roslib.names.ns_join(item.namespace, item.name)
+                if item.launch_name not in node_occurrence:
+                    node_occurrence[item.launch_name] = 0
+                else:
+                    node_occurrence[item.launch_name] += 1
+
+                #  Search the line number of a given node in launch file
+                lines_with_node_name = []
+                with open(item.filename, 'r') as launch_file:
+                    for line_number, line_text in enumerate(launch_file):
+                        if f'name="{item.launch_name}"' in line_text:
+                            lines_with_node_name.append(
+                                [line_number + 1, line_text])
+
+                line_number = -1
+                start_column = 0
+                end_column = 0
+                line_text = ""
+                if len(lines_with_node_name) == 0:
+                    # no line found. TODO: Report error?
+                    line_number = 0
+                elif len(lines_with_node_name) == 1:
+                    line_number = lines_with_node_name[0][0]
+                    line_text = lines_with_node_name[0][1]
+                elif len(lines_with_node_name) > node_occurrence[item.launch_name]:
+                    # More than one occurrence, but Node are loaded from top to bottom
+                    # try to find the correct match
+                    line_number = lines_with_node_name[node_occurrence[item.launch_name]][0]
+                    line_text = lines_with_node_name[node_occurrence[item.launch_name]][1]
+
+                if len(line_text) > 0:
+                    start_column = line_text.index(
+                        f'name="{item.launch_name}"') + 7
+                    end_column = start_column + len(item.launch_name)
+
+                # range in text where the node appears
+                file_range = {"startLineNumber": line_number,
+                              "endLineNumber": line_number,
+                              "startColumn": start_column,
+                              "endColumn": end_column}
+
+                reply_lc.nodes.append(
+                    LaunchNodeInfo(node_fullname,
+                                   # remove last "/" character in namespace
+                                   item.namespace[:-1],
+                                   item.package,
+                                   item.type,
+                                   item.respawn,
+                                   item.respawn_delay,
+                                   item.args,
+                                   item.remap_args,
+                                   item.env_args,
+                                   item.output,
+                                   item.launch_prefix,
+                                   item.required,
+                                   item.filename,
+                                   file_range,
+                                   item.launch_context_arg,
+                                   item.launch_name)
+                )
+
+            # Add parameter values
+            for name, p in lc.roscfg.params.items():
+                reply_lc.parameters.append(RosParameter(name, p.value))
 
     @wamp.register('ros.launch.start_node')
     def start_node(self, request_json: LaunchNode, return_as_json: bool = True) -> LaunchNodeReply:
