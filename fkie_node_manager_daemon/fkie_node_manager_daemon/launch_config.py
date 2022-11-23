@@ -17,8 +17,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List
+from typing import Dict
 from typing import Iterable
+from typing import List
+from typing import Number
 from typing import Text
 from typing import Tuple
 from typing import Union
@@ -30,6 +32,7 @@ import sys
 import time
 
 import launch
+from launch.frontend.entity import Entity
 from launch.launch_description_sources import get_launch_description_from_any_launch_file
 from launch.frontend.parser import Parser
 from launch.launch_description_sources import get_launch_description_from_frontend_launch_file
@@ -55,9 +58,47 @@ class LaunchConfigException(Exception):
     pass
 
 
+class LaunchNodeInfo:
+    '''
+    Represents the launch information for a given node
+    '''
+
+    def __init__(self, nodeName: str='', nodeNamespace: str='', package: str='', node_type: str='',
+                 respawn: bool = False, respawn_delay: Number = 0, args: str = '',
+                 remap_args: List[Tuple[str, str]] = [],
+                 env_args: List[Tuple[str, str]] = [],
+                 output: str = '', launch_prefix: str = '', required: bool = False,
+                 file_name: str = '', file_range: Dict[str, Number] = {"startLineNumber": 0,
+                                                                       "endLineNumber": 0,
+                                                                       "startColumn": 0,
+                                                                       "endColumn": 0},
+                 launch_context_arg: str = '', launch_name: str = ''
+                 ) -> None:
+        self.nodeName = nodeName
+        self.nodeNamespace = nodeNamespace
+        self.package = package
+        self.node_type = node_type
+        self.respawn = respawn
+        self.respawn_delay = respawn_delay
+        self.args = args
+        self.remap_args = remap_args
+        self.env_args = env_args
+        self.output = output
+        self.launch_prefix = launch_prefix
+        self.required = required
+        self.file_name = file_name
+        self.file_range = file_range
+        self.launch_context_arg = launch_context_arg
+        self.launch_name = launch_name
+
+    @classmethod
+    def from_launch(cls, entity: launch.actions.ExecuteProcess, launch_description: launch.LaunchDescription, launch_context: launch.LaunchContext) -> 'LaunchNodeInfo':
+        rsult = LaunchNodeInfo()
+        pass
+
 class LaunchNode():
 
-    def __init__(self, node, context: LaunchContext = None):
+    def __init__(self, node: Entity, context: LaunchContext = None):
         self.node = node
         self.context = context
         self.__node_name = ''
@@ -145,6 +186,7 @@ class LaunchNode():
     def get_name_from_node(cls, node: launch_ros.actions.node.Node) -> str:
         result = ''
         if hasattr(node, 'name') and node.name:
+            # from ExecuteProcess
             if isinstance(node.name, str):
                 result = node.name
             else:
@@ -154,6 +196,7 @@ class LaunchNode():
             if result:
                 nmd.ros_node.get_logger().debug("Nodename '%s' from name" % result)
         if not result and hasattr(node, 'node_name') and node.node_name:
+            # from Node
             if isinstance(node.node_name, str):
                 result = node.node_name
             else:
@@ -163,7 +206,7 @@ class LaunchNode():
             if result:
                 nmd.ros_node.get_logger().debug("Nodename '%s' from node_name" % result)
         if not result and hasattr(node, '_Node__executable'):
-            # use executable
+            # no name was set for Node or ExecuteProcess => use executable
             if isinstance(node._Node__executable, str):
                 result = node._Node__executable
             else:
@@ -185,15 +228,17 @@ class LaunchNode():
                 nmd.ros_node.get_logger().debug("Nodename '%s' from cmd" % result)
         if result:
             ns = SEP
-            if not result.startswith(SEP) and hasattr(node, 'expanded_node_namespace') and node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
-                ns = node.expanded_node_namespace
-            result = names.ns_join(ns, result)
+            if not result.startswith(SEP) and hasattr(node, 'expanded_node_namespace'):
+                if node.expanded_node_namespace != launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
+                    ns = node.expanded_node_namespace
+                    result = names.ns_join(ns, result)
+                else:
+                    # only the name is set in the launch file. 'node_name' returns name with unspecified namespace
+                    result = result.replace(
+                        f"{launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE}/", '')
         else:
             Log.debug("No name for node found: %s %s" %
                       (type(node), dir(node)))
-            # print("describe", node.describe(), dir(node.describe()), str(node.describe()))
-            # print("'cmd'", " ".join([str(n) for n in node.cmd]))
-
         return result
 
     @classmethod
@@ -309,6 +354,12 @@ class LaunchConfig(object):
 #            print("KK", key, val)
 
         #print("LD", dir(self.__launch_description))
+        # print("frontend_parsers", launch.frontend.parser.Parser.frontend_parsers)
+        # launch.frontend.parser.Parser.load_launch_extensions()
+        # launch.frontend.parser.Parser.load_parser_implementations()
+        # print("frontend_parsers", launch.frontend.parser.Parser.frontend_parsers)
+        # entity, parser = launch.frontend.parser.Parser.load(self.filename)
+        # print("DIFFLOAD", entity, parser)
         self._included_files: List[IncludeLaunchDescription] = []
         self._load()
         self.argv = None
@@ -355,7 +406,7 @@ class LaunchConfig(object):
                     "not all argv are setted properly!")
             return self.__launch_description
 
-    def _load(self, sub_obj=None) -> None:
+    def _load(self, sub_obj=None, ident: str='') -> None:
         if sub_obj is None:
             sub_obj = self.__launch_description
 
@@ -367,11 +418,14 @@ class LaunchConfig(object):
 
         entities = None
         if hasattr(sub_obj, 'get_sub_entities'):
+            print(ident, "GET SUB ENTITY")
             entities = getattr(sub_obj, 'get_sub_entities')()
         elif hasattr(sub_obj, 'entities'):
+            print(ident, "GET ENTITY")
             entities = getattr(sub_obj, 'entities')
         if entities is not None:
             for entity in entities:
+                print(ident, f"typeID: {type(entity)} {entity}")
                 if isinstance(entity, launch_ros.actions.node.Node):
                     # for cmds in entity.cmd:
                     #     for cmd in cmds:
@@ -393,54 +447,67 @@ class LaunchConfig(object):
                     entity._perform_substitutions(self.context)
                     if entity.expanded_node_namespace == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
                         entity.__expanded_node_namespace = ''
-                    if entity.condition is not None:
-                        print("CONDITION: ",
-                              entity.condition.evaluate(self.context))
+#                    if entity.condition is not None:
+#                        print("CONDITION: ",
+#                              entity.condition.evaluate(self.context))
                 elif isinstance(entity, launch.actions.execute_process.ExecuteProcess):
-                    print("EXEC", type(entity), dir(entity))
+                    pass
+#                    print("EXEC", type(entity), dir(entity))
                     # entity._perform_substitutions(self.context)
                 elif isinstance(entity, launch.actions.declare_launch_argument.DeclareLaunchArgument):
-                    print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
-                        self.context, entity.default_value))
-                    entity.execute(self.__launch_context)
-                    print('  perform ARG after execute:', entity.name, launch.utilities.perform_substitutions(
-                        self.context, entity.default_value))
+#                    print('  perform ARG:', entity.name, launch.utilities.perform_substitutions(
+#                        self.context, entity.default_value))
+                    cfg_actions= entity.execute(self.__launch_context)
+                    if cfg_actions is not None:
+                        for cac in cfg_actions:
+                            print(ident, '->', type(cac), cac)
+#                    print('  perform ARG after execute:', entity.name, launch.utilities.perform_substitutions(
+#                        self.context, entity.default_value))
                 elif isinstance(entity, launch.actions.include_launch_description.IncludeLaunchDescription):
                     # launch.actions.declare_launch_argument.DeclareLaunchArgument
                     try:
-                        entity.execute(self.__launch_context)
+                        cfg_actions = entity.execute(self.__launch_context)
+                        if cfg_actions is not None:
+                            for cac in cfg_actions:
+                                print(ident, '>>', type(cac), cac)
+                            ild = entity.launch_description_source.get_launch_description(self.context)
+                            for cac in cfg_actions[:-1]:
+                                print(ident, '++', type(cac), cac)
+                                ild.add_action(cac)
                         self._included_files.append(entity)
-                        print("IncludeLaunchDescription", dir(), entity)
-                        for a in dir(entity):
+#                        print("IncludeLaunchDescription", dir(), entity)
+#                        for a in dir(entity):
                             # if not a.startswith('_')
-                            print(f"  {a}: {getattr(entity, a)}")
-                        print("_get_launch_file", entity._get_launch_file())
-                        print("_get_launch_file_directory",
-                              entity._get_launch_file_directory())
-                        print("get_launch_arguments - ",
-                              entity.launch_arguments)
-                        print("launch_configurations - ",
-                              self.__launch_context.launch_configurations)
-                        for (name, value) in entity.launch_arguments:
-                            self.__launch_context.launch_configurations[name] = value
-                            print(name, value)
+#                            print(f"  {a}: {getattr(entity, a)}")
+ #                       print("_get_launch_file", entity._get_launch_file())
+  #                      print("_get_launch_file_directory",
+   #                           entity._get_launch_file_directory())
+   #                     print("get_launch_arguments - ",
+   #                           entity.launch_arguments)
+    #                    print("launch_configurations - ",
+     #                         self.__launch_context.launch_configurations)
+#                        for (name, value) in entity.launch_arguments:
+#                            self.__launch_context.launch_configurations[name] = value
+      #                      print(name, value)
                     except launch.invalid_launch_file_error.InvalidLaunchFileError as err:
-                        print('err', dir(err))
-                        print('launch_description_source', dir(
-                            entity.launch_description_source.location))
+      #                  print('err', dir(err))
+       #                 print('launch_description_source', dir(
+       #                     entity.launch_description_source.location))
                         raise Exception('%s (%s)' % (
                             err, entity.launch_description_source.location))
                 elif hasattr(entity, 'execute'):
-                    print("TY2", type(entity), dir(entity))
+       #             print("TY2", type(entity), dir(entity))
                     entity.execute(self.__launch_context)
-                else:
-                    print("unknown entity:", entity, dir(entity))
-                    for a in dir(entity):
+        #        else:
+        #            print("unknown entity:", entity, dir(entity))
+        #            for a in dir(entity):
                         # if not a.startswith('_')
-                        print(f"  {a}: {getattr(entity, a)}")
-                self._load(entity)
-        print("get_launch_arguments", [launch.utilities.perform_substitutions(
-            self.context, l.default_value) for l in self.__launch_description.get_launch_arguments()])
+        #                print(f"  {a}: {getattr(entity, a)}")
+                self._load(entity, ident+'  ')
+                if len(ident) > 10:
+                    raise
+#        print("get_launch_arguments", [launch.utilities.perform_substitutions(
+#            self.context, l.default_value) for l in self.__launch_description.get_launch_arguments()])
 
     def nodes(self, sub_obj=None) -> List[LaunchNode]:
         result = []
