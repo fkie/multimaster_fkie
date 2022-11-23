@@ -395,7 +395,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # use argv from already open file
                 cfg = self._loaded_files[cfgid]
                 launch_config = LaunchConfig(
-                    cfg.filename, daemonuri=request.daemonuri, launch_arguments=cfg.provided_launch_arguments)
+                    cfg.filename, daemonuri=daemonuri, launch_arguments=cfg.provided_launch_arguments)
                 self._loaded_files[cfgid] = launch_config
                 # stored_roscfg = cfg.roscfg
                 # argv = cfg.argv
