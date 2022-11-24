@@ -111,6 +111,7 @@ public:
         rclcpp::QoS qos_settings(100);
         qos_settings.reliable();
         qos_settings.transient_local();
+        on_shutdown = false;
         publisher_ = this->create_publisher<fkie_multimaster_msgs::msg::DiscoveredState>("~/rosstate", qos_settings);
         participant_ = nullptr;
         subscriber_ = nullptr;
@@ -142,7 +143,9 @@ public:
 
     void shutdown()
     {
+        this->on_shutdown = true;
         timer_->cancel();
+        eprosima::fastrtps::Domain::stopAll();
     }
 
     void _callback_timer_state()
@@ -260,6 +263,7 @@ public:
      */
     void onNewDataMessage(eprosima::fastrtps::Subscriber *sub)
     {
+        if (this->on_shutdown) return;
         RCLCPP_DEBUG(get_logger(), "New ParticipantEntitiesInfo msg on 'ros_discovery_info', count unread: %lu", sub->get_unread_count());
 #ifdef rmw_dds_common_FOUND
         std::lock_guard<std::mutex> guard(mutex_);
@@ -505,7 +509,7 @@ public:
                 NodeInfo ni;
                 auto name_found = map.find("name");
                 auto ns_found = map.find("namespace");
-                RCLCPP_INFO(get_logger(), " no enclave found for %s, pname: %s", participant_guid.c_str(), info.info.m_participantName);
+                RCLCPP_INFO(get_logger(), " no enclave found for %s, pname: %s", participant_guid.c_str(), info.info.m_participantName.c_str());
                 if (name_found != map.end())
                 {
                     ni.name = std::string(name_found->second.begin(), name_found->second.end());
@@ -592,6 +596,7 @@ private:
 #endif
     mutable std::mutex mutex_;
     bool infoUpdated_;
+    bool on_shutdown;
     uint64_t infoUpdatedTs_;
     uint infoUpdatedSkipped_;
     rclcpp::TimerBase::SharedPtr timer_;
@@ -614,7 +619,9 @@ int main(int argc, char *argv[])
     std::string node_name = "discovery_" + ros_distro + "_" + std::string(hostname_chars);
     auto listener = std::make_shared<CustomParticipantListener>(node_name, "/_node_manager");
     rclcpp::spin(listener);
+    RCLCPP_INFO(listener->get_logger(), "shutdown...");
     listener->shutdown();
     rclcpp::shutdown();
+    printf("bye!\n");
     return 0;
 }
