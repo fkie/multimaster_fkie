@@ -59,9 +59,10 @@ class RosStateServicer(CrossbarBaseSession):
         self.topic_name_endpoint = '%s/daemons' % (
             NM_DISCOVERY_NAMESPACE)
         qos_profile = QoSProfile(depth=100,
-                                 durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                 # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                  # history=QoSHistoryPolicy.KEEP_LAST,
-                                 reliability=QoSReliabilityPolicy.RELIABLE)
+                                 # reliability=QoSReliabilityPolicy.RELIABLE)
+                                 )
         nmd.ros_node.get_logger().info('listen for discovered items on %s' %
                                        self.topic_name_state)
         self.sub_discovered_state = nmd.ros_node.create_subscription(
@@ -147,6 +148,7 @@ class RosStateServicer(CrossbarBaseSession):
     def crossbar_get_node_list(self) -> str:
         nmd.ros_node.get_logger().info('Request to [ros.nodes.get_list]')
         node_list: List[RosNode] = self.to_crossbar()
+
         return json.dumps(node_list, cls=SelfEncoder)
 
     def _guid_to_str(self, guid):
@@ -211,7 +213,8 @@ class RosStateServicer(CrossbarBaseSession):
                 for rn in rp.node_entities:
                     n_guid = self._guid_to_str(rp.guid)
                     full_name = os.path.join(rn.ns, rn.name)
-                    Log.info(f"add node: {n_guid}|{full_name}, {rp.enclave}, {rp.unicast_locators}")
+                    Log.info(
+                        f"add node: {n_guid}|{full_name}, {rp.enclave}, {rp.unicast_locators}")
                     ros_node = RosNode(f"{n_guid}|{full_name}", rn.name)
                     ros_node.name = full_name
                     ros_node.namespace = rn.ns

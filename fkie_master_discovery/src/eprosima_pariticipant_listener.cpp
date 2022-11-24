@@ -109,9 +109,10 @@ public:
                                                                                              eprosima::fastrtps::SubscriberListener()
     {
         rclcpp::QoS qos_settings(100);
-        qos_settings.reliable();
-        qos_settings.transient_local();
+        //qos_settings.reliable();
+        //qos_settings.transient_local();
         on_shutdown = false;
+        subscriber_count = 0;
         publisher_ = this->create_publisher<fkie_multimaster_msgs::msg::DiscoveredState>("~/rosstate", qos_settings);
         participant_ = nullptr;
         subscriber_ = nullptr;
@@ -162,6 +163,14 @@ public:
             {
                 doUpdate = true;
             }
+        }
+        current_subscriber_count = this->count_subscribers("~/rosstate");
+        if (current_subscriber_count != subscriber_count)
+        {
+            if (current_subscriber_count > subscriber_count && current_subscriber_count > 0) {
+                doUpdate = true;
+            }
+            subscriber_count = current_subscriber_count;
         }
         if (doUpdate)
         {
@@ -595,6 +604,7 @@ private:
     const void *message_type_impl_;
 #endif
     mutable std::mutex mutex_;
+    size_t subscriber_count;
     bool infoUpdated_;
     bool on_shutdown;
     uint64_t infoUpdatedTs_;
