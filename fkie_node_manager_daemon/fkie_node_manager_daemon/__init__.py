@@ -17,6 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import fkie_multimaster_msgs
+fkie_multimaster_msgs.ROS_VERSION = 2
 
 from .ros_node import RosNodeLauncher
 

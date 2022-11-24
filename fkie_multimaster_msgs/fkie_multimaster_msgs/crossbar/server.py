@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import shutil
+from fkie_multimaster_msgs import ROS_VERSION
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.defines import GRPC_SERVER_PORT_OFFSET
 from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
@@ -77,11 +78,10 @@ CROSSBAR_CONFIG_JSON = {
 
 
 def port() -> int:
-    try:
-        # try import ROS1
+    if ROS_VERSION == 1:
         from fkie_multimaster_msgs.system import ros1_grpcuri
         return ros1_grpcuri.port() - GRPC_SERVER_PORT_OFFSET + 600
-    except ModuleNotFoundError:
+    else:
         # use defaults for ROS2
         ros_domain_id = 0
         if 'ROS_DOMAIN_ID' in os.environ:

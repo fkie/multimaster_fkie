@@ -20,6 +20,7 @@
 import os
 import re
 from fkie_multimaster_msgs.system.host import ros_host_suffix
+from fkie_multimaster_msgs import ROS_VERSION
 
 
 SEP = '/'
@@ -32,10 +33,10 @@ SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
 
 PACKAGE_FILE = 'package.xml'
 
-try:
+if ROS_VERSION == 1:
     import rospkg
     LOG_PATH = rospkg.get_log_dir()
-except ImportError:
+else:
     LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get(
         'ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
 ''':var LOG_PATH: logging path where all screen configuration and log files are stored.'''
@@ -47,13 +48,15 @@ SCREEN = "/usr/bin/screen"
 
 SCREEN_NAME_MAX_CHARS = 74
 
-try:
+print("ROS_VERSION", ROS_VERSION)
+
+if ROS_VERSION == 1:
     import rospy
     SCREEN_SLASH_SEP = '_'
     '''this character is used to replace the slashes in ROS-Names for ROS1 nodes.'''
     RESPAWN_SCRIPT = 'rosrun fkie_node_manager_daemon respawn'
     ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
-except ImportError:
+else:
     import rospkg
     SCREEN_SLASH_SEP = '_'
     '''this character is used to replace the slashes in ROS-Names for ROS2 nodes.'''

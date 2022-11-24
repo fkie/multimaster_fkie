@@ -5,13 +5,12 @@ from typing import List, Dict, Union
 import re
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs import names
+from fkie_multimaster_msgs import ROS_VERSION
 
 SEP = '/'
-try:
+if ROS_VERSION == 1:
     import rospy
     SEP = rospy.names.SEP
-except ImportError:
-    pass
 
 
 def get_node_name(name):
