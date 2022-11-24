@@ -246,4 +246,4 @@ class RosStateServicer(CrossbarBaseSession):
                     else:
                         parent_node = ros_node
                     result.append(ros_node)
-            return result
+        return result
