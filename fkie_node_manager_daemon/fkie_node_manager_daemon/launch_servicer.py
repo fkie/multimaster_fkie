@@ -82,6 +82,12 @@ class CfgId(object):
         self.daemonuri = daemonuri
         self._local = is_local(daemonuri)
 
+    def __str__(self):
+        return "%s%s" % (self.daemonuri, self.path)
+
+    def __repr__(self):
+        return "%s%s" % (self.daemonuri, self.path)
+
     def __hash__(self, *args, **kwargs):
         return hash("%s%s" % (self.daemonuri, self.path))
 
@@ -319,12 +325,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 return json.dumps(result, cls=SelfEncoder)
         result.paths.append(launchfile)
         # it is already loaded?
-        if (launchfile, daemonuri) in self._loaded_files.keys():
+        print("self._loaded_files", self._loaded_files,
+              self._loaded_files.keys())
+        if (launchfile, daemonuri) in list(self._loaded_files.keys()):
             result.status.code = 'ALREADY_OPEN'
             result.status.msg = "Launch file %s already loaded!" % (
                 launchfile)
             Log.debug('..load aborted, ALREADY_OPEN')
             return json.dumps(result, cls=SelfEncoder)
+
 
         # load launch configuration
         try:
@@ -391,11 +400,13 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         Log.debug("reload launch file: %s, daemonuri: %s",
                   request.path, daemonuri)
         if cfgid in self._loaded_files:
+            old_launch = self._loaded_files[cfgid]
             try:
+                self._remove_launch_from_observer(old_launch)
+                old_launch._unload()
                 # use argv from already open file
-                cfg = self._loaded_files[cfgid]
                 launch_config = LaunchConfig(
-                    cfg.filename, daemonuri=daemonuri, launch_arguments=cfg.provided_launch_arguments)
+                    old_launch.filename, daemonuri=daemonuri, launch_arguments=old_launch.provided_launch_arguments)
                 self._loaded_files[cfgid] = launch_config
                 # stored_roscfg = cfg.roscfg
                 # argv = cfg.argv
@@ -404,9 +415,10 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # TODO: added change detection for nodes parameters
                 # notify changes to crossbar GUI
                 self.publish_to('ros.launch.changed', {})
-                self._remove_launch_from_observer(launch_config)
                 self._add_launch_to_observer(launch_config)
             except Exception as e:
+                old_launch._load()
+                self._add_launch_to_observer(old_launch)
                 print(traceback.format_exc())
                 err_text = f"{request.path} loading failed!"
                 err_details = f"{err_text}: {e}"
@@ -469,8 +481,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             nodes = lc.nodes()
             for item in nodes:
                 node_fullname = item.node_name
-                is_executable = type(
-                    item.node) == launch.actions.execute_process.ExecuteProcess
+                # is_executable = type(
+                #     item.node) == launch.actions.execute_process.ExecuteProcess
                 # composable_container = ''
                 # if item.composable_container is not None:
                 #     # get composable container name
@@ -482,16 +494,17 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 # for cn in item.composable_nodes:
                 #    ni.composable_nodes.extend(
                 #        [LaunchConfig.get_name_from_node(cn)])
-                reply_lc.nodes.append(LaunchNodeInfo(node_fullname,
-                                                     nodeNamespace='',
-                                                     package=item.node_package,
-                                                     node_type=item.node_executable,
-                                                     args=shlex.join(item.arguments),
-                                                     respawn=item.respawn,
-                                                     respawn_delay=item.respawn_delay,
-                                                     launch_prefix=item.prefix,
-                                                     file_name=cfgid.path,
-                                                     launch_name=cfgid.path))
+                reply_lc.nodes.append(item)
+                # reply_lc.nodes.append(LaunchNodeInfo(node_fullname,
+                #                                      node_namespace='',
+                #                                      package=item.node_package,
+                #                                      node_type=item.node_executable,
+                #                                      args=shlex.join(item.arguments),
+                #                                      respawn=item.respawn,
+                #                                      respawn_delay=item.respawn_delay,
+                #                                      launch_prefix=item.prefix,
+                #                                      file_name=cfgid.path,
+                #                                      launch_name=cfgid.path))
                 # TODO: add composable nodes to container
                 # for cn in item.composable_nodes:
                 #    reply_lc.nodes.append(LaunchConfig.get_name_from_node(cn))
@@ -503,86 +516,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             # TODO: add assosiations
             reply.append(reply_lc)
         return json.dumps(reply, cls=SelfEncoder)
-
-
-        Log.debug('Request to [ros.launch.get_list]')
-        requested_files = list(self._loaded_files.keys())
-        reply = []
-        for cfgid in requested_files:
-            lc = self._loaded_files[cfgid]
-            reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host,
-                                     nodes=[], parameters=[], nodelets=[], associations=[])
-
-            # Add launch arguments
-            for name, arg in lc.argv2dict(lc.argv).items():
-                reply_lc.args.append(LaunchArgument(name, arg))
-
-            node_occurrence = {}
-            for item in lc.roscfg.nodes:
-                node_fullname = roslib.names.ns_join(item.namespace, item.name)
-                if item.launch_name not in node_occurrence:
-                    node_occurrence[item.launch_name] = 0
-                else:
-                    node_occurrence[item.launch_name] += 1
-
-                #  Search the line number of a given node in launch file
-                lines_with_node_name = []
-                with open(item.filename, 'r') as launch_file:
-                    for line_number, line_text in enumerate(launch_file):
-                        if f'name="{item.launch_name}"' in line_text:
-                            lines_with_node_name.append(
-                                [line_number + 1, line_text])
-
-                line_number = -1
-                start_column = 0
-                end_column = 0
-                line_text = ""
-                if len(lines_with_node_name) == 0:
-                    # no line found. TODO: Report error?
-                    line_number = 0
-                elif len(lines_with_node_name) == 1:
-                    line_number = lines_with_node_name[0][0]
-                    line_text = lines_with_node_name[0][1]
-                elif len(lines_with_node_name) > node_occurrence[item.launch_name]:
-                    # More than one occurrence, but Node are loaded from top to bottom
-                    # try to find the correct match
-                    line_number = lines_with_node_name[node_occurrence[item.launch_name]][0]
-                    line_text = lines_with_node_name[node_occurrence[item.launch_name]][1]
-
-                if len(line_text) > 0:
-                    start_column = line_text.index(
-                        f'name="{item.launch_name}"') + 7
-                    end_column = start_column + len(item.launch_name)
-
-                # range in text where the node appears
-                file_range = {"startLineNumber": line_number,
-                              "endLineNumber": line_number,
-                              "startColumn": start_column,
-                              "endColumn": end_column}
-
-                reply_lc.nodes.append(
-                    LaunchNodeInfo(node_fullname,
-                                   # remove last "/" character in namespace
-                                   item.namespace[:-1],
-                                   item.package,
-                                   item.type,
-                                   item.respawn,
-                                   item.respawn_delay,
-                                   item.args,
-                                   item.remap_args,
-                                   item.env_args,
-                                   item.output,
-                                   item.launch_prefix,
-                                   item.required,
-                                   item.filename,
-                                   file_range,
-                                   item.launch_context_arg,
-                                   item.launch_name)
-                )
-
-            # Add parameter values
-            for name, p in lc.roscfg.params.items():
-                reply_lc.parameters.append(RosParameter(name, p.value))
 
     @wamp.register('ros.launch.start_node')
     def start_node(self, request_json: LaunchNode, return_as_json: bool = True) -> LaunchNodeReply:
@@ -625,16 +558,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 if n is not None:
                     if n.composable_container:
                         # load plugin in container
-                        container_name = launch_configs[0].get_name_from_node(
-                            n.composable_container)
                         Log.debug('Load node=%s; as plugin into container=%s;' %
-                                  (request.name, container_name))
+                                  (request.name, n.composable_container))
                         launcher.run_composed_node(
-                            n.node, container_name=container_name, context=launch_configs[0].context)
+                            n._entity, container_name=n.composable_container, context=launch_configs[0].context)
                     else:
-                        startcfg = launcher.from_node(
-                            n, launchcfg=launch_configs[0], executable=request.opt_binary, loglevel=request.loglevel, logformat=request.logformat, cmd_prefix=request.cmd_prefix)
-                        launcher.run_node(startcfg)
+#                        startcfg = launcher.from_node(
+#                            n, launchcfg=launch_configs[0], executable=request.opt_binary, loglevel=request.loglevel, logformat=request.logformat, cmd_prefix=request.cmd_prefix)
+#                        launcher.run_node(startcfg)
+                        launcher.run_node(n)
                         Log.debug('Node=%s; start finished' % (request.name))
                     result.status.code = 'OK'
             except exceptions.BinarySelectionRequest as bsr:

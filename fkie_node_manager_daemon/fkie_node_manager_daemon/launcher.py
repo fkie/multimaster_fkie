@@ -46,16 +46,17 @@ import composition_interfaces.srv
 
 from fkie_multimaster_msgs.grpc_helper import remote
 from .launch_config import LaunchConfig
-from .launch_config import LaunchNode
+from .launch_config import LaunchNodeWrapper
 from launch.launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead
 from .startcfg import StartConfig
 import fkie_node_manager_daemon as nmd
 from fkie_multimaster_msgs import names
 from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.defines import LOG_PATH
 from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
+from fkie_multimaster_msgs.launch import xml
+from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import host
 from fkie_multimaster_msgs.system import screen
@@ -131,7 +132,7 @@ def create_start_config(node, launchcfg, *, executable='', daemonuri=None, logle
     return result
 
 
-def from_node(node: LaunchNode, launchcfg: LaunchConfig, *, executable: Text = '', loglevel: Text = '', logformat: Text = '', cmd_prefix: Text = '') -> StartConfig:
+def from_node(node: LaunchNodeWrapper, launchcfg: LaunchConfig, *, executable: Text = '', loglevel: Text = '', logformat: Text = '', cmd_prefix: Text = '') -> StartConfig:
     lc = launchcfg.context
     pkg_exec = ('', '')
     if type(node.node) in [launch_ros.actions.node.Node, launch_ros.actions.composable_node_container.ComposableNodeContainer]:
@@ -236,7 +237,7 @@ def from_node(node: LaunchNode, launchcfg: LaunchConfig, *, executable: Text = '
                               for x in node.node._ExecuteProcess__cwd])
 
     result.args = node.arguments
-    #TODO parse and include launch arguments, see ros_ign_gazebo_demos // diff_drive.launch.py
+    # TODO parse and include launch arguments, see ros_ign_gazebo_demos // diff_drive.launch.py
     env = {}
     if node.node._ExecuteProcess__env is not None:
         for key, value in node.node._ExecuteProcess__env:
@@ -251,7 +252,8 @@ def from_node(node: LaunchNode, launchcfg: LaunchConfig, *, executable: Text = '
     if type(node.node) == launch.actions.execute_process.ExecuteProcess:
         for x in node.node.cmd:
             print("x:", x)
-            print("perform_substitutions(lc, x):", perform_substitutions(lc, x))
+            print("perform_substitutions(lc, x):",
+                  perform_substitutions(lc, x))
 
         result.cmd = [perform_substitutions(lc, x) for x in node.node.cmd]
     print("CMD from NODE: ", node.cmd)
@@ -276,7 +278,136 @@ def get_package_exec(node: launch_ros.actions.node.Node, context: LaunchContext)
     raise NameError('pkg or exec tag not found')
 
 
-def run_node(startcfg):
+def from_node2(node: LaunchNodeWrapper, launchcfg: LaunchConfig, *, executable: Text = '', loglevel: Text = '', logformat: Text = '', cmd_prefix: Text = '') -> StartConfig:
+    lc = launchcfg.context
+    pkg_exec = ('', '')
+    if type(node.node) in [launch_ros.actions.node.Node, launch_ros.actions.composable_node_container.ComposableNodeContainer]:
+        pkg_exec = get_package_exec(node.node, lc)
+    result = StartConfig(*pkg_exec)
+    result.config_path = launchcfg.filename
+    if executable:
+        result.binary_path = executable
+    result.fullname = node.node_name
+    result.namespace = names.namespace(result.fullname, with_sep_suffix=False)
+    result.name = os.path.basename(result.fullname)
+
+    # set launch prefix
+    prefix = perform_substitutions(lc, node.node._ExecuteProcess__prefix)
+    if prefix.lower() == 'screen' or prefix.lower().find('screen ') != -1:
+        nmd.ros_node.get_logger().info("SCREEN prefix removed before start!")
+        prefix = ''
+    result.prefix = '%s %s' % (cmd_prefix, prefix) if cmd_prefix else prefix
+
+    # set remapings
+    result.remaps = {}
+    if hasattr(node.node, '_Node__expanded_remappings'):
+        if node.node._Node__expanded_remappings is not None:
+            for remapping_from, remapping_to in node.node._Node__expanded_remappings:
+                result.remaps[remapping_from] = remapping_to
+
+    # set respawn parameter supported by ROS2
+    result.respawn = node.respawn
+    #result.respawn_max = respawn_params['max']
+    #result.respawn_min_runtime = respawn_params['min_runtime']
+    result.respawn_delay = node.respawn_delay
+    # set log level
+    result.loglevel = loglevel
+    result.logformat = logformat
+
+    result.daemonuri = launchcfg.daemonuri
+    # override host with machine tag, not supported by ROS2
+#    if n.machine_name and n.machine_name in launchcfg.roscfg.machines:
+#        result.host = launchcfg.roscfg.machines[n.machine_name].address
+
+    # set args
+    # TODO: which args?
+    # result.args = n.args.split()
+    # add params
+    parameter_args = node.parameter_arguments
+    for param in parameter_args:
+        if isinstance(param, dict):
+            result.params.update(param)
+        elif isinstance(param, pathlib.Path):
+            result.param_files.append(str(param))
+        elif isinstance(param, Tuple) and param[1]:
+            result.param_files.append(param[0])
+        else:
+            raise RuntimeError(
+                'invalid normalized parameters {}'.format(repr(param)))
+    # if hasattr(node.node, '_Node__parameters'):
+    #     if node.node._Node__parameters is not None:
+    #         print("node.node._Node__parameters", node.node._Node__parameters)
+    #         if isinstance(node.node._Node__parameters, dict):
+    #             evaluated_parameters = evaluate_parameter_dict(
+    #                 lc, node.node._Node__parameters)
+    #             result.params.update(evaluated_parameters)
+    #             #for name, value in evaluated_parameters.items():
+    #         else:
+    #             evaluated_parameters = evaluate_parameters(
+    #                 lc, node.node._Node__parameters)
+    #             for params in evaluated_parameters:
+    #                 if isinstance(params, dict):
+    #                     result.params.update(params)
+    #                 elif isinstance(params, pathlib.Path):
+    #                     result.param_files.append(str(params))
+    #                 else:
+    #                     raise RuntimeError(
+    #                         'invalid normalized parameters {}'.format(repr(params)))
+    nmd.ros_node.get_logger().debug("add parameter:\n  %s" % '\n  '.join("%s: %s%s" % (key, str(
+        val)[:80], '...' if len(str(val)) > 80 else '') for key, val in result.params.items()))
+
+    # Prepare the ros_specific_arguments list and add it to the context so that the
+    # LocalSubstitution placeholders added to the the cmd can be expanded using the contents.
+    # ros_specific_arguments: Dict[str, Union[str, List[str]]] = {}
+    # if self.__node_name is not None:
+    #     ros_specific_arguments['name'] = '__node:={}'.format(self.__expanded_node_name)
+    # if self.__expanded_node_namespace != '':
+    #     ros_specific_arguments['ns'] = '__ns:={}'.format(self.__expanded_node_namespace)
+    # if self.__expanded_parameter_files is not None:
+    #     ros_specific_arguments['params'] = self.__expanded_parameter_files
+
+    # context.extend_locals({'ros_specific_arguments': ros_specific_arguments})
+
+    # from ExecuteProcess
+    # expand substitutions in arguments to async_execute_process()
+    # cmd = [perform_substitutions(lc, x) for x in node._ExecuteProcess__cmd]
+    # name = os.path.basename(cmd[0]) if node._ExecuteProcess__name is None \
+    #     else perform_substitutions(lc, node._ExecuteProcess__name)
+    # with _global_process_counter_lock:
+    #     global _global_process_counter
+    #     _global_process_counter += 1
+    #     node._ExecuteProcess__name = '{}-{}'.format(name, _global_process_counter)
+    result.cwd = None
+    if node.node._ExecuteProcess__cwd is not None:
+        result.cwd = ''.join([lc.perform_substitution(x)
+                              for x in node.node._ExecuteProcess__cwd])
+
+    result.args = node.arguments
+    # TODO parse and include launch arguments, see ros_ign_gazebo_demos // diff_drive.launch.py
+    env = {}
+    if node.node._ExecuteProcess__env is not None:
+        for key, value in node.node._ExecuteProcess__env:
+            env[''.join([lc.perform_substitution(x) for x in key])] = \
+                ''.join([lc.perform_substitution(x) for x in value])
+    if node.node._ExecuteProcess__additional_env is not None:
+        for key, value in node.node._ExecuteProcess__additional_env:
+            env[''.join([lc.perform_substitution(x) for x in key])] = \
+                ''.join([lc.perform_substitution(x) for x in value])
+    result.env = env
+    print("CMD ENV: ", env)
+    if type(node.node) == launch.actions.execute_process.ExecuteProcess:
+        for x in node.node.cmd:
+            print("x:", x)
+            print("perform_substitutions(lc, x):",
+                  perform_substitutions(lc, x))
+
+        result.cmd = [perform_substitutions(lc, x) for x in node.node.cmd]
+    print("CMD from NODE: ", node.cmd)
+    print("CMD result: ", result.cmd)
+    return result
+
+
+def run_node(node: LaunchNodeWrapper):
     '''
     Start a node local or on specified host using a :class:`.startcfg.StartConfig`
 
@@ -286,139 +417,78 @@ def run_node(startcfg):
     :raise exceptions.BinarySelectionRequest: on multiple binaries
     :see: :meth:`fkie_node_manager.host.is_local`
     '''
-    hostname = startcfg.hostname
-    nodename = startcfg.namespace.rstrip('/') + '/' + startcfg.name
-    if not hostname or host.is_local(hostname, wait=True):
-        # run on local host
-        # interpret arguments with path elements
-        args = []
-        for arg in startcfg.args:
-            new_arg = arg
-            # TODO: check if we have to prepand --ros-args
-            if arg.startswith('$(find'):
-                new_arg = xml.interpret_path(arg)
-                nmd.ros_node.get_logger().debug("interpret arg '%s' to '%s'" % (arg, new_arg))
-            args.append(new_arg)
-        print("startcfg", startcfg)
-        if not startcfg.cmd:  # it is a node
-            # set name and namespace of the node
-            if startcfg.name or startcfg.namespace or startcfg.remaps or startcfg.params or startcfg.param_files:
-                args.append('--ros-args')
-            if startcfg.name:
-                args.append('-r __node:=%s' % startcfg.name)
-            if startcfg.namespace:
-                args.append('-r __ns:=%s' % startcfg.namespace)
-            # add remap arguments
-            for key, val in startcfg.remaps.items():
-                args.append('-r %s:=%s' % (key, val))
-            # add param arguments
-            for key, val in startcfg.params.items():
-                args.append('-p "%s:=%s"' % (key, val))
-            # add param_files arguments
-            for fname in startcfg.param_files:
-                args.append('--params-file "%s"' % fname)
-        cmd_type = startcfg.binary_path
-        if startcfg.cmd:
-            cmd_type = ' '.join(startcfg.cmd)
-            #for cmd_part in startcfg.cmd:
-            #    if ' ' in cmd_type:
-            #        print("shlex", cmd_part)
-            #        cmd_type += shlex.quote(cmd_part)
-            #    else:
-            #        print("w/o shlex", cmd_part)
-            #        cmd_type += cmd_part
-            #    cmd_type += ' '
-            cwd = startcfg.cwd
-        # get binary path from package
-        elif not cmd_type:
-            try:
-                cmd_type = get_executable_path(
-                    package_name=startcfg.package, executable_name=startcfg.binary)
-            except PackageNotFound as e:
-                nmd.ros_node.get_logger().warn("resource not found: %s" % e)
-                raise exceptions.ResourceNotFound(
-                    startcfg.package, "resource not found: %s" % e)
-            except MultipleExecutables as e:
-                err = 'Multiple executables with same name in package [%s]  found:' % startcfg.package
-                # for p in e.paths:
-                #     err += f'\n- {p}'
-                raise exceptions.BinarySelectionRequest(e.paths, err)
-            cwd = ros_pkg.get_cwd(startcfg.cwd, cmd_type)
-            try:
-                global STARTED_BINARIES
-                STARTED_BINARIES[nodename] = (
-                    cmd_type, os.path.getmtime(cmd_type))
-            except Exception:
-                pass
-        # set environment
-        new_env = dict(os.environ)
-        # set display variable to local display
-        if 'DISPLAY' in startcfg.env:
-            if not startcfg.env['DISPLAY'] or startcfg.env['DISPLAY'] == 'remote':
-                del startcfg.env['DISPLAY']
-        else:
-            new_env['DISPLAY'] = ':0'
-        # add environment from launch
-        new_env.update(startcfg.env)
-        if startcfg.namespace:
-            new_env['ROS_NAMESPACE'] = startcfg.namespace
-        # set logging
-        if startcfg.logformat:
-            new_env['ROSCONSOLE_FORMAT'] = '%s' % startcfg.logformat
-        if startcfg.loglevel:
-            new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(
-                startcfg.package, startcfg.loglevel)
-        # handle respawn
-        if startcfg.respawn:
-            if startcfg.respawn_delay > 0:
-                new_env['RESPAWN_DELAY'] = '%d' % startcfg.respawn_delay
-            # TODO
-            # respawn_params = _get_respawn_params(startcfg.fullname, startcfg.params)
-            # if respawn_params['max'] > 0:
-            #     new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
-            # if respawn_params['min_runtime'] > 0:
-            #     new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
-            cmd_type = "%s %s %s" % (RESPAWN_SCRIPT, startcfg.prefix, cmd_type)
-        else:
-            cmd_type = "%s %s" % (startcfg.prefix, cmd_type)
-        # TODO: check for HOSTNAME
-        # masteruri = startcfg.masteruri
-        # if masteruri is None:
-        #     masteruri = masteruri_from_ros()
-        # if masteruri is not None:
-        #     if 'ROS_MASTER_URI' not in startcfg.env:
-        #         new_env['ROS_MASTER_URI'] = masteruri
-        #     # host in startcfg is a nmduri -> get host name
-        #     ros_hostname = host.get_ros_hostname(masteruri, hostname)
-        #     if ros_hostname:
-        #         addr = socket.gethostbyname(ros_hostname)
-        #         if addr in set(ip for _n, ip in DiscoverSocket.localifs()):
-        #             new_env['ROS_HOSTNAME'] = ros_hostname
-            # load params to ROS master
-            #_load_parameters(masteruri, startcfg.params, startcfg.clear_params)
-        # start
-        # cmd_str = '%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args))
-        cmd_str = ' '.join([screen.get_cmd(
-            startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, *args])
-        nmd.ros_node.get_logger().info("%s (launch_file: '%s', daemonuri: %s)" %
-                                       (cmd_str, startcfg.config_path, startcfg.daemonuri))
-        nmd.ros_node.get_logger().debug(
-            "environment while run node '%s': '%s'" % (cmd_str, new_env))
-        SupervisedPopen(shlex.split(cmd_str), cwd=cwd, env=new_env, object_id="run_node_%s" %
-                        startcfg.fullname, description="Run [%s]%s" % (startcfg.package, startcfg.binary))
+    # run on local host
+    # set environment
+    new_env = dict(os.environ) if node.env is None else dict(node.env)
+    # set display variable to local display
+    if 'DISPLAY' in new_env:
+        if not new_env['DISPLAY'] or new_env['DISPLAY'] == 'remote':
+            del new_env['DISPLAY']
     else:
-        nmduri = startcfg.nmduri
-        nmd.ros_node.get_logger().info("remote run node '%s' at '%s'" % (nodename, nmduri))
-        startcfg.params.update(_params_to_package_path(startcfg.params))
-        startcfg.args = _args_to_package_path(startcfg.args)
-        # run on a remote machine
-        channel = remote.open_channel(nmduri, rosnode=nmd.ros_node)
-        if channel is None:
-            raise exceptions.StartException(
-                "Unknown launch manager url for host %s to start %s" % (nmduri, startcfg.fullname))
-        # TODO: remote start using crossar
-        #lm = LaunchStub(channel)
-        # lm.start_standalone_node(startcfg)
+        new_env['DISPLAY'] = ':0'
+    # add environment from launch
+    if node.additional_env:
+        new_env.update(dict(node.additional_env))
+    if node.node_namespace:
+        new_env['ROS_NAMESPACE'] = node.node_namespace
+    # set logging
+    if node.output_format:
+        new_env['ROSCONSOLE_FORMAT'] = '%s' % node.output_format
+    # if node.loglevel:
+    #     new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(
+    #         node.package, node.loglevel)
+    # handle respawn
+    respawn_prefix = ''
+    if node.respawn:
+        if node.respawn_delay > 0:
+            new_env['RESPAWN_DELAY'] = '%d' % node.respawn_delay
+        # TODO
+        # respawn_params = _get_respawn_params(node.fullname, node.params)
+        # if respawn_params['max'] > 0:
+        #     new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
+        # if respawn_params['min_runtime'] > 0:
+        #     new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
+        respawn_prefix = f"{RESPAWN_SCRIPT}"
+
+    # TODO: check for HOSTNAME
+    # masteruri = startcfg.masteruri
+    # if masteruri is None:
+    #     masteruri = masteruri_from_ros()
+    # if masteruri is not None:
+    #     if 'ROS_MASTER_URI' not in startcfg.env:
+    #         new_env['ROS_MASTER_URI'] = masteruri
+    #     # host in startcfg is a nmduri -> get host name
+    #     ros_hostname = host.get_ros_hostname(masteruri, hostname)
+    #     if ros_hostname:
+    #         addr = socket.gethostbyname(ros_hostname)
+    #         if addr in set(ip for _n, ip in DiscoverSocket.localifs()):
+    #             new_env['ROS_HOSTNAME'] = ros_hostname
+        # load params to ROS master
+        #_load_parameters(masteruri, startcfg.params, startcfg.clear_params)
+    # start
+    # cmd_str = '%s %s %s' % (screen.get_cmd(startcfg.fullname, new_env, startcfg.env.keys()), cmd_type, ' '.join(args))
+    screen_prefix = ' '.join([screen.get_cmd(
+        node.unique_name, new_env, new_env.keys())])
+    nmd.ros_node.get_logger().info(
+        f"{screen_prefix} {respawn_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
+    nmd.ros_node.get_logger().debug(
+        f"environment while run node '{node.unique_name}': '{new_env}'")
+    SupervisedPopen(shlex.split(' '.join([screen_prefix, respawn_prefix, node.cmd])), cwd=node.cwd, env=new_env,
+                    object_id=f"run_node_{node.unique_name}", description=f"Run [{node.package_name}]{node.executable}")
+
+#     else:
+#         nmduri = startcfg.nmduri
+#         nmd.ros_node.get_logger().info("remote run node '%s' at '%s'" % (nodename, nmduri))
+#         startcfg.params.update(_params_to_package_path(startcfg.params))
+#         startcfg.args = _args_to_package_path(startcfg.args)
+#         # run on a remote machine
+#         channel = remote.open_channel(nmduri, rosnode=nmd.ros_node)
+#         if channel is None:
+#             raise exceptions.StartException(
+#                 "Unknown launch manager url for host %s to start %s" % (nmduri, startcfg.fullname))
+#         # TODO: remote start using crossar
+#         #lm = LaunchStub(channel)
+#         # lm.start_standalone_node(startcfg)
 
 
 def run_composed_node(node: launch_ros.descriptions.ComposableNode, *, container_name: Text, context: LaunchContext):

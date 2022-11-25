@@ -39,7 +39,6 @@ class ScreenServicer(CrossbarBaseSession):
         Log.info("Create ROS2 screen servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
         self._is_running = True
-        self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
         self._multiple_screen_check_force_after = 10
         self._multiple_screen_do_check = True
         self._multiple_screen_thread = threading.Thread(

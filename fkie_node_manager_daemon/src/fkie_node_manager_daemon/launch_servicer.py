@@ -946,21 +946,22 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 reply_lc.nodes.append(
                     LaunchNodeInfo(node_fullname,
                                    # remove last "/" character in namespace
-                                   item.namespace[:-1],
-                                   item.package,
-                                   item.type,
-                                   item.respawn,
-                                   item.respawn_delay,
-                                   item.args,
-                                   item.remap_args,
-                                   item.env_args,
-                                   item.output,
-                                   item.launch_prefix,
-                                   item.required,
-                                   item.filename,
-                                   file_range,
-                                   item.launch_context_arg,
-                                   item.launch_name)
+                                   node_name=node_fullname
+                                   node_namespace=item.namespace[:-1],
+                                   package_name=item.package,
+                                   executable=item.type,
+                                   respawn=item.respawn,
+                                   respawn_delay=item.respawn_delay,
+                                   args=item.args,
+                                   remap_args=item.remap_args,
+                                   additional_env=item.env_args,
+                                   launch_prefix=item.launch_prefix,
+                                   output=item.output,
+                                   required=item.required,
+                                   file_name=item.filename,
+                                   file_range=file_range,
+                                   launch_context_arg=item.launch_context_arg,
+                                   launch_name=item.launch_name)
                 )
 
             # Add parameter values

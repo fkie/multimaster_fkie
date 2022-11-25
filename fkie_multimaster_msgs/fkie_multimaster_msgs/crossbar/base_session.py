@@ -52,7 +52,11 @@ from .server import crossbar_start_server, CROSSBAR_PATH
 
 class SelfEncoder(json.JSONEncoder):
     def default(self, obj):
-        return obj.__dict__
+        result = {}
+        for key, value in vars(obj).items():
+            if key[0] != '_':
+                result[key] = value
+        return result
 
 
 class CrossbarBaseSession(ApplicationSession):

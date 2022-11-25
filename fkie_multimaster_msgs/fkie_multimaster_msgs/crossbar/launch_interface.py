@@ -35,7 +35,10 @@ import json
 from typing import Any
 from typing import List
 from typing import Dict
+from typing import Iterable
+from typing import Optional
 from typing import Tuple
+from typing import Union
 from numbers import Number
 
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
@@ -172,35 +175,110 @@ class LaunchAssociations:
 class LaunchNodeInfo:
     '''
     Represents the launch information for a given node
-    '''
+    :param: unique_name generated unique node name
+    :param: node_name the name of the node
+    :param: node_namespace the ROS namespace for this Node
+    :param: package_name the package in which the node executable can be found
+    :param: executable the name of the executable to find if a package
+        is provided or otherwise a path to the executable to run.
+    :param: respawn if 'True', relaunch the process that abnormally died.
+        Defaults to 'False'.
+    :param: respawn_delay a delay time to relaunch the died process if respawn is 'True'.
+    :param: args list of extra arguments for the node
+    :param: remap_args ordered list of 'to' and 'from' string pairs to be
+        passed to the node as ROS remapping rules
+    :param: parameters list of tuples of names of yaml files with parameter rules,
+        or dictionaries of parameters.
+    :param: env dictionary of environment variables to be used, starting from
+        a clean environment. If 'None', the current environment is used.
+    :param: additional_env dictionary of environment variables to be added.
+        If 'env' was None, they are added to the current environment.
+        If not, 'env' is updated with additional_env.
+    :param: launch_prefix a set of commands/arguments to preceed the cmd, used for
+        things like gdb/valgrind and defaults to the LaunchConfiguration
+        called 'launch-prefix'
+    :param: output configuration for process output logging. Defaults to 'log'
+        i.e. log both stdout and stderr to launch main log file and stderr to
+        the screen.
+        Overridden externally by the OVERRIDE_LAUNCH_PROCESS_OUTPUT envvar value.
+        See `launch.logging.get_output_loggers()` documentation for further
+        reference on all available options.
+    :param: output_format for logging each output line, supporting `str.format()`
+        substitutions with the following keys in scope: `line` to reference the raw
+        output line and `this` to reference this action instance.
+    :param: cmd a list where the first item is the executable and the rest
+        are arguments to the executable, each item may be a string or a
+        list of strings and Substitutions to be resolved at runtime
+    :param: cwd the directory in which to run the executable
+    :param: sigterm_timeout time until shutdown should escalate to SIGTERM,
+        as a string, defaults to the LaunchConfiguration called
+        'sigterm_timeout'
+    :param: sigkill_timeout time until escalating to SIGKILL after SIGTERM,
+        as a string, defaults to the LaunchConfiguration called
+        'sigkill_timeout'
+    :param: on_exit list of actions to execute upon process exit.
+    :param: composable_container the name of the node where this node should be loaded.
 
-    def __init__(self, nodeName: str, nodeNamespace: str, package: str, node_type: str,
-                 respawn: bool = False, respawn_delay: Number = 0, args: str = '',
-                 remap_args: List[Tuple[str, str]] = [],
-                 env_args: List[Tuple[str, str]] = [],
-                 output: str = '', launch_prefix: str = '', required: bool = False,
-                 file_name: str = '', file_range: Dict[str, Number] = {"startLineNumber": 0,
-                                                                       "endLineNumber": 0,
-                                                                       "startColumn": 0,
-                                                                       "endColumn": 0},
-                 launch_context_arg: str = '', launch_name: str = ''
+    '''
+#    : param: exec_name the label used to represent the process.
+#    Defaults to the basename of node executable.
+
+    def __init__(self, unique_name: str, *,
+                 node_name: str = None,
+                 node_namespace: str = None,
+                 package_name: str = None,
+                 executable: str = None,
+                 respawn: bool = False,
+                 respawn_delay: Number = 0,
+                 args: str = None,
+                 remap_args: List[Tuple[str, str]] = None,
+                 parameters: Tuple[str, bool] = None,
+                 env: List[Tuple[str, str]] = None,
+                 additional_env: List[Tuple[str, str]] = None,
+                 launch_prefix: str = None,
+                 output: str = None,
+                 output_format: str = None,
+                 cmd: str = None,
+                 cwd: str = None,
+                 sigterm_timeout: str = None,
+                 sigkill_timeout: str = None,
+                 on_exit: List[Any] = None,
+                 required: bool = False,
+                 file_name: str = None,
+                 file_range: Dict[str, Number] = {"startLineNumber": 0,
+                                                  "endLineNumber": 0,
+                                                  "startColumn": 0,
+                                                  "endColumn": 0},
+                 launch_context_arg: str = None,
+                 launch_name: str = None,
+                 composable_container: str = None
                  ) -> None:
-        self.nodeName = nodeName
-        self.nodeNamespace = nodeNamespace
-        self.package = package
-        self.node_type = node_type
+        self.node_name = node_name
+        self.node_namespace = node_namespace
+        self.package_name = package_name
+        self.executable = executable
+        self.unique_name = unique_name
         self.respawn = respawn
         self.respawn_delay = respawn_delay
         self.args = args
         self.remap_args = remap_args
-        self.env_args = env_args
-        self.output = output
+        self.parameters = parameters
+        self.env = env
+        self.additional_env = additional_env
         self.launch_prefix = launch_prefix
+        self.output = output
+        self.output_format = output_format
+        self.cmd = cmd
+        self.cwd = cwd
+        self.sigterm_timeout = sigterm_timeout
+        self.sigkill_timeout = sigkill_timeout
+        self.on_exit = on_exit
         self.required = required
         self.file_name = file_name
         self.file_range = file_range
         self.launch_context_arg = launch_context_arg
         self.launch_name = launch_name
+        self.composable_container = composable_container
 
 
 class LaunchContent:
