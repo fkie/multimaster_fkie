@@ -17,6 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from rclpy.node import Node 
 from .ros_node import RosNodeLauncher
 
 # from pkg_resources import get_distribution, DistributionNotFound
@@ -27,9 +28,11 @@ from .ros_node import RosNodeLauncher
 #     pass
 
 # the rosnode is assigned in :class:RosNodeLauncher while init
-ros_node = None
+ros_node: Node = None
+launcher: RosNodeLauncher = None
 
 
 def main():
-    rnh = RosNodeLauncher()
-    rnh.spin()
+    global launcher
+    launcher = RosNodeLauncher()
+    launcher.spin()

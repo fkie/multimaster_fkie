@@ -151,6 +151,11 @@ class RosStateServicer(CrossbarBaseSession):
 
         return json.dumps(node_list, cls=SelfEncoder)
 
+    @wamp.register('ros.nodes.stop_node')
+    def stop_node(self, name: str) -> bool:
+        Log.info(f"Request to stop node '{name}'")
+        return nmd.launcher.server.screen_servicer.kill_node(name.split('|')[-1])
+
     def _guid_to_str(self, guid):
         return '.'.join('{:02X}'.format(c) for c in guid.data.tolist())
 

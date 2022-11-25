@@ -1155,7 +1155,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         return json.dumps(result, cls=SelfEncoder)
 
     def crossbar_abort(self, code: str = '') -> None:
-        print(f"Abort from GUI received (ros.nodes.abort with code '{code}'). Not Implemented!")
+        print(
+            f"Abort from GUI received (ros.nodes.abort with code '{code}'). Not Implemented!")
 
     def StartStandaloneNode(self, request, context):
         Log.debug('StartStandaloneNode request:\n%s' % str(request))

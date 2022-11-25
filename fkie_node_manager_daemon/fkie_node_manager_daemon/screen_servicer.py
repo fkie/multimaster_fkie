@@ -79,7 +79,7 @@ class ScreenServicer(CrossbarBaseSession):
 
     @wamp.register('ros.screen.kill_node')
     def kill_node(self, name: str) -> bool:
-        Log.info("Kill node '%s'", name)
+        Log.info(f"Kill node '{name}'")
         self._multiple_screen_do_check = True
         success = False
         screens = screen.get_active_screens(name)
