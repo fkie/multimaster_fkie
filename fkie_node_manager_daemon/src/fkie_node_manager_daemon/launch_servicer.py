@@ -943,26 +943,25 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                               "startColumn": start_column,
                               "endColumn": end_column}
 
-                reply_lc.nodes.append(
-                    LaunchNodeInfo(node_fullname,
-                                   # remove last "/" character in namespace
-                                   node_name=node_fullname
-                                   node_namespace=item.namespace[:-1],
-                                   package_name=item.package,
-                                   executable=item.type,
-                                   respawn=item.respawn,
-                                   respawn_delay=item.respawn_delay,
-                                   args=item.args,
-                                   remap_args=item.remap_args,
-                                   additional_env=item.env_args,
-                                   launch_prefix=item.launch_prefix,
-                                   output=item.output,
-                                   required=item.required,
-                                   file_name=item.filename,
-                                   file_range=file_range,
-                                   launch_context_arg=item.launch_context_arg,
-                                   launch_name=item.launch_name)
-                )
+                reply_lc.nodes.append(LaunchNodeInfo(node_fullname,
+                                                     # remove last "/" character in namespace
+                                                     node_name=node_fullname,
+                                                     node_namespace=item.namespace[:-1],
+                                                     package_name=item.package,
+                                                     executable=item.type,
+                                                     respawn=item.respawn,
+                                                     respawn_delay=item.respawn_delay,
+                                                     args=item.args,
+                                                     remap_args=item.remap_args,
+                                                     additional_env=item.env_args,
+                                                     launch_prefix=item.launch_prefix,
+                                                     output=item.output,
+                                                     required=item.required,
+                                                     file_name=item.filename,
+                                                     file_range=file_range,
+                                                     launch_context_arg=item.launch_context_arg,
+                                                     launch_name=item.launch_name)
+                                      )
 
             # Add parameter values
             for name, p in lc.roscfg.params.items():
