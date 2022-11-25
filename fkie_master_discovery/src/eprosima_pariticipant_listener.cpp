@@ -164,7 +164,7 @@ public:
                 doUpdate = true;
             }
         }
-        current_subscriber_count = this->count_subscribers("~/rosstate");
+        auto current_subscriber_count = this->count_subscribers("~/rosstate");
         if (current_subscriber_count != subscriber_count)
         {
             if (current_subscriber_count > subscriber_count && current_subscriber_count > 0) {

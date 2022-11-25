@@ -17,7 +17,7 @@ from fkie_multimaster_msgs.system import host as nmdhost
 from fkie_multimaster_msgs.system import screen
 import fkie_multimaster_msgs.names as names
 
-if os.environ['ROS_VERSION'] == "1":
+if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == "1":
     from fkie_multimaster_msgs.system import ros1_masteruri
     from fkie_node_manager_daemon.strings import isstring
     from rosgraph.network import get_local_addresses

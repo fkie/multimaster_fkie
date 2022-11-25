@@ -20,8 +20,18 @@
 import os
 import re
 from fkie_multimaster_msgs.system.host import ros_host_suffix
-from fkie_multimaster_msgs import ROS_VERSION
 
+
+if os.environ['ROS_VERSION'] == "1":
+    SCREEN_SLASH_SEP = '_'
+    '''this character is used to replace the slashes in ROS-Names for ROS1 nodes.'''
+    RESPAWN_SCRIPT = 'rosrun fkie_node_manager_daemon respawn'
+    ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
+else:
+    SCREEN_SLASH_SEP = '_'
+    '''this character is used to replace the slashes in ROS-Names for ROS2 nodes.'''
+    RESPAWN_SCRIPT = 'ros2 run fkie_node_manager_daemon respawn'
+    ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
 SEP = '/'
 PRIV_NAME = '~'
@@ -33,10 +43,10 @@ SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
 
 PACKAGE_FILE = 'package.xml'
 
-if ROS_VERSION == 1:
+try:
     import rospkg
     LOG_PATH = rospkg.get_log_dir()
-else:
+except ImportError:
     LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get(
         'ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')
 ''':var LOG_PATH: logging path where all screen configuration and log files are stored.'''
@@ -47,21 +57,6 @@ SCREEN = "/usr/bin/screen"
 ''':var SCREEN: Defines the path to screen binary.'''
 
 SCREEN_NAME_MAX_CHARS = 74
-
-print("ROS_VERSION", ROS_VERSION)
-
-if ROS_VERSION == 1:
-    import rospy
-    SCREEN_SLASH_SEP = '_'
-    '''this character is used to replace the slashes in ROS-Names for ROS1 nodes.'''
-    RESPAWN_SCRIPT = 'rosrun fkie_node_manager_daemon respawn'
-    ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
-else:
-    import rospkg
-    SCREEN_SLASH_SEP = '_'
-    '''this character is used to replace the slashes in ROS-Names for ROS2 nodes.'''
-    RESPAWN_SCRIPT = 'ros2 run fkie_node_manager_daemon respawn'
-    ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
 GRPC_TIMEOUT = 15.0
 ''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''

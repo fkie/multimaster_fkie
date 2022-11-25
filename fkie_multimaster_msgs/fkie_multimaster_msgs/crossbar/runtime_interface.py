@@ -5,10 +5,9 @@ from typing import List, Dict, Union
 import re
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs import names
-from fkie_multimaster_msgs import ROS_VERSION
 
 SEP = '/'
-if ROS_VERSION == 1:
+if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == "1":
     import rospy
     SEP = rospy.names.SEP
 
