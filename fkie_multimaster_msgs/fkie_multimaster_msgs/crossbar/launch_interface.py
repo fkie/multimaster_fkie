@@ -70,7 +70,7 @@ class LaunchReturnStatus:
 
 class LaunchArgument:
 
-    def __init__(self, name: str, value: str, default_value: Any = None, description: str = '', choices: List[str] = []) -> None:
+    def __init__(self, name: str, value: str, default_value: Any = None, description: str = None, choices: List[str] = None) -> None:
         self.name = name
         self.value = value
         self.default_value = default_value
@@ -177,6 +177,7 @@ class LaunchNodeInfo:
     Represents the launch information for a given node
     :param: unique_name generated unique node name
     :param: node_name the name of the node
+    :param: name_configured the name set by launch file
     :param: node_namespace the ROS namespace for this Node
     :param: package_name the package in which the node executable can be found
     :param: executable the name of the executable to find if a package
@@ -225,6 +226,7 @@ class LaunchNodeInfo:
 
     def __init__(self, unique_name: str, *,
                  node_name: str = None,
+                 name_configured: str = None,
                  node_namespace: str = None,
                  package_name: str = None,
                  executable: str = None,
@@ -249,11 +251,12 @@ class LaunchNodeInfo:
                                                   "endLineNumber": 0,
                                                   "startColumn": 0,
                                                   "endColumn": 0},
-                 launch_context_arg: str = None,
+                 launch_context_arg: List[LaunchArgument] = None,
                  launch_name: str = None,
                  composable_container: str = None
                  ) -> None:
         self.node_name = node_name
+        self.name_configured = name_configured
         self.node_namespace = node_namespace
         self.package_name = package_name
         self.executable = executable

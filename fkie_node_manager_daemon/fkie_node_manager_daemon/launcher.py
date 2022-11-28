@@ -470,7 +470,7 @@ def run_node(node: LaunchNodeWrapper):
     screen_prefix = ' '.join([screen.get_cmd(
         node.unique_name, new_env, new_env.keys())])
     nmd.ros_node.get_logger().info(
-        f"{screen_prefix} {respawn_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
+        f"{screen_prefix} {respawn_prefix} {node.launch_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
     nmd.ros_node.get_logger().debug(
         f"environment while run node '{node.unique_name}': '{new_env}'")
     SupervisedPopen(shlex.split(' '.join([screen_prefix, respawn_prefix, node.cmd])), cwd=node.cwd, env=new_env,

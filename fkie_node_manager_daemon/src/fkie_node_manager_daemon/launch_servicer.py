@@ -946,6 +946,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 reply_lc.nodes.append(LaunchNodeInfo(node_fullname,
                                                      # remove last "/" character in namespace
                                                      node_name=node_fullname,
+                                                     name_configured=node_fullname,
                                                      node_namespace=item.namespace[:-1],
                                                      package_name=item.package,
                                                      executable=item.type,

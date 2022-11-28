@@ -63,7 +63,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
     _unique_names: Set[str] = set()
     _remapped_names: Dict[str, Set[str]] = {}
 
-    def __init__(self, entity: launch.actions.ExecuteProcess, launch_description: Union[launch.LaunchDescription, launch.actions.IncludeLaunchDescription], launch_context: launch.LaunchContext) -> None:
+    def __init__(self, entity: launch.actions.ExecuteProcess, launch_description: Union[launch.LaunchDescription, launch.actions.IncludeLaunchDescription], launch_context: launch.LaunchContext, composable_container: str = None) -> None:
         self._entity = entity
         self._launch_description = launch_description
         self._launch_context = launch_context
@@ -94,9 +94,10 @@ class LaunchNodeWrapper(LaunchNodeInfo):
             self._launch_context.extend_locals(
                 {'ros_specific_arguments': ros_specific_arguments})
 
-        node_name, unique_name = self._get_name()
+        node_name, unique_name, name_configured = self._get_name()
         LaunchNodeInfo.__init__(
-            self, unique_name=unique_name, node_name=node_name)
+            self, unique_name=unique_name, node_name=node_name, name_configured=name_configured)
+        print("name_configured", name_configured)
         self.node_namespace = self._get_namespace()
         self.package = self._get_node_package()
         self.executable = self._get_node_executable()
@@ -104,19 +105,29 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self.respawn_delay = self._get_respawn_delay()
         if isinstance(self._launch_description, launch.actions.IncludeLaunchDescription):
             self.file_name = self._launch_description._get_launch_file()
+            self.launch_name = getattr(
+                self._launch_context.locals, 'launch_file_path', None)
+            # add launch arguments used to load the included file
+            if self._launch_description.launch_arguments:
+                self.launch_context_arg = []
+            for arg_name, arg_value in self._launch_description.launch_arguments:
+                self.launch_context_arg.append(LaunchArgument(self._to_string(arg_name),
+                                                              self._to_string(arg_value)))
         else:
             self.launch_name = getattr(
                 self._launch_description, 'launch_name', '')
+            self.launch_context_arg = getattr(
+                self._launch_context.locals, 'launch_arguments', None)
             self.file_name = self.launch_name
-        self.composable_container: str = ''
+        self.composable_container: str = composable_container
         self.launch_prefix = self._get_launch_prefix()
         self.parameters = self._get_parameter_arguments()
         self.args = self._get_arguments()
-        self.cmd = self._to_string(self._entity.cmd)
-        self.cwd = self._to_string(self._entity.cwd)
-        self.env = self._to_tuple_list(self._entity.env)
-        self.additional_env = self._to_tuple_list(self._entity.additional_env)
-        self.launch_prefix = self._to_string(self._entity.prefix)
+        self.cmd = self._to_string(getattr(self._entity, 'cmd', None))
+        self.cwd = self._to_string(getattr(self._entity, 'cwd', None))
+        self.env = self._to_tuple_list(getattr(self._entity, 'env', None))
+        self.additional_env = self._to_tuple_list(getattr(self._entity, 'additional_env', None))
+        self.launch_prefix = self._to_string(self._get_launch_prefix())
 
         #  remap_args: List[Tuple[str, str]] = None,
         #  output: str = '',
@@ -161,15 +172,18 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self.executable = result
         return result
 
-    def _get_launch_prefix(self) -> str:
-        return launch.utilities.perform_substitutions(
-            self._launch_context, self._entity.prefix)
+    def _get_launch_prefix(self) -> Union[str, None]:
+        prefix = getattr(self._entity, 'prefix', None)
+        if prefix:
+            prefix = launch.utilities.perform_substitutions(
+                self._launch_context, self._entity.prefix)
+        return prefix
 
     def _get_respawn(self) -> bool:
-        return self._entity._ExecuteProcess__respawn
+        return getattr(self._entity, '_ExecuteProcess__respawn', False)
 
     def _get_respawn_delay(self) -> Union[float, None]:
-        return self._entity._ExecuteProcess__respawn_delay
+        return getattr(self._entity, '_ExecuteProcess__respawn_delay', None)
 
     def _get_parameter_arguments(self):
         return getattr(self._entity, '_Node__expanded_parameter_arguments', [])
@@ -189,6 +203,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         return result
 
     def _get_name(self) -> Tuple[str, str]:
+        name_configured = None
         result = ''
         # first get name from launch.ExecuteProcess
         result = getattr(self._entity, 'name', '')
@@ -201,6 +216,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
                     self._launch_context, result)
             if result.endswith(launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAME):
                 result = ''
+        if result:
+            name_configured = result
         if not result:
             # use executable as name
             result = self._get_node_executable()
@@ -213,9 +230,13 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         if result and not result.startswith(SEP):
             ns = self._get_namespace()
             result = names.ns_join(ns, result)
+            if name_configured:
+                name_configured = result
         # if only the name is set in the launch file. 'node_name' returns name with unspecified namespace
         result = result.replace(
             f"{launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE}/", '')
+        if name_configured:
+            name_configured = result
         if not result:
             Log.warn("No name for node found: %s %s" %
                      (type(self._entity), dir(self._entity)))
@@ -237,7 +258,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         else:
             LaunchNodeWrapper._unique_names.add(result)
         Log.info(f"create node wrapper with name '{result}'")
-        return (result, unique_name)
+        return (result, unique_name, name_configured)
 
     def _get_name_from_cmd(self):
         result = ''
@@ -255,6 +276,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         elif value and isinstance(value[0], launch.Substitution):
             result += launch.utilities.perform_substitutions(
                 self._launch_context, value)
+            if ' ' in result and '{' in result:
+                result = f"'{result}'"
         elif isinstance(value, List):
             result += ' '.join([self._to_string(val) for val in value])
         elif value is not None:
@@ -310,6 +333,7 @@ class LaunchConfig(object):
             self.__launch_context = LaunchContext(argv=argv)
         for (name, value) in launch_arguments:
             self.__launch_context.launch_configurations[name] = value
+            self.launch_arguments.append(LaunchArgument(name, value))
         self.__launch_description = get_launch_description_from_any_launch_file(
             self.filename)
         # self.__launch_description.visit(self.__launch_context)
@@ -390,6 +414,12 @@ class LaunchConfig(object):
         current_launch_description = launch_description
         if sub_obj is None:
             sub_obj = self.__launch_description
+            self.context.extend_locals({
+                'launch_file_path': self.filename,
+            })
+            self.context.extend_locals({
+                'launch_arguments': self.launch_arguments,
+            })
         if current_launch_description is None:
             current_launch_description = self.__launch_description
 
@@ -431,9 +461,17 @@ class LaunchConfig(object):
                     #             print('      + CMD OTHER:', cmd, dir(cmd))
                     entity._perform_substitutions(self.context)
                     print("IIII", entity._Node__node_executable)
+                    #actions = entity.execute(self.context)
+                    node = LaunchNodeWrapper(
+                        entity, current_launch_description, self.context)
+                    self._nodes.append(node)
+                    # for action in actions:
+                    #    if isinstance(action, launch_ros.actions.LoadComposableNodes):
 
-                    self._nodes.append(LaunchNodeWrapper(
-                        entity, current_launch_description, self.context))
+                    if isinstance(entity, launch_ros.actions.ComposableNodeContainer):
+                        for cn in entity._ComposableNodeContainer__composable_node_descriptions:
+                            self._nodes.append(LaunchNodeWrapper(
+                                cn, current_launch_description, self.context, composable_container=node.unique_name))
                     # if entity.expanded_node_namespace == launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE:
                     #     entity.__expanded_node_namespace = ''
 #                    if entity.condition is not None:
