@@ -36,7 +36,7 @@ from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
 from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAME
-from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAMESPACE
+from fkie_multimaster_msgs.defines import NM_NAMESPACE
 from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system.url import get_port
@@ -55,9 +55,9 @@ class RosStateServicer(CrossbarBaseSession):
         self._endpoints = {}  # uri : Endpoint
         self._ros_state = None  # DiscoveredState
         self.topic_name_state = '%s/%s/rosstate' % (
-            NM_DISCOVERY_NAMESPACE, NM_DISCOVERY_NAME)
+            NM_NAMESPACE, NM_DISCOVERY_NAME)
         self.topic_name_endpoint = '%s/daemons' % (
-            NM_DISCOVERY_NAMESPACE)
+            NM_NAMESPACE)
         qos_profile = QoSProfile(depth=100,
                                  # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                  # history=QoSHistoryPolicy.KEEP_LAST,

@@ -29,6 +29,8 @@ from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rcl_interfaces.msg import ParameterDescriptor
 from fkie_node_manager_daemon.server import Server
 from fkie_multimaster_msgs.crossbar import server
+from fkie_multimaster_msgs.defines import NM_DAEMON_NAME
+from fkie_multimaster_msgs.defines import NM_NAMESPACE
 from fkie_multimaster_msgs.system.host import ros_host_suffix
 from fkie_multimaster_msgs.system.screen import test_screen
 import fkie_node_manager_daemon as nmd
@@ -45,7 +47,7 @@ class RosNodeLauncher(object):
         self._run_tests()
         self.ros_domain_id = -1
         self.parser = self._init_arg_parser()
-        self.name = 'daemon_%s' % ros_host_suffix()
+        self.name = NM_DAEMON_NAME
         # change terminal name
         print('\33]0;%s\a' % (self.name), end='', flush=True)
         parsed_args, remaining_args = self.parser.parse_known_args()
@@ -58,7 +60,7 @@ class RosNodeLauncher(object):
             # TODO: switch domain id
             # os.environ.pop('ROS_DOMAIN_ID')
         rclpy.init(args=remaining_args)
-        self.rosnode = rclpy.create_node(self.name, namespace='/_node_manager')
+        self.rosnode = rclpy.create_node(self.name, namespace=NM_NAMESPACE)
 
         self.executor = MultiThreadedExecutor(num_threads=3)
         self.executor.add_node(self.rosnode)
