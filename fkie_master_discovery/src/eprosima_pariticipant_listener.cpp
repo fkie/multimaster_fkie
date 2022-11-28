@@ -158,6 +158,7 @@ public:
             if (now() - infoUpdatedTs_ < 500000000)
             {
                 doUpdate = false;
+                infoUpdatedSkipped_++;
             }
             if (infoUpdatedSkipped_ > 5)
             {
@@ -168,7 +169,7 @@ public:
         if (current_subscriber_count != subscriber_count)
         {
             if (current_subscriber_count > subscriber_count && current_subscriber_count > 0) {
-                doUpdate = true;
+                infoUpdated_ = true;
             }
             subscriber_count = current_subscriber_count;
         }
