@@ -146,12 +146,10 @@ def get_active_screens(nodename: str = '') -> Dict[str, List[str]]:
             if pid != -1:
                 screen_name = '%d.%s' % (pid, node_part)
                 if nodename:
-                    # put all sessions which starts with '_'
-                    if node_part.startswith('_'):
-                        if nodename == session_name2node_name(node_part):
-                            result[screen_name] = nodename
-                else:
                     # only sessions for given node
+                    if nodename == session_name2node_name(node_part):
+                        result[screen_name] = nodename
+                else:
                     name = session_name2node_name(node_part)
                     result[screen_name] = name
     return result
@@ -173,8 +171,12 @@ def test_screen() -> None:
     '''
     if not os.path.isfile(SCREEN):
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
+    # try to fix empty LD_LIBRARY_PATH path issues in screen
+    if os.environ['LD_LIBRARY_PATH']:
+        os.environ['LD_LIBRARY_PATH_SCRREN'] = os.environ['LD_LIBRARY_PATH']
     with open('%s/screen.cfg' % SETTINGS_PATH, 'w') as sf:
-        sf.write('logfile flush 0')
+        sf.write('logfile flush 0\n')
+        sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCRREN\n')
 
 
 def get_logfile(session: str = None, node: str = None, for_new_screen: bool = False, namespace: str = '/') -> str:
@@ -265,7 +267,10 @@ def get_cmd(node: str, env=[], keys=[], namespace: str = '/') -> str:
     shell = '-/bin/bash'
     if 'SHELL' in os.environ:
         shell = '-%s' % os.environ['SHELL']
-    cfg_file = '%s/screen.cfg' % SETTINGS_PATH
+    # try to fix empty LD_LIBRARY_PATH path issues in screen
+    if os.environ['LD_LIBRARY_PATH']:
+        os.environ['LD_LIBRARY_PATH_SCRREN'] = os.environ['LD_LIBRARY_PATH']
+    cfg_file = os.path.join(SETTINGS_PATH, 'screen.cfg')
     cfg_opt = ''
     if os.path.exists(cfg_file):
         cfg_opt = '-c %s' % cfg_file
