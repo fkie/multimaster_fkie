@@ -212,8 +212,7 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         # check for valid namespace
         if result and not result.startswith(SEP):
             ns = self._get_namespace()
-            if ns != SEP:
-                result = names.ns_join(ns, result)
+            result = names.ns_join(ns, result)
         # if only the name is set in the launch file. 'node_name' returns name with unspecified namespace
         result = result.replace(
             f"{launch_ros.actions.node.Node.UNSPECIFIED_NODE_NAMESPACE}/", '')
