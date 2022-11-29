@@ -627,8 +627,8 @@ int main(int argc, char *argv[])
     char hostname_chars[HOST_NAME_MAX];
     gethostname(hostname_chars, HOST_NAME_MAX);
     std::string ros_distro = getEnvironmentVariable("ROS_DISTRO");
-    std::string node_name = "discovery_" + ros_distro + "_" + std::string(hostname_chars);
-    auto listener = std::make_shared<CustomParticipantListener>(node_name, "/_node_manager");
+    std::string node_name = "_discovery_" + ros_distro + "_" + std::string(hostname_chars);
+    auto listener = std::make_shared<CustomParticipantListener>(node_name, "/node_manager");
     rclcpp::spin(listener);
     RCLCPP_INFO(listener->get_logger(), "shutdown...");
     listener->shutdown();

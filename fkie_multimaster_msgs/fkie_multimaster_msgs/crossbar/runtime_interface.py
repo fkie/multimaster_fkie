@@ -79,19 +79,20 @@ class RosParameter:
 class RosNode:
     def __init__(self, id: str, name: str) -> None:
         self.id = id
-        self.parent_id = ''
+        self.parent_id = None
         self.name = get_node_name(name)
         self.namespace = names.namespace(name, with_sep_suffix=False)
         self.status = 'running'
         self.pid = -1
-        self.node_API_URI = ''
-        self.masteruri = ''
+        self.node_API_URI = None
+        self.masteruri = None
         self.location = 'local'
         self.publishers: List[RosTopic] = []
         self.subscribers: List[RosTopic] = []
         self.services: List[RosService] = []
         self.screens: List[str] = []
         self.parameters: List[RosParameter] = []
+        self.system_node = False
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)

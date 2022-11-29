@@ -1380,13 +1380,18 @@ class MasterInfo(object):
             iffilter = filter_interface
             ros_nodes = dict()
             # filter the topics
+            discover_state_publisher = False
+            system_service = False
             for name, topic in self.topics.items():
                 ros_topic = RosTopic(name, topic.type)
                 for n in topic.publisherNodes:
+                    discover_state_publisher = topic.type in [
+                        'fkie_multimaster_msgs/MasterState']
                     if not iffilter.is_ignored_publisher(n, name, topic.type):
                         ros_topic.publisher.append(n)
                         node = ros_nodes.get(n, RosNode(n, n))
                         node.publishers.append(ros_topic)
+                        node.system_node |= discover_state_publisher
                         ros_nodes[n] = node
                 for n in topic.subscriberNodes:
                     if not iffilter.is_ignored_subscriber(n, name, topic.type):
@@ -1396,12 +1401,15 @@ class MasterInfo(object):
                         ros_nodes[n] = node
             # filter the services
             for name, service in self.services.items():
+                system_service = service.type in [
+                    'fkie_multimaster_msgs/LoadLaunch', 'fkie_multimaster_msgs/GetSyncInfo']
                 ros_service = RosService(name, service.type)
                 for sp in service.serviceProvider:
                     if not iffilter.is_ignored_service(sp, name):
                         ros_service.provider.append(sp)
                         node = ros_nodes.get(sp, RosNode(sp, sp))
                         node.services.append(ros_service)
+                        node.system_node |= system_service
                         ros_nodes[sp] = node
                 ros_service.service_API_URI = service.uri
                 ros_service.masteruri = service.masteruri
@@ -1417,12 +1425,15 @@ class MasterInfo(object):
                 ros_node.location = 'local' if node.isLocal else 'remote'
 
                 # Include namespace in name
-                ros_node.name = names.ns_join(ros_node.namespace, ros_node.name)
+                ros_node.name = names.ns_join(
+                    ros_node.namespace, ros_node.name)
 
                 # Add active screens for a given node
                 screens = screen.get_active_screens(name)
                 for session_name, _ in screens.items():
                     ros_node.screens.append(session_name)
+                ros_node.system_node |= name in ['/rosout', rospy.get_name(), '/master_discovery', '/master_sync',
+                                                 '/node_manager', '/node_manager_daemon', '/zeroconf', '/param_sync']
                 result.append(ros_node)
         except Exception:
             import traceback

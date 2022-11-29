@@ -28,18 +28,18 @@ if os.environ['ROS_VERSION'] == "1":
     RESPAWN_SCRIPT = 'rosrun fkie_node_manager_daemon respawn'
     ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 else:
-    SCREEN_SLASH_SEP = '_'
+    SCREEN_SLASH_SEP = '.'
     '''this character is used to replace the slashes in ROS-Names for ROS2 nodes.'''
     RESPAWN_SCRIPT = 'ros2 run fkie_node_manager_daemon respawn'
     ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
 SEP = '/'
 PRIV_NAME = '~'
-NM_NAMESPACE = '/_node_manager'
+NM_NAMESPACE = '/node_manager'
 ros_distro = f"_{os.environ['ROS_DISTRO']}" if 'ROS_DISTRO' in os.environ else ''
 nm_name_suffix = f"{ros_distro}_{ros_host_suffix()}"
-NM_DISCOVERY_NAME = f'discovery{nm_name_suffix}'
-NM_DAEMON_NAME = f'daemon{nm_name_suffix}'
+NM_DISCOVERY_NAME = f'_discovery{nm_name_suffix}'
+NM_DAEMON_NAME = f'_daemon{nm_name_suffix}'
 EMPTY_PATTERN = re.compile('\b', re.I)
 SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
                  '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']

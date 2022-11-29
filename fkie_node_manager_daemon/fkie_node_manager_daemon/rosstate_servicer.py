@@ -39,6 +39,7 @@ from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAME
 from fkie_multimaster_msgs.defines import NM_NAMESPACE
 from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system.url import get_port
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import DiscoveredState
@@ -223,6 +224,8 @@ class RosStateServicer(CrossbarBaseSession):
                     Log.info(
                         f"add node: {n_guid}|{full_name}, {rp.enclave}, {rp.unicast_locators}")
                     ros_node = RosNode(f"{n_guid}|{full_name}", rn.name)
+                    discover_state_publisher = False
+                    endpoint_publisher = False
                     ros_node.name = full_name
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
@@ -231,6 +234,8 @@ class RosStateServicer(CrossbarBaseSession):
                             tp = topic_by_id[gid]
                             tp.publisher.append(n_guid)
                             ros_node.publishers.append(tp)
+                            discover_state_publisher = tp.msgtype == 'fkie_multimaster_msgs::msg::dds_::DiscoveredState_'
+                            endpoint_publisher = tp.msgtype == 'fkie_multimaster_msgs::msg::dds_::Endpoint_'
                         except KeyError:
                             try:
                                 srv = service_by_id[gid]
@@ -255,5 +260,12 @@ class RosStateServicer(CrossbarBaseSession):
                         ros_node.parent_id = parent_node.id
                     else:
                         parent_node = ros_node
+                    # Add active screens for a given node
+                    screens = screen.get_active_screens(full_name)
+                    for session_name, _ in screens.items():
+                        print("APPEND SCREEN:", session_name)
+                        ros_node.screens.append(session_name)
+                    ros_node.system_node = discover_state_publisher or endpoint_publisher or os.path.basename(
+                        full_name).startswith('_') or full_name in ['/rosout']
                     result.append(ros_node)
         return result
