@@ -1051,7 +1051,8 @@ class Discoverer(object):
                     cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
                                         host=addr[0],
                                         port=port + 300,
-                                        masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',)
+                                        masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',
+                                        origin=master.masteruri==self.master_monitor.getMasteruri())
                     result.append(cbmaster)
                     crossbar_reported_masters.add(master.masteruri)
             if not (crossbar_reported_masters == self._crossbar_reported_masters):

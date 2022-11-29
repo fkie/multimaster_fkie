@@ -77,9 +77,11 @@ class RosStateServicer(CrossbarBaseSession):
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
+        my_provider_name = nmd.launcher.server.name
         for uri, endpoint in endpoints.items():
+            origin = my_provider_name == endpoint.ros_name
             provider = RosProvider(
-                name=endpoint.ros_name, host=endpoint.name, port=get_port(endpoint.uri))
+                name=endpoint.ros_name, host=endpoint.name, port=get_port(endpoint.uri), origin=origin)
             result.append(provider)
         return result
 
