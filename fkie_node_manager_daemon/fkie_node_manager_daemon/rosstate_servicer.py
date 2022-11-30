@@ -25,7 +25,6 @@ from typing import Union
 
 import os
 import json
-from types import SimpleNamespace
 import asyncio
 from autobahn import wamp
 import threading
@@ -75,7 +74,7 @@ class RosStateServicer(CrossbarBaseSession):
                                        )
         qos_endpoint_profile = QoSProfile(depth=100,
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-                                          #history=QoSHistoryPolicy.KEEP_LAST,
+                                          # history=QoSHistoryPolicy.KEEP_LAST,
                                           reliability=QoSReliabilityPolicy.RELIABLE)
         Log.info('listen for discovered items on %s' %
                  self.topic_name_state)
@@ -140,6 +139,7 @@ class RosStateServicer(CrossbarBaseSession):
             self.publish_to('ros.discovery.ready', {'status': True})
         self._ros_state = msg
         self.publish_to('ros.nodes.changed', {"timestamp": time.time()})
+        nmd.launcher.server.screen_servicer.system_change()
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
@@ -176,55 +176,52 @@ class RosStateServicer(CrossbarBaseSession):
         unloaded = False
         if node is not None:
             if node.parent_id:
-                # try to unload node from container
-                Log.info(
-                    f"-> unload '{name}' from '{node.parent_id}'")
-                container_node: RosNode = self.get_ros_node_by_id(
-                    node.parent_id)
-                try:
-                    node_name = ns_join(node.namespace, node.name)
-                    container_name = ns_join(
-                        container_node.namespace, container_node.name)
-                    try:
-                        node_unique_id = self.get_composed_node_id(
-                            container_name, node_name)
-                    except Exception as err:
-                        return json.dumps({'result': False, 'message': str(err)}, cls=SelfEncoder)
-                    service_unload_node = f'{container_name}/_container/unload_node'
-                    Log.info(
-                        f"-> unload '{node_name}' with id '{node_unique_id}' from '{service_unload_node}'")
-                    client_srv = nmd.ros_node.create_client(
-                        UnloadNode, service_unload_node)
-                    if not client_srv.wait_for_service(timeout_sec=1.0):
-                        return json.dumps({'result': False, 'message': f"Service '{service_unload_node}' not available"}, cls=SelfEncoder)
-                    request = UnloadNode.Request()
-                    request.unique_id = node_unique_id
-                    response = client_srv.call(request)
-                    if not response.success:
-                        return json.dumps({'result': False, 'message': response.error_message}, cls=SelfEncoder)
-                    unloaded = True
-                finally:
-                    nmd.ros_node.destroy_client(client_srv)
+                self.stop_composed_node(node)
+                unloaded = True
         if unloaded:
             return json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
+        nmd.launcher.server.screen_servicer.system_change()
         return nmd.launcher.server.screen_servicer.kill_node(name.split('|')[-1])
 
+    def stop_composed_node(self, node: RosNode) -> None:
+        # try to unload node from container
+        node_name = ns_join(node.namespace, node.name)
+        Log.info(
+            f"-> unload '{node_name}' from '{node.parent_id}'")
+        container_node: RosNode = self.get_ros_node_by_id(node.parent_id)
+        if container_node is not None:
+            container_name = ns_join(
+                container_node.namespace, container_node.name)
+            try:
+                node_unique_id = self.get_composed_node_id(
+                    container_name, node_name)
+            except Exception as err:
+                print("unload ERR", err)
+                return json.dumps({'result': False, 'message': str(err)}, cls=SelfEncoder)
+
+            service_unload_node = f'{container_name}/_container/unload_node'
+            Log.info(
+                f"-> unload '{node_name}' with id '{node_unique_id}' from '{service_unload_node}'")
+
+            request = UnloadNode.Request()
+            request.unique_id = node_unique_id
+            response = nmd.launcher.call_service(
+                service_unload_node, UnloadNode, request)
+            if not response.success:
+                return json.dumps({'result': False, 'message': response.error_message}, cls=SelfEncoder)
+        else:
+            return json.dumps({'result': False, 'message': '{node.parent_id} not found!'}, cls=SelfEncoder)
+
     def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
-        try:
-            result = []
-            service_list_nodes = f'{container_name}/_container/list_nodes'
-            Log.debug(f"-> list nodes from '{service_list_nodes}'")
-            client_list = nmd.ros_node.create_client(
-                ListNodes, service_list_nodes)
-            if not client_list.wait_for_service(timeout_sec=1.0):
-                raise Exception(f'Service {service_list_nodes} not available')
-            request_list = ListNodes.Request()
-            response_list = client_list.call(request_list)
-            for name, unique_id in zip(response_list.full_node_names, response_list.unique_ids):
-                if name == node_name:
-                    return unique_id
-        finally:
-            nmd.ros_node.destroy_client(client_list)
+        service_list_nodes = f'{container_name}/_container/list_nodes'
+        Log.debug(f"-> list nodes from '{service_list_nodes}'")
+        request_list = ListNodes.Request()
+        response_list = nmd.launcher.call_service(
+            service_list_nodes, ListNodes, request_list)
+        for name, unique_id in zip(response_list.full_node_names, response_list.unique_ids):
+            if name == node_name:
+                return unique_id
+        return -1
 
     def _get_ros_node_list(self) -> List[RosNode]:
         if self._ros_node_list is None:
@@ -362,3 +359,4 @@ class RosStateServicer(CrossbarBaseSession):
                         full_name).startswith('_') or full_name in ['/rosout']
                     result.append(ros_node)
         return result
+

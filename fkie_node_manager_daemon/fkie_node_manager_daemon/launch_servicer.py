@@ -557,28 +557,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             try:
                 result.launch_files.append(launch_configs[0].filename)
-                n = launch_configs[0].get_node(request.name)
-                if n is not None:
-                    if n.composable_container:
-                        # load plugin in container
-                        Log.debug(
-                            f"Load node='{request.name}'; as plugin into container='{n.composable_container}';")
-                        # check if container is running
-                        container_node: RosNode = nmd.launcher.server.rosstate_servicer.get_ros_node(
-                            n.composable_container)
-                        if container_node is None:
-                            Log.debug(
-                                f"Run container node='{n.composable_container}'")
-                            ccn = launch_configs[0].get_node(
-                                n.composable_container)
-                            if ccn is not None:
-                                launcher.run_node(ccn)
-                        launcher.run_composed_node(
-                            n._entity, container_name=n.composable_container, context=launch_configs[0].context)
-                    else:
-                        launcher.run_node(n)
-                        Log.debug(f'Node={request.name}; start finished')
-                    result.status.code = 'OK'
+                launch_configs[0].run_node(request.name)
+                Log.debug(f'Node={request.name}; start finished')
+                result.status.code = 'OK'
             except exceptions.BinarySelectionRequest as bsr:
                 result.status.code = 'MULTIPLE_BINARIES'
                 result.status.msg = f"multiple binaries found for node '{request.name}': {bsr.choices}"
@@ -594,6 +575,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             Log.warn(result.status.msg)
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         finally:
+            nmd.launcher.server.screen_servicer.system_change()
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     @wamp.register('ros.launch.start_nodes')

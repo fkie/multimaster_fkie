@@ -22,9 +22,13 @@ import argparse
 import os
 import signal
 import sys
+import threading
 import traceback
 
 import rclpy
+from rclpy.client import SrvType
+from rclpy.client import SrvTypeRequest
+from rclpy.client import SrvTypeResponse
 from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rcl_interfaces.msg import ParameterDescriptor
 from fkie_node_manager_daemon.server import Server
@@ -135,3 +139,34 @@ class RosNodeLauncher(object):
             self.server.load_launch_file(lfile, autostart=False)
         for sfile in start_files:
             self.server.load_launch_file(sfile, autostart=True)
+
+
+    def call_service(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, timeout_sec: float = 1.0) -> SrvTypeResponse:
+        """
+        Make a service request and wait for the result.
+
+        :param srv_name: The service name.
+        :param srv_type: The service type.
+        :param request: The service request.
+        :return: The service response.
+        """
+        client = self.rosnode.create_client(srv_type, srv_name)
+        try:
+            if not client.wait_for_service(timeout_sec=timeout_sec):
+                raise Exception(f"Service '{srv_name}' of type '{srv_type}' not available")
+
+            event = threading.Event()
+
+            def unblock(future):
+                nonlocal event
+                event.set()
+
+            future = client.call_async(request)
+            future.add_done_callback(unblock)
+
+            event.wait(timeout=timeout_sec)
+            if future.exception() is not None:
+                raise future.exception()
+            return future.result()
+        finally:
+            self.rosnode.destroy_client(srv_name)

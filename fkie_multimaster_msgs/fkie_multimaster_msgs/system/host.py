@@ -164,7 +164,7 @@ def __is_local(hostname: str) -> bool:
             hostname, 0, 0, 0, socket.SOL_TCP) if isinstance(host[4][0], str)]
     except socket.gaierror:
         with _LOCK:
-            #nmd.ros_node.get_logger().debug("host::HOSTS_CACHE resolve %s failed" % hostname)
+            #Log.debug("host::HOSTS_CACHE resolve %s failed" % hostname)
             HOSTS_CACHE[hostname] = False
         return False
     local_addresses = ['localhost'] + get_local_addresses()
@@ -172,7 +172,7 @@ def __is_local(hostname: str) -> bool:
     result = ([ip for ip in machine_ips if (ip.startswith('127.') or ip == '::1')] != [
     ]) or (set(machine_ips) & set(local_addresses) != set())
     with _LOCK:
-        #nmd.ros_node.get_logger().debug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
+        #Log.debug("host::HOSTS_CACHE add %s:%s" % (hostname, result))
         HOSTS_CACHE[hostname] = result
     return result
 

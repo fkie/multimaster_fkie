@@ -33,13 +33,27 @@ if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == "1":
         from fkie_node_manager.reduced_nm import StartException
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description='Start nodes remotely using the host ROS configuration',
         epilog="Fraunhofer FKIE 2022")
 
-    parser.add_argument('--name', default=None,
+    parser.add_argument('--name', default=None, required=True,
                         help='The name of the node (with namespace) or script')
+    parser.add_argument('--set_name', type=str2bool, nargs='?',
+                        const=True, default=True,
+                        help='Set ros name using arguments if True')
     parser.add_argument('--command', default=None,
                         help='Generic command to execute')
     parser.add_argument('--node_type', default=None,
@@ -73,6 +87,7 @@ def parse_arguments():
 
     argumentsStr = "\n"
     argumentsStr += f'  name: {args.name}\n' if args.name is not None else ""
+    argumentsStr += f'  set_name: {args.set_name}\n'
     argumentsStr += f'  command: {args.command}\n' if args.command is not None else ""
     argumentsStr += f'  node_type: {args.node_type}\n' if args.node_type is not None else ""
     argumentsStr += f'  package: {args.package}\n' if args.package is not None else ""
@@ -177,7 +192,7 @@ def remove_src_binary(cmdlist):
     return result
 
 
-def run_ROS1_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, masteruri=None, loglevel=''):
+def run_ROS1_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, masteruri=None, loglevel='', set_name=True):
     '''
     Runs a ROS1 node. Starts a roscore if needed.
     '''
@@ -212,9 +227,12 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
     arg_ns = names.namespace(name, with_sep_suffix=False)
     arg_name = names.basename(name)
 
+    arg_name_list = []
+    if set_name:
+        arg_name_list = [f'__name:={arg_name}', f'__ns:={arg_ns}']
     cmd_args = [screen.get_cmd(node=arg_name, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd[0],
-                f'__name:={arg_name}', f'__ns:={arg_ns}', node_params]
+                *arg_name_list, node_params]
     Log.info('run on remote host:', ' '.join(cmd_args))
 
     # determine the current working path
@@ -243,7 +261,7 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
             'Multiple executables were found! The first one was started! Executables:\n%s', str(cmd))
 
 
-def run_ROS2_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False):
+def run_ROS2_node(package: str, executable: str, name: str, args: List[str], prefix='', respawn=False, set_name=True):
     '''
     Runs a ROS2 node
     '''
@@ -252,10 +270,14 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     arg_ns = names.namespace(name, with_sep_suffix=False)
     arg_name = names.basename(name)
 
-    cmd = f'ros2 run {package} {executable} --ros-args -r __name:={arg_name} -r __ns:={arg_ns}'
+    print("set_name", set_name)
+    arg_name_list = f'--ros-args -r __name:={arg_name} -r __ns:={arg_ns}' if set_name else ''
+    print("arg_name_list", arg_name_list)
+    cmd = f'ros2 run {package} {executable} {arg_name_list}'
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args[1:])
-
+    if not set_name and node_params:
+        node_params = f'--ros-args {node_params}'
     cmd_args = [screen.get_cmd(node=arg_name, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd, node_params]
 
@@ -360,10 +382,10 @@ def main(argv=sys.argv):
         elif args.node_type and args.package and args.name:
             if os.environ['ROS_VERSION'] == "1":
                 run_ROS1_node(args.package, args.node_type, args.name,
-                              additional_args, args.prefix, args.respawn, args.masteruri)
+                              additional_args, args.prefix, args.respawn, args.masteruri, set_name=args.set_name)
             elif os.environ['ROS_VERSION'] == "2":
                 run_ROS2_node(args.package, args.node_type, args.name,
-                              additional_args, args.prefix, args.respawn)
+                              additional_args, args.prefix, args.respawn, set_name=args.set_name)
             else:
                 Log.error(f'Invalid ROS Version: {os.environ["ROS_VERSION"]}')
 

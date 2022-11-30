@@ -46,7 +46,7 @@ def ns_join(ns: Text, name: Text) -> Text:
     return ns + SEP + name
 
 
-def namespace(name: Text, with_sep_suffix: bool = True, global_on_none: str = False) -> Text:
+def namespace(name: Text, with_sep_suffix: bool = True, global_on_none: bool = False, raise_err_on_none: bool = True) -> Text:
     """
     Get the namespace of name. The namespace is returned with a
     trailing slash in order to favor easy concatenation and easier use
@@ -59,22 +59,24 @@ def namespace(name: Text, with_sep_suffix: bool = True, global_on_none: str = Fa
     :rtype: str
     :raise ValueError: if name is invalid
     """
-    if name is None:
+    if name is None or not name:
         if global_on_none:
             return SEP
-        else:
+        elif raise_err_on_none:
             raise ValueError('name')
-    if not name:
-        return SEP
+        else:
+            return ''
     elif name[-1] == SEP:
         name = name[:-1]
     offset = 1 if with_sep_suffix else 0
     return name[:name.rfind(SEP)+offset] or SEP
 
 
-def basename(p):
+def basename(p) -> str:
     """
     Returns the final component of a node name
     """
-    i = p.rfind(SEP) + 1
-    return p[i:]
+    if p:
+        i = p.rfind(SEP) + 1
+        return p[i:]
+    return ''

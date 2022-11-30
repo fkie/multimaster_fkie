@@ -39,7 +39,8 @@ class ScreenServicer(CrossbarBaseSession):
         Log.info("Create ROS2 screen servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
         self._is_running = True
-        self._multiple_screen_check_force_after = 10
+        self._multiple_screen_check_force_after_default = 10
+        self._multiple_screen_check_force_after = self._multiple_screen_check_force_after_default
         self._multiple_screen_do_check = True
         self._multiple_screen_thread = threading.Thread(
             target=self._check_multiple_screens, daemon=True)
@@ -55,6 +56,10 @@ class ScreenServicer(CrossbarBaseSession):
         while self._is_running:
             if self._multiple_screen_do_check or last_check >= self._multiple_screen_check_force_after:
                 screen.wipe()
+                if self._multiple_screen_do_check:
+                    self._multiple_screen_check_force_after = self._multiple_screen_check_force_after_default
+                else:
+                    self._multiple_screen_check_force_after += self._multiple_screen_check_force_after
                 self._multiple_screen_do_check = False
                 screens = screen.get_active_screens()
                 screen_dict: Dict[str, ScreenRepetitions] = {}
@@ -76,6 +81,9 @@ class ScreenServicer(CrossbarBaseSession):
             else:
                 last_check += 1
             time.sleep(1.0)
+
+    def system_change(self) -> None:
+        self._multiple_screen_do_check = True
 
     @wamp.register('ros.screen.kill_node')
     def kill_node(self, name: str) -> bool:

@@ -30,28 +30,37 @@ from typing import Union
 from xml.dom.minidom import parse  # , parseString
 import os
 import re
+import shlex
 import sys
 import time
 
 import launch
+from launch.launch_context import LaunchContext
 from launch.launch_description_sources import get_launch_description_from_any_launch_file
 from launch.frontend.parser import Parser
 from launch.launch_description_sources import get_launch_description_from_frontend_launch_file
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.actions.include_launch_description import IncludeLaunchDescription
+from launch_ros.utilities.evaluate_parameters import evaluate_parameters
+from launch_ros.utilities import to_parameters_list
 from launch.utilities import perform_substitutions
-from launch.utilities import normalize_to_list_of_substitutions
 from launch.launch_description import LaunchDescription
 import launch_ros
+import composition_interfaces.srv
 
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeInfo
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs import names
 from fkie_multimaster_msgs import ros_pkg
+from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
 from fkie_multimaster_msgs.defines import SEP
+from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 
-from launch.launch_context import LaunchContext
+import fkie_node_manager_daemon as nmd
 
 
 class LaunchConfigException(Exception):
@@ -126,7 +135,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
         self.cmd = self._to_string(getattr(self._entity, 'cmd', None))
         self.cwd = self._to_string(getattr(self._entity, 'cwd', None))
         self.env = self._to_tuple_list(getattr(self._entity, 'env', None))
-        self.additional_env = self._to_tuple_list(getattr(self._entity, 'additional_env', None))
+        self.additional_env = self._to_tuple_list(
+            getattr(self._entity, 'additional_env', None))
         self.launch_prefix = self._to_string(self._get_launch_prefix())
 
         #  remap_args: List[Tuple[str, str]] = None,
@@ -322,6 +332,8 @@ class LaunchConfig(object):
         self.__package = ros_pkg.get_name(os.path.dirname(self.__launchfile))[
             0] if package is None else package
         self._nodes: List[LaunchNodeWrapper] = []
+        self._started_binaries: Dict[str, float] = dict()
+        ''':var STARTED_BINARIES: dictionary with nodes and tuple of (paths of started binaries and their last modification time). Used to detect changes on binaries.'''
         self.__nmduri = daemonuri
         self.provided_launch_arguments = launch_arguments
         self.launch_arguments: List[LaunchArgument] = []
@@ -707,3 +719,155 @@ class LaunchConfig(object):
                 return item
         Log.warn("Node '%s' NOT found" % name)
         return None
+
+    def run_node(self, name: str) -> None:
+        '''
+        Start a node local or on specified host using a :class:`.startcfg.StartConfig`
+
+        :param startcfg: start configuration e.g. returned by :meth:`create_start_config`
+        :type startcfg: :class:`fkie_node_manager_daemon.startcfg.StartConfig`
+        :raise exceptions.StartException: on errors
+        :raise exceptions.BinarySelectionRequest: on multiple binaries
+        :see: :meth:`fkie_node_manager.host.is_local`
+        '''
+        node: LaunchNodeWrapper = self.get_node(name)
+        if node is None:
+            raise exceptions.StartException(f"Node '{name}' in '{self.filename}' not found!")
+        if node.composable_container:
+            # load plugin in container
+            Log.debug(
+                f"Load node='{node.unique_name}'; as plugin into container='{node.composable_container}';")
+            # check if container is running
+            container_node: RosNode = nmd.launcher.server.rosstate_servicer.get_ros_node(
+                node.composable_container)
+            if container_node is None:
+                Log.debug(
+                    f"Run container node='{node.composable_container}'")
+                self.run_node(node.composable_container)
+            print("lok")
+            print("put into quee")
+            self.run_composed_node(node)
+            print("put into quee done")
+            return
+
+        # run on local host
+        # set environment
+        new_env = dict(os.environ) if node.env is None else dict(node.env)
+        # set display variable to local display
+        if 'DISPLAY' in new_env:
+            if not new_env['DISPLAY'] or new_env['DISPLAY'] == 'remote':
+                del new_env['DISPLAY']
+        else:
+            new_env['DISPLAY'] = ':0'
+        # add environment from launch
+        if node.additional_env:
+            new_env.update(dict(node.additional_env))
+        if node.node_namespace:
+            new_env['ROS_NAMESPACE'] = node.node_namespace
+        # set logging
+        if node.output_format:
+            new_env['ROSCONSOLE_FORMAT'] = '%s' % node.output_format
+        # if node.loglevel:
+        #     new_env['ROSCONSOLE_CONFIG_FILE'] = _rosconsole_cfg_file(
+        #         node.package, node.loglevel)
+        # handle respawn
+        respawn_prefix = ''
+        if node.respawn:
+            if node.respawn_delay > 0:
+                new_env['RESPAWN_DELAY'] = '%d' % node.respawn_delay
+            # TODO
+            # respawn_params = _get_respawn_params(node.fullname, node.params)
+            # if respawn_params['max'] > 0:
+            #     new_env['RESPAWN_MAX'] = '%d' % respawn_params['max']
+            # if respawn_params['min_runtime'] > 0:
+            #     new_env['RESPAWN_MIN_RUNTIME'] = '%d' % respawn_params['min_runtime']
+            respawn_prefix = f"{RESPAWN_SCRIPT}"
+
+        try:
+            self._started_binaries[node.unique_name] = (
+                node.executable, os.path.getmtime(node.executable))
+        except Exception:
+            pass
+
+        # TODO: check for HOSTNAME
+        # start
+        screen_prefix = ' '.join([screen.get_cmd(
+            node.unique_name, new_env, new_env.keys())])
+        Log.info(
+            f"{screen_prefix} {respawn_prefix} {node.launch_prefix} {node.cmd} (launch_file: '{node.launch_name}')")
+        Log.debug(
+            f"environment while run node '{node.unique_name}': '{new_env}'")
+        SupervisedPopen(shlex.split(' '.join([screen_prefix, respawn_prefix, node.cmd])), cwd=node.cwd, env=new_env,
+                        object_id=f"run_node_{node.unique_name}", description=f"Run [{node.package_name}]{node.executable}")
+
+
+    def run_composed_node(self, node: LaunchNodeWrapper):
+        # Create a client to load nodes in the target container.
+        client_load_node = nmd.ros_node.create_client(
+            composition_interfaces.srv.LoadNode, '%s/_container/load_node' % node.composable_container)
+        composable_node_description: launch_ros.descriptions.ComposableNode = node._entity
+        request = composition_interfaces.srv.LoadNode.Request()
+        request.package_name = perform_substitutions(
+            self.context, composable_node_description.package
+        )
+        request.plugin_name = perform_substitutions(
+            self.context, composable_node_description.node_plugin
+        )
+        if composable_node_description.node_name is not None:
+            request.node_name = perform_substitutions(
+                self.context, composable_node_description.node_name
+            )
+        if composable_node_description.node_namespace is not None:
+            request.node_namespace = perform_substitutions(
+                self.context, composable_node_description.node_namespace
+            )
+        # request.log_level = perform_substitutions(context, node_description.log_level)
+        if composable_node_description.remappings is not None:
+            for from_, to in composable_node_description.remappings:
+                request.remap_rules.append('{}:={}'.format(
+                    perform_substitutions(self.context, list(from_)),
+                    perform_substitutions(self.context, list(to)),
+                ))
+        if composable_node_description.parameters is not None:
+            request.parameters = [
+                param.to_parameter_msg() for param in to_parameters_list(
+                    self.context, evaluate_parameters(
+                        self.context, composable_node_description.parameters
+                    )
+                )
+            ]
+        if composable_node_description.extra_arguments is not None:
+            request.extra_arguments = [
+                param.to_parameter_msg() for param in to_parameters_list(
+                    self.context, evaluate_parameters(
+                        self.context, composable_node_description.extra_arguments
+                    )
+                )
+            ]
+        service_load_node_name = f'{node.composable_container}/_container/load_node'
+        Log.debug(f"-> load composed node to '{service_load_node_name}'")
+        response = nmd.launcher.call_service(
+            service_load_node_name, composition_interfaces.srv.LoadNode, request)
+        print("response received")
+        node_name = response.full_node_name if response.full_node_name else request.node_name
+        nmd.ros_node.destroy_client(client_load_node)
+        if response.success:
+            # if node_name is not None:
+            #     add_node_name(context, node_name)
+            #     node_name_count = get_node_name_count(context, node_name)
+            #     if node_name_count > 1:
+            #         container_logger = launch.logging.get_logger(self.__target_container.name)
+            #         container_logger.warning(
+            #             'there are now at least {} nodes with the name {} created within this '
+            #             'launch context'.format(node_name_count, node_name)
+            #         )
+            Log.info(
+                f"Loaded node '{response.full_node_name}' in container '{node.composable_container}'")
+        else:
+            error_msg = "Failed to load node '{}' of type '{}' in container '{}': {}".format(
+                node_name, request.plugin_name, node.composable_container,
+                response.error_message
+            )
+            Log.error(error_msg)
+            raise exceptions.StartException(error_msg)
+        print("LOADED")
