@@ -39,6 +39,7 @@ from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAME
 from fkie_multimaster_msgs.defines import NM_NAMESPACE
 from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.names import ns_join
 from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system.url import get_port
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
@@ -51,27 +52,32 @@ import fkie_node_manager_daemon as nmd
 class RosStateServicer(CrossbarBaseSession):
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = NMD_DEFAULT_PORT, test_env=False):
-        nmd.ros_node.get_logger().info("Create ros_state servicer")
+        Log.info("Create ros_state servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
-        self._endpoints = {}  # uri : Endpoint
-        self._ros_state = None  # DiscoveredState
+        self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
+        self._ros_state: DiscoveredState = None
+        self._ros_node_list: List[RosNode] = None
         self.topic_name_state = '%s/%s/rosstate' % (
             NM_NAMESPACE, NM_DISCOVERY_NAME)
         self.topic_name_endpoint = '%s/daemons' % (
             NM_NAMESPACE)
-        qos_profile = QoSProfile(depth=100,
-                                 # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-                                 # history=QoSHistoryPolicy.KEEP_LAST,
-                                 # reliability=QoSReliabilityPolicy.RELIABLE)
-                                 )
-        nmd.ros_node.get_logger().info('listen for discovered items on %s' %
-                                       self.topic_name_state)
+        qos_state_profile = QoSProfile(depth=100,
+                                       # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                       # history=QoSHistoryPolicy.KEEP_LAST,
+                                       # reliability=QoSReliabilityPolicy.RELIABLE)
+                                       )
+        qos_endpoint_profile = QoSProfile(depth=100,
+                                          durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                          #history=QoSHistoryPolicy.KEEP_LAST,
+                                          reliability=QoSReliabilityPolicy.RELIABLE)
+        Log.info('listen for discovered items on %s' %
+                 self.topic_name_state)
         self.sub_discovered_state = nmd.ros_node.create_subscription(
-            DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_profile)
-        nmd.ros_node.get_logger().info('listen for endpoint items on %s' %
-                                       self.topic_name_endpoint)
+            DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
+        Log.info('listen for endpoint items on %s' %
+                 self.topic_name_endpoint)
         self.sub_endpoints = nmd.ros_node.create_subscription(
-            Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_profile)
+            Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
         self._checkDiscoveryNodeThread = threading.Thread(
             target=self._check_discovery_node, daemon=True)
         self._checkDiscoveryNodeThread.start()
@@ -134,7 +140,7 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_multimaster_msgs.Endpoint<XXX>
         '''
-        nmd.ros_node.get_logger().info('new message on %s' % self.topic_name_endpoint)
+        Log.info('new message on %s' % self.topic_name_endpoint)
         if msg.on_shutdown:
             if msg.uri in self._endpoints:
                 del self._endpoints[msg.uri]
@@ -144,7 +150,7 @@ class RosStateServicer(CrossbarBaseSession):
 
     @wamp.register('ros.provider.get_list')
     def crossbar_get_provider_list(self) -> str:
-        nmd.ros_node.get_logger().info('Request to [ros.provider.get_list]')
+        Log.info('Request to [ros.provider.get_list]')
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     @wamp.register('ros.nodes.get_list')

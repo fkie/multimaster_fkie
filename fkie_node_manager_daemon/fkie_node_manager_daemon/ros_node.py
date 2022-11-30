@@ -45,7 +45,7 @@ class RosNodeLauncher(object):
 
     def __init__(self):
         self._run_tests()
-        self.ros_domain_id = -1
+        self.ros_domain_id = 0
         self.parser = self._init_arg_parser()
         self.name = NM_DAEMON_NAME
         # change terminal name

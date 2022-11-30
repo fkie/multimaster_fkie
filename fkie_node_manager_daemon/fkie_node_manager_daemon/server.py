@@ -102,9 +102,10 @@ class Server:
         self.insecure_port = port
         if server.port() != port:
             self.name = "%s_%d" % (self.name, port)
-        self.uri = self.rosstate_servicer.uri  # nmduri('grpc://%s' % uri)
-        endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=get_host_name(
-        ), ros_domain_id=self.ros_domain_id, on_shutdown=False, pid=os.getpid())
+        self.uri = self.rosstate_servicer.uri.replace(
+            'localhost', get_host_name())
+        endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=ns_join(nmd.ros_node.get_namespace(), nmd.ros_node.get_name(
+        )), ros_domain_id=self.ros_domain_id, on_shutdown=False, pid=os.getpid())
         self.pub_endpoint.publish(endpoint_msg)
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
@@ -131,7 +132,8 @@ class Server:
 
     def _crossbar_send_status(self, status: bool):
         # try to send notification to crossbar subscribers
-        self.rosstate_servicer.publish_to('ros.daemon.ready', {'status': status})
+        self.rosstate_servicer.publish_to(
+            'ros.daemon.ready', {'status': status})
 
     def shutdown(self):
         WAIT_TIMEOUT = 3
