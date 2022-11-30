@@ -84,6 +84,7 @@ class Server:
             Endpoint, 'daemons', qos_profile=qos_profile)
         self.rosname = ns_join(
             nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
+        self._endpoint_msg = Endpoint(name=self.name, uri=self.rosstate_servicer.uri, ros_name=self.rosname, ros_domain_id=self.ros_domain_id, on_shutdown=False, pid=os.getpid())
 
     def __del__(self):
         self.crossbar_loop.stop()
@@ -102,11 +103,8 @@ class Server:
         self.insecure_port = port
         if server.port() != port:
             self.name = "%s_%d" % (self.name, port)
-        self.uri = self.rosstate_servicer.uri.replace(
-            'localhost', get_host_name())
-        endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=ns_join(nmd.ros_node.get_namespace(), nmd.ros_node.get_name(
-        )), ros_domain_id=self.ros_domain_id, on_shutdown=False, pid=os.getpid())
-        self.pub_endpoint.publish(endpoint_msg)
+        self._endpoint_msg.name = self.name
+        self.pub_endpoint.publish(self._endpoint_msg)
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
@@ -138,9 +136,8 @@ class Server:
     def shutdown(self):
         WAIT_TIMEOUT = 3
         self._crossbar_send_status(False)
-        endpoint_msg = Endpoint(name=get_host_name(), uri=self.uri, ros_name=get_host_name(
-        ), ros_domain_id=self.ros_domain_id, on_shutdown=True, pid=os.getpid())
-        self.pub_endpoint.publish(endpoint_msg)
+        self._endpoint_msg.on_shutdown=True
+        self.pub_endpoint.publish(self._endpoint_msg)
         self.screen_servicer.stop()
         self.launch_servicer.stop()
         self.file_servicer.stop()

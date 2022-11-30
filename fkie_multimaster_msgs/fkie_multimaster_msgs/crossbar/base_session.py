@@ -47,6 +47,7 @@ from asyncio import coroutine
 
 
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.system.host import get_host_name
 from .server import crossbar_start_server, CROSSBAR_PATH
 
 
@@ -75,6 +76,7 @@ class CrossbarBaseSession(ApplicationSession):
             return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
         self.crossbar_runner = ApplicationRunner(self.uri, self.config.realm)
+        self.uri = self.uri.replace('localhost', get_host_name())
         task = asyncio.run_coroutine_threadsafe(
             self.crossbar_connect(), self.crossbar_loop)
 
@@ -82,6 +84,7 @@ class CrossbarBaseSession(ApplicationSession):
     Subscribes to a crossbar topic in async way.
     Subscribed topics in this way are subscribed after reconnection.
     '''
+
     def subscribe_to(self, topic: str, handler: Callable):
         self._crossbar_subscriptions.append((topic, handler))
         if self.crossbar_connected:
@@ -101,6 +104,7 @@ class CrossbarBaseSession(ApplicationSession):
     Publishes message to given topic without throw an exception on connection problems.
     Last failed message will be send on connect.
     '''
+
     def publish_to(self, topic: str, msg: Union[str, Any]):
         encoded_msg = msg
         if not isinstance(msg, str):
@@ -113,7 +117,8 @@ class CrossbarBaseSession(ApplicationSession):
             self._crossbar_failed_publications[topic] = encoded_msg
         except Exception:
             import traceback
-            Log.warn(f"Error while publish to {topic}: {traceback.format_exc()}")
+            Log.warn(
+                f"Error while publish to {topic}: {traceback.format_exc()}")
 
     def shutdown(self):
         self._on_shutdown = True

@@ -41,7 +41,7 @@ from watchdog.events import FileSystemEvent
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
+from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadRequest
@@ -66,6 +66,8 @@ from fkie_multimaster_msgs.system.url import equal_uri
 from . import launcher
 from .launch_config import LaunchConfig
 from .launch_validator import LaunchValidator
+
+import fkie_node_manager_daemon as nmd
 
 
 class CfgId(object):
@@ -334,7 +336,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             Log.debug('..load aborted, ALREADY_OPEN')
             return json.dumps(result, cls=SelfEncoder)
 
-
         # load launch configuration
         try:
             # validate xml
@@ -342,14 +343,16 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             # test for required args
             provided_args = [arg.name for arg in request.args]
             # get the list with needed launch args
-            req_args = LaunchConfig.get_launch_arguments(launchfile, request.args)
+            req_args = LaunchConfig.get_launch_arguments(
+                launchfile, request.args)
             # req_args_dict = launch_config.argv2dict(req_args)
             if request.request_args and req_args:
                 for arg in req_args:
                     if arg.name not in provided_args:
                         result.args.extend(req_args)
                         result.status.code = 'PARAMS_REQUIRED'
-                        Log.debug(f"..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; privided args {provided_args}")
+                        Log.debug(
+                            f"..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; privided args {provided_args}")
                         return json.dumps(result, cls=SelfEncoder)
             # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
             launch_arguments = [(arg.name, arg.value) for arg in request.args]
@@ -476,7 +479,8 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
             # Add launch arguments
             for name, p in lc.provided_launch_arguments:
-                reply_lc.args.append(LaunchArgument(name, p.value if hasattr(p, 'value') else p))
+                reply_lc.args.append(LaunchArgument(
+                    name, p.value if hasattr(p, 'value') else p))
 
             nodes = lc.nodes()
             for item in nodes:
@@ -539,16 +543,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 for cfgid, launchcfg in self._loaded_files.items():
                     n = launchcfg.get_node(request.name)
                     if n is not None:
-                        Log.debug('Found launch file=%s;' %
-                                  (launchcfg.filename))
+                        Log.debug(f"Found launch file={launchcfg.filename};")
                         launch_configs.append(launchcfg)
             if not launch_configs:
                 result.status.code = 'NODE_NOT_FOUND'
-                result.status.msg = "Node '%s' not found" % request.name
+                result.status.msg = f"Node '{request.name}' not found"
                 return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             if len(launch_configs) > 1:
                 result.status.code = 'MULTIPLE_LAUNCHES'
-                result.status.msg = "Node '%s' found in multiple launch files" % request.name
+                result.status.msg = f"Node '{request.name}' found in multiple launch files"
                 result.launch_files.extend(
                     [lcfg.filename for lcfg in launch_configs])
                 return json.dumps(result, cls=SelfEncoder) if return_as_json else result
@@ -558,32 +561,36 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 if n is not None:
                     if n.composable_container:
                         # load plugin in container
-                        Log.debug('Load node=%s; as plugin into container=%s;' %
-                                  (request.name, n.composable_container))
+                        Log.debug(
+                            f"Load node='{request.name}'; as plugin into container='{n.composable_container}';")
+                        # check if container is running
+                        container_node: RosNode = nmd.launcher.server.rosstate_servicer.get_ros_node(
+                            n.composable_container)
+                        if container_node is None:
+                            Log.debug(
+                                f"Run container node='{n.composable_container}'")
+                            ccn = launch_configs[0].get_node(
+                                n.composable_container)
+                            if ccn is not None:
+                                launcher.run_node(ccn)
                         launcher.run_composed_node(
                             n._entity, container_name=n.composable_container, context=launch_configs[0].context)
                     else:
-#                        startcfg = launcher.from_node(
-#                            n, launchcfg=launch_configs[0], executable=request.opt_binary, loglevel=request.loglevel, logformat=request.logformat, cmd_prefix=request.cmd_prefix)
-#                        launcher.run_node(startcfg)
                         launcher.run_node(n)
-                        Log.debug('Node=%s; start finished' % (request.name))
+                        Log.debug(f'Node={request.name}; start finished')
                     result.status.code = 'OK'
             except exceptions.BinarySelectionRequest as bsr:
                 result.status.code = 'MULTIPLE_BINARIES'
-                result.status.msg = "multiple binaries found for node '%s': %s" % (
-                    request.name, bsr.choices)
+                result.status.msg = f"multiple binaries found for node '{request.name}': {bsr.choices}"
                 result.paths.extend(bsr.choices)
                 return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         except exceptions.ResourceNotFound as err_nf:
             result.status.code = 'ERROR'
-            result.status.msg = "Error while start node '%s': %s" % (
-                request.name, err_nf)
+            result.status.msg = f"Error while start node '{request.name}': {err_nf}"
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         except Exception as _errr:
             result.status.code = 'ERROR'
-            result.status.msg = "Error while start node '%s': %s" % (
-                request.name, traceback.format_exc())
+            result.status.msg = f"Error while start node '{request.name}': {traceback.format_exc()}"
             Log.warn(result.status.msg)
             return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         finally:

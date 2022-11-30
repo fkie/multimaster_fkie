@@ -18,7 +18,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Dict
 from typing import List
+from numbers import Number
+from typing import Union
 
 import os
 import json
@@ -27,6 +30,9 @@ import asyncio
 from autobahn import wamp
 import threading
 import time
+
+from composition_interfaces.srv import ListNodes
+from composition_interfaces.srv import UnloadNode
 
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
@@ -41,6 +47,7 @@ from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.names import ns_join
 from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_msgs.system.host import get_hostname
 from fkie_multimaster_msgs.system.url import get_port
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import DiscoveredState
@@ -84,11 +91,10 @@ class RosStateServicer(CrossbarBaseSession):
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
-        my_provider_name = nmd.launcher.server.name
         for uri, endpoint in endpoints.items():
-            origin = my_provider_name == endpoint.ros_name
+            origin = self.uri == uri
             provider = RosProvider(
-                name=endpoint.ros_name, host=endpoint.name, port=get_port(endpoint.uri), origin=origin)
+                name=endpoint.name, host=get_hostname(endpoint.uri), port=get_port(endpoint.uri), origin=origin)
             result.append(provider)
         return result
 
@@ -128,7 +134,8 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_multimaster_msgs.DiscoveredState<XXX>
         '''
-        nmd.ros_node.get_logger().info('new message on %s' % self.topic_name_state)
+        Log.info('new message on %s' % self.topic_name_state)
+        self._ros_node_list = None
         if self._ros_state is None:
             self.publish_to('ros.discovery.ready', {'status': True})
         self._ros_state = msg
@@ -155,15 +162,88 @@ class RosStateServicer(CrossbarBaseSession):
 
     @wamp.register('ros.nodes.get_list')
     def crossbar_get_node_list(self) -> str:
-        nmd.ros_node.get_logger().info('Request to [ros.nodes.get_list]')
-        node_list: List[RosNode] = self.to_crossbar()
+        Log.info('Request to [ros.nodes.get_list]')
+        node_list: List[RosNode] = self._get_ros_node_list()
 
         return json.dumps(node_list, cls=SelfEncoder)
 
     @wamp.register('ros.nodes.stop_node')
     def stop_node(self, name: str) -> bool:
         Log.info(f"Request to stop node '{name}'")
+        node: RosNode = self.get_ros_node(name)
+        if node is None:
+            node = self.get_ros_node_by_id(name)
+        unloaded = False
+        if node is not None:
+            if node.parent_id:
+                # try to unload node from container
+                Log.info(
+                    f"-> unload '{name}' from '{node.parent_id}'")
+                container_node: RosNode = self.get_ros_node_by_id(
+                    node.parent_id)
+                try:
+                    node_name = ns_join(node.namespace, node.name)
+                    container_name = ns_join(
+                        container_node.namespace, container_node.name)
+                    try:
+                        node_unique_id = self.get_composed_node_id(
+                            container_name, node_name)
+                    except Exception as err:
+                        return json.dumps({'result': False, 'message': str(err)}, cls=SelfEncoder)
+                    service_unload_node = f'{container_name}/_container/unload_node'
+                    Log.info(
+                        f"-> unload '{node_name}' with id '{node_unique_id}' from '{service_unload_node}'")
+                    client_srv = nmd.ros_node.create_client(
+                        UnloadNode, service_unload_node)
+                    if not client_srv.wait_for_service(timeout_sec=1.0):
+                        return json.dumps({'result': False, 'message': f"Service '{service_unload_node}' not available"}, cls=SelfEncoder)
+                    request = UnloadNode.Request()
+                    request.unique_id = node_unique_id
+                    response = client_srv.call(request)
+                    if not response.success:
+                        return json.dumps({'result': False, 'message': response.error_message}, cls=SelfEncoder)
+                    unloaded = True
+                finally:
+                    nmd.ros_node.destroy_client(client_srv)
+        if unloaded:
+            return json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
         return nmd.launcher.server.screen_servicer.kill_node(name.split('|')[-1])
+
+    def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
+        try:
+            result = []
+            service_list_nodes = f'{container_name}/_container/list_nodes'
+            Log.debug(f"-> list nodes from '{service_list_nodes}'")
+            client_list = nmd.ros_node.create_client(
+                ListNodes, service_list_nodes)
+            if not client_list.wait_for_service(timeout_sec=1.0):
+                raise Exception(f'Service {service_list_nodes} not available')
+            request_list = ListNodes.Request()
+            response_list = client_list.call(request_list)
+            for name, unique_id in zip(response_list.full_node_names, response_list.unique_ids):
+                if name == node_name:
+                    return unique_id
+        finally:
+            nmd.ros_node.destroy_client(client_list)
+
+    def _get_ros_node_list(self) -> List[RosNode]:
+        if self._ros_node_list is None:
+            self._ros_node_list = self.to_crossbar()
+        return self._ros_node_list
+
+    def get_ros_node(self, node_name: str) -> Union[RosNode, None]:
+        node_list: List[RosNode] = self._get_ros_node_list()
+        for node in node_list:
+            if node_name == ns_join(node.namespace, node.name):
+                return node
+        return None
+
+    def get_ros_node_by_id(self, node_id: str) -> Union[RosNode, None]:
+        node_list: List[RosNode] = self._get_ros_node_list()
+        for node in node_list:
+            if node_id == node.id:
+                return node
+        return None
 
     def _guid_to_str(self, guid):
         return '.'.join('{:02X}'.format(c) for c in guid.data.tolist())
@@ -202,6 +282,12 @@ class RosStateServicer(CrossbarBaseSession):
             service_by_id = {}
             service_objs = {}
             for rp in self._ros_state.participants:
+                # location = ''
+                # for loc in rp.unicast_locators:
+                #     if '127.0.0.' in loc or 'SHM' in loc:
+                #         location = 'local'
+                # if not location:
+                #     location = rp.unicast_locators
                 for te in rp.topic_entities:
                     t_guid = self._guid_to_str(te.guid)
                     if te.name.startswith('rt/'):
@@ -232,6 +318,7 @@ class RosStateServicer(CrossbarBaseSession):
                     ros_node = RosNode(f"{n_guid}|{full_name}", rn.name)
                     discover_state_publisher = False
                     endpoint_publisher = False
+                    ros_node.location = rp.unicast_locators
                     ros_node.name = full_name
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
