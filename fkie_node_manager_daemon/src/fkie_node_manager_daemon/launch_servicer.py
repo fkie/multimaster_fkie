@@ -530,6 +530,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         try:
             # test for required args
             provided_args = ['%s' % arg.name for arg in request.args]
+            provided_args_dict = {arg.name: arg.value for arg in request.args}
             launch_config = LaunchConfig(
                 launchfile, masteruri=request.masteruri, host=request.host, monitor_servicer=self._monitor_servicer)
 
@@ -541,8 +542,15 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 for arg, value in req_args_dict.items():
                     if arg not in provided_args:
                         # result.args.append([LaunchArgument(name=arg, value=value) for arg, value in req_args_dict.items()])
+                        la_value = value
+                        default_value = None
+                        if arg not in provided_args_dict:
+                            la_value = None
+                            default_value = value
+                        else:
+                            default_value = provided_args_dict[arg]
                         result.args.append(
-                            LaunchArgument(name=arg, value=value))
+                            LaunchArgument(name=arg, value=la_value, default_value=default_value))
 
                 if len(result.args) > 0:
                     result.status.code = 'PARAMS_REQUIRED'
@@ -553,8 +561,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                     for arg in request.args if arg.name in req_args_dict]
             _loaded, _res_argv = launch_config.load(argv)
             # parse result args for reply
-            result.args.extend([LaunchArgument(name=name, value=value)
-                                for name, value in launch_config.resolve_dict.items()])
+            for name, value in launch_config.resolve_dict.items():
+                if name in req_args_dict:
+                    result.args.append(LaunchArgument(
+                        name=name, value=value, default_value=req_args_dict[name]))
+                else:
+                    result.args.append(LaunchArgument(
+                        name=name, value=None, default_value=value))
             self._loaded_files[CfgId(
                 launchfile, request.masteruri)] = launch_config
             Log.debug('..load complete!')
