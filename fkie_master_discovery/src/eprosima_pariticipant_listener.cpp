@@ -50,6 +50,7 @@
 
 #include "builtin_interfaces/msg/duration.hpp"
 #include "fkie_multimaster_msgs/msg/discovered_state.hpp"
+#include "fkie_multimaster_msgs/msg/endpoint.hpp"
 #include "fkie_multimaster_msgs/msg/guid.hpp"
 #include "fkie_multimaster_msgs/msg/node_entities_info.hpp"
 #include "fkie_multimaster_msgs/msg/participant_entities_info.hpp"
@@ -57,6 +58,7 @@
 
 #include "rclcpp/node.hpp"
 #include "rclcpp/publisher.hpp"
+#include "rclcpp/subscription.hpp"
 
 using namespace std::chrono_literals;
 
@@ -112,8 +114,9 @@ public:
         //qos_settings.reliable();
         //qos_settings.transient_local();
         on_shutdown = false;
-        subscriber_count = 0;
         publisher_ = this->create_publisher<fkie_multimaster_msgs::msg::DiscoveredState>("~/rosstate", qos_settings);
+        subscriber_daemon_ = this->create_subscription<fkie_multimaster_msgs::msg::Endpoint>("daemons", qos_settings, std::bind(&CustomParticipantListener::_daemon_detected, this, std::placeholders::_1));
+        daemon_topic_ = std::string("rt") + this->publisher_->get_topic_name();
         participant_ = nullptr;
         subscriber_ = nullptr;
         infoUpdated_ = false;
@@ -145,6 +148,7 @@ public:
     void shutdown()
     {
         this->on_shutdown = true;
+        this->
         timer_->cancel();
         eprosima::fastrtps::Domain::stopAll();
     }
@@ -165,14 +169,6 @@ public:
                 doUpdate = true;
             }
         }
-        auto current_subscriber_count = this->count_subscribers("~/rosstate");
-        if (current_subscriber_count != subscriber_count)
-        {
-            if (current_subscriber_count > subscriber_count && current_subscriber_count > 0) {
-                infoUpdated_ = true;
-            }
-            subscriber_count = current_subscriber_count;
-        }
         if (doUpdate)
         {
             // publish all participants
@@ -180,11 +176,13 @@ public:
             std::lock_guard<std::mutex> guard(mutex_);
             fkie_multimaster_msgs::msg::DiscoveredState rosmsg;
             rosmsg.stamp = newStamp;
+            RCLCPP_INFO(get_logger(), "rosgraph: create");
             for (auto itdp = discoveredParticipants_.begin(); itdp != discoveredParticipants_.end(); itdp++)
             {
                 fkie_multimaster_msgs::msg::ParticipantEntitiesInfo rospt;
                 rospt.guid = guid_to_msg(itdp->first);
                 rospt.enclave = itdp->second.enclave;
+                RCLCPP_INFO(get_logger(), "rosgraph: create participant; guid=%s, enclave=%s", to_string(itdp->first).c_str(), rospt.enclave.c_str());
                 for (auto ul = itdp->second.unicast_locators.begin(); ul != itdp->second.unicast_locators.end(); ul++)
                 {
                     rospt.unicast_locators.push_back(*ul);
@@ -194,17 +192,19 @@ public:
                     fkie_multimaster_msgs::msg::NodeEntitiesInfo rosnd;
                     rosnd.name = un->name;
                     rosnd.ns = un->ns;
+                    RCLCPP_INFO(get_logger(), "rosgraph:   add node=%s, ns=%s", rosnd.name.c_str(), rosnd.ns.c_str());
                     // copy GUIDs of all publisher associated with this node
                     for (auto unp = un->publisher.begin(); unp != un->publisher.end(); unp++)
                     {
                         rosnd.publisher.push_back(*unp);
                     }
+                    RCLCPP_INFO(get_logger(), "rosgraph:     added %lu publisher ids", rosnd.publisher.size());
                     // copy GUIDs of all subscriber associated with this node
                     for (auto uns = un->subscriber.begin(); uns != un->subscriber.end(); uns++)
                     {
                         rosnd.subscriber.push_back(*uns);
                     }
-                    RCLCPP_INFO(get_logger(), "add node to participant; guid=%s, node=%s", to_string(itdp->first).c_str(), rosnd.name.c_str());
+                    RCLCPP_INFO(get_logger(), "rosgraph:     added %lu subscriber ids", rosnd.subscriber.size());
                     rospt.node_entities.push_back(rosnd);
                 }
                 for (auto itdt = discoveredTopics_.begin(); itdt != discoveredTopics_.end(); itdt++)
@@ -216,6 +216,7 @@ public:
                         rt.name = itdt->second.name;
                         rt.ttype = itdt->second.ttype;
                         rt.info = itdt->second.info;
+                        RCLCPP_INFO(get_logger(), "rosgraph:   add topic=%s, type=%s", rt.name.c_str(), rt.ttype.c_str());
 #ifdef rmw_dds_common_FOUND
                         rt.qos.durability = itdt->second.qos.durability;
                         rt.qos.history = itdt->second.qos.history;
@@ -229,6 +230,7 @@ public:
                         rospt.topic_entities.push_back(rt);
                     }
                 }
+                RCLCPP_INFO(get_logger(), "rosgraph:     added %lu topics", rospt.topic_entities.size());
                 rosmsg.participants.push_back(rospt);
             }
             // add removed nodes
@@ -252,11 +254,19 @@ public:
                 rosmsg.removed_topics.push_back(guid_to_msg(*itrt));
             }
             removedTopics_.clear();
-            RCLCPP_INFO(get_logger(), "pub ros graph");
+            RCLCPP_INFO(get_logger(), "publish complete ros graph");
             stamp_ = newStamp;
             publisher_->publish(rosmsg);
             infoUpdated_ = false;
             infoUpdatedSkipped_ = 0;
+        }
+    }
+
+    void _daemon_detected(const fkie_multimaster_msgs::msg::Endpoint::SharedPtr msg)
+    {
+        if (!msg->on_shutdown) {
+            infoUpdated_ = true;
+            infoUpdatedTs_ = now();
         }
     }
 
@@ -274,7 +284,7 @@ public:
     void onNewDataMessage(eprosima::fastrtps::Subscriber *sub)
     {
         if (this->on_shutdown) return;
-        RCLCPP_DEBUG(get_logger(), "New ParticipantEntitiesInfo msg on 'ros_discovery_info', count unread: %lu", sub->get_unread_count());
+        RCLCPP_INFO(get_logger(), "New ParticipantEntitiesInfo msg on 'ros_discovery_info', count unread: %lu", sub->get_unread_count());
 #ifdef rmw_dds_common_FOUND
         std::lock_guard<std::mutex> guard(mutex_);
         rmw_dds_common::msg::ParticipantEntitiesInfo msg;
@@ -310,23 +320,33 @@ public:
             }
             // create a new list with all nodes
             participant.nodes.clear();
-            RCLCPP_INFO(get_logger(), "add discovered nodes for guid=%s", to_string(guid).c_str());
+            RCLCPP_INFO(get_logger(), "  add discovered nodes for guid=%s", to_string(guid).c_str());
             for (auto &node : msg.node_entities_info_seq)
             {
                 NodeInfo &ni = _get_node(participant, node.node_name, node.node_namespace);
                 // update publisher/subscriber
-                // ni.publisher.clear();
+                ni.publisher.clear();
                 for (auto &writer_gid : node.writer_gid_seq)
                 {
                     fkie_multimaster_msgs::msg::Guid guid;
                     std::memcpy(&guid.data, &writer_gid, sizeof(guid.data));
+                    rmw_gid_t rmw_gidt;
+                    rmw_dds_common::convert_msg_to_gid(&writer_gid, &rmw_gidt);
+                    eprosima::fastrtps::rtps::GUID_t guids;
+                    rmw_fastrtps_shared_cpp::copy_from_byte_array_to_fastrtps_guid(rmw_gidt.data, &guids);
+                    RCLCPP_INFO(get_logger(), "    add publisher ID %s", to_string(guids).c_str());
                     ni.publisher.push_back(guid);
                 }
-                // ni.subscriber.clear();
+                ni.subscriber.clear();
                 for (auto &reader_gid : node.reader_gid_seq)
                 {
                     fkie_multimaster_msgs::msg::Guid guid;
                     std::memcpy(&guid.data, &reader_gid, sizeof(guid.data));
+                    rmw_gid_t rmw_gidt;
+                    rmw_dds_common::convert_msg_to_gid(&reader_gid, &rmw_gidt);
+                    eprosima::fastrtps::rtps::GUID_t guids;
+                    rmw_fastrtps_shared_cpp::copy_from_byte_array_to_fastrtps_guid(rmw_gidt.data, &guids);
+                    RCLCPP_INFO(get_logger(), "    add subscriber ID %s", to_string(guids).c_str());
                     ni.subscriber.push_back(guid);
                 }
                 infoUpdated_ = true;
@@ -345,13 +365,15 @@ public:
             if (old_nodes.size() > 0)
             {
                 ParticipantInfo rpi;
-                for (auto it = old_nodes.begin(); it != old_nodes.end(); it++)
-                {
-                    NodeInfo ni;
-                    ni.name = it->name;
-                    ni.ns = it->ns;
-                    rpi.nodes.push_back(ni);
-                }
+                // for (auto it = old_nodes.begin(); it != old_nodes.end(); it++)
+                // {
+                //     NodeInfo ni;
+                //     ni.name = it->name;
+                //     ni.ns = it->ns;
+                //     rpi.nodes.push_back(ni);
+                //     RCLCPP_INFO(get_logger(), "    remove node ns=%s, name=%s from participant guid=%s", ni.ns.c_str(), ni.name.c_str(), to_string(guid).c_str());
+                //     participant.nodes.erase(it);
+                // }
                 removedParticipants_[guid] = rpi;
             }
         }
@@ -371,7 +393,7 @@ public:
                 return pi_node;
             }
         }
-        RCLCPP_INFO(get_logger(), "new node discovered; ns=%s, name=%s, count already known nodes: %lu", ns.c_str(), name.c_str(), pi.nodes.size());
+        RCLCPP_INFO(get_logger(), "    new node discovered; ns=%s, name=%s, count already known nodes: %lu", ns.c_str(), name.c_str(), pi.nodes.size());
         NodeInfo ni;
         ni.name = name;
         ni.ns = ns;
@@ -422,6 +444,7 @@ public:
         eprosima::fastrtps::rtps::WriterDiscoveryInfo &&info) override
     {
         (void)participant;
+
         if (eprosima::fastrtps::rtps::WriterDiscoveryInfo::CHANGED_QOS_WRITER != info.status)
         {
             bool isnew = false;
@@ -465,7 +488,12 @@ public:
             rtps_qos_to_rmw_qos(proxyData.m_qos, &ti.qos);
 #endif
             discoveredTopics_[proxyData.guid()] = ti;
-            RCLCPP_DEBUG(get_logger(), "new topic %s", ti.name.c_str());
+            RCLCPP_INFO(get_logger(), "process_discovery_info: new topic %s, participan_guid: %s", ti.name.c_str(), to_string(participant_guid).c_str());
+            if (ti.name == daemon_topic_) {
+                RCLCPP_INFO(get_logger(), "process_discovery_info: ->>DAEMON found %s, participan_guid: %s", ti.name.c_str(), to_string(participant_guid).c_str());
+                infoUpdated_ = true;
+                infoUpdatedTs_ = now();
+            }
         }
         else
         {
@@ -479,7 +507,7 @@ public:
             {
                 removedTopics_.push_back(proxyData.guid());
             }
-            RCLCPP_DEBUG(get_logger(), "remove topic %s", proxyData.topicName().c_str());
+            RCLCPP_INFO(get_logger(), "remove topic %s", proxyData.topicName().c_str());
         }
         infoUpdated_ = true;
         infoUpdatedTs_ = now();
@@ -489,15 +517,15 @@ public:
         eprosima::fastrtps::Participant * /*participant*/,
         eprosima::fastrtps::rtps::ParticipantDiscoveryInfo &&info)
     {
-        RCLCPP_DEBUG(get_logger(), "participant info %s", info.info.m_participantName.c_str());
-        RCLCPP_DEBUG(get_logger(), "  status %d", info.status);
+        RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery: participant info %s", info.info.m_participantName.c_str());
+        RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery:   status %d", info.status);
         std::lock_guard<std::mutex> guard(mutex_);
         auto participant_guid = to_string(info.info.m_guid);
         switch (info.status)
         {
         case eprosima::fastrtps::rtps::ParticipantDiscoveryInfo::DISCOVERED_PARTICIPANT:
         {
-            RCLCPP_INFO(get_logger(), "new participant %s", participant_guid.c_str());
+            RCLCPP_INFO(get_logger(), "onParticipantDiscovery: new participant %s", participant_guid.c_str());
             auto itp = discoveredParticipants_.find(info.info.m_guid);
             if (itp == discoveredParticipants_.end())
             {
@@ -511,7 +539,7 @@ public:
             if (enclave_found != map.end())
             {
                 pi.enclave = std::string(enclave_found->second.begin(), enclave_found->second.end());
-                RCLCPP_INFO(get_logger(), "  enclave '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
+                RCLCPP_INFO(get_logger(), "onParticipantDiscovery:   enclave '%s' found for %s", pi.enclave.c_str(), participant_guid.c_str());
             }
             else
             {
@@ -519,7 +547,7 @@ public:
                 NodeInfo ni;
                 auto name_found = map.find("name");
                 auto ns_found = map.find("namespace");
-                RCLCPP_INFO(get_logger(), " no enclave found for %s, pname: %s", participant_guid.c_str(), info.info.m_participantName.c_str());
+                RCLCPP_INFO(get_logger(), "onParticipantDiscovery:  no enclave found for %s, pname: %s", participant_guid.c_str(), info.info.m_participantName.c_str());
                 if (name_found != map.end())
                 {
                     ni.name = std::string(name_found->second.begin(), name_found->second.end());
@@ -532,7 +560,7 @@ public:
             }
             for (auto i = info.info.default_locators.unicast.begin(); i != info.info.default_locators.unicast.end(); ++i)
             {
-                RCLCPP_DEBUG(get_logger(), "add unicast locator: %s", to_string(*i).c_str());
+                RCLCPP_DEBUG(get_logger(), "onParticipantDiscovery:  add unicast locator: %s", to_string(*i).c_str());
                 pi.unicast_locators.push_back(to_string(*i));
             }
             discoveredParticipants_[info.info.m_guid] = pi;
@@ -548,10 +576,10 @@ public:
             // only consider known GUIDs
             if (itp != discoveredParticipants_.end())
             {
-                RCLCPP_INFO(get_logger(), "  remove participant %s with nodes[%lu]:", to_string(info.info.m_guid).c_str(), itp->second.nodes.size());
+                RCLCPP_INFO(get_logger(), "onParticipantDiscovery:   remove participant %s with nodes[%lu]:", to_string(info.info.m_guid).c_str(), itp->second.nodes.size());
                 for (auto &ni : itp->second.nodes)
                 {
-                    RCLCPP_INFO(get_logger(), "    - ns=%s, name:=%s", ni.ns.c_str(), ni.name.c_str());
+                    RCLCPP_INFO(get_logger(), "onParticipantDiscovery:     - ns=%s, name:=%s", ni.ns.c_str(), ni.name.c_str());
                 }
                 discoveredParticipants_.erase(itp);
                 // remove all topics of this participant ID
@@ -559,7 +587,7 @@ public:
                 {
                     if (info.info.m_guid == itt->first)
                     {
-                        RCLCPP_INFO(get_logger(), "  remove topic belongs to %s", itt->second.name.c_str());
+                        RCLCPP_INFO(get_logger(), "onParticipantDiscovery:   remove topic belongs to %s", itt->second.name.c_str());
                         auto vrt = std::find(removedTopics_.begin(), removedTopics_.end(), itt->first);
                         if (vrt == removedTopics_.end())
                         {
@@ -605,7 +633,6 @@ private:
     const void *message_type_impl_;
 #endif
     mutable std::mutex mutex_;
-    size_t subscriber_count;
     bool infoUpdated_;
     bool on_shutdown;
     uint64_t infoUpdatedTs_;
@@ -614,6 +641,8 @@ private:
     eprosima::fastrtps::Participant *participant_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
     eprosima::fastrtps::Subscriber *subscriber_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
     rclcpp::Publisher<fkie_multimaster_msgs::msg::DiscoveredState>::SharedPtr publisher_;
+    rclcpp::Subscription<fkie_multimaster_msgs::msg::Endpoint>::SharedPtr subscriber_daemon_;
+    std::string daemon_topic_;
     double stamp_;
     paricipant_map_t discoveredParticipants_ RCPPUTILS_TSA_GUARDED_BY(mutex_);
     topic_map_t discoveredTopics_ RCPPUTILS_TSA_GUARDED_BY(mutex_);

@@ -112,6 +112,9 @@ class RosStateServicer(CrossbarBaseSession):
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
                     self._ros_state = None
                     self.publish_to('ros.discovery.ready', {'status': False})
+            elif nmd.ros_node.count_publishers(self.topic_name_state) > 0:
+                nmd.launcher.server.pub_endpoint.publish(
+                    nmd.launcher.server._endpoint_msg)
             time.sleep(1)
 
     def stop(self):

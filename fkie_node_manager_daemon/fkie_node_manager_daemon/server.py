@@ -104,13 +104,13 @@ class Server:
         if server.port() != port:
             self.name = "%s_%d" % (self.name, port)
         self._endpoint_msg.name = self.name
-        self.pub_endpoint.publish(self._endpoint_msg)
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
         self._crossbarThread.start()
         self._crossbarNotificationThread = threading.Thread(
             target=self._crossbar_notify_if_regsitered, daemon=True)
         self._crossbarNotificationThread.start()
+        self.pub_endpoint.publish(self._endpoint_msg)
         return True
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
