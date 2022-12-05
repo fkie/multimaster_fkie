@@ -67,7 +67,6 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadReply
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodelets
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchAssociations
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNode
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeInfo
@@ -907,7 +906,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
             reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.masteruri, host=lc.host,
-                                     nodes=[], parameters=[], nodelets=[], associations=[])
+                                     nodes=[], parameters=[], associations=[])
 
             # Add launch arguments
             for name, arg in lc.argv2dict(lc.argv).items():
@@ -956,6 +955,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                               "startColumn": start_column,
                               "endColumn": end_column}
 
+                composable_container = None
+                if item.package == 'nodelet' and item.type == 'nodelet':
+                    args = item.args.split(' ')
+                    if len(args) == 3 and args[0] == 'load':
+                        composable_container = roslib.names.ns_join(
+                            item.namespace, args[2])
+
                 reply_lc.nodes.append(LaunchNodeInfo(node_fullname,
                                                      # remove last "/" character in namespace
                                                      node_name=node_fullname,
@@ -974,28 +980,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                                                      file_name=item.filename,
                                                      file_range=file_range,
                                                      launch_context_arg=item.launch_context_arg,
-                                                     launch_name=item.launch_name)
+                                                     launch_name=item.launch_name,
+                                                     composable_container=composable_container)
                                       )
 
             # Add parameter values
             for name, p in lc.roscfg.params.items():
                 reply_lc.parameters.append(RosParameter(name, p.value))
-
-            # create nodelets description
-            nodelets = {}
-            for n in lc.roscfg.nodes:
-                if n.package == 'nodelet' and n.type == 'nodelet':
-                    args = n.args.split(' ')
-                    if len(args) == 3 and args[0] == 'load':
-                        nodelet_mngr = roslib.names.ns_join(
-                            n.namespace, args[2])
-                        if nodelet_mngr not in nodelets:
-                            nodelets[nodelet_mngr] = []
-                        nodelets[nodelet_mngr].append(
-                            roslib.names.ns_join(n.namespace, n.name))
-            for mngr, ndl in nodelets.items():
-                nlmsg = LaunchNodelets(manager=mngr, nodes=ndl)
-                reply_lc.nodelets.append(nlmsg)
 
             # create association description
             associations = {}

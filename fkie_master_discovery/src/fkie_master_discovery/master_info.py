@@ -1391,6 +1391,11 @@ class MasterInfo(object):
                         ros_topic.publisher.append(n)
                         node = ros_nodes.get(n, RosNode(n, n))
                         node.publishers.append(ros_topic)
+                        # check if it is a nodlet
+                        if name.endswith('/bond'):
+                            parent_id = name[:-5]
+                            if n != parent_id:
+                                node.parent_id = parent_id
                         node.system_node |= discover_state_publisher
                         ros_nodes[n] = node
                 for n in topic.subscriberNodes:

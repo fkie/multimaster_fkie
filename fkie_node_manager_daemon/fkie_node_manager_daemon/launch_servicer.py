@@ -47,7 +47,6 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadReply
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodelets
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchAssociations
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNode
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeInfo
@@ -475,7 +474,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         for cfgid in requested_files:
             lc = self._loaded_files[cfgid]
             reply_lc = LaunchContent(path=cfgid.path, args=[], masteruri=lc.daemonuri, host='',  # lc.host,
-                                     nodes=[], parameters=[], nodelets=[], associations=[])
+                                     nodes=[], parameters=[], associations=[])
 
             # Add launch arguments
             for name, p in lc.provided_launch_arguments:

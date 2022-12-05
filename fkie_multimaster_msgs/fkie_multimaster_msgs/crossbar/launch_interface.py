@@ -142,21 +142,6 @@ class LaunchLoadRequest:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
-class LaunchNodelets:
-    '''
-    Represents the nodelets specified in Launchfile.
-    :param str manager: nodelete manager
-    :param [str] nodes: list with nodes (full name) controlled by nodelet manager.
-    '''
-
-    def __init__(self, manager: str, nodes: List[str]) -> None:
-        self.manager = manager
-        self.nodes = nodes
-
-    def __str__(self):
-        return json.dumps(dict(self), ensure_ascii=False)
-
-
 class LaunchAssociations:
     '''
     Represents the associations specified in Launch file.
@@ -301,7 +286,6 @@ class LaunchContent:
                  host: str = '',
                  nodes: List[str] = [],
                  parameters: List[RosParameter] = [],
-                 nodelets: List[LaunchNodelets] = [],
                  associations: List[LaunchAssociations] = []) -> None:
         self.path = path
         self.args = args
@@ -309,7 +293,6 @@ class LaunchContent:
         self.host = host
         self.nodes = nodes
         self.parameters = parameters
-        self.nodelets = nodelets
         self.associations = associations
 
     def __str__(self):
