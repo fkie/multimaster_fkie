@@ -163,6 +163,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch
         self._included_files = []
         self._included_dirs = []
+        self._launch_includes = {}
         self._is_running = True
         self._peers = {}
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
@@ -190,7 +191,12 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
 
     def on_any_event(self, event: FileSystemEvent):
         if event.src_path in self._included_files:
-            change_event = {event.event_type: event.src_path}
+            affected_launch_files = []
+            for launch_path, path_list in self._launch_includes.items():
+                if event.src_path in path_list:
+                    affected_launch_files.append(launch_path)
+            change_event = {event.event_type: event.src_path,
+                            'affected': affected_launch_files}
             Log.debug("observed change %s on %s" %
                       (event.event_type, event.src_path))
             self.publish_to('ros.path.changed', change_event)
@@ -317,7 +323,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             pass
         return topic
 
-    def _add_file_to_observe(self, path):
+    def _add_file_to_observe(self, path, launchfile):
         directory = os.path.dirname(path)
         Log.debug('observe path: %s' % path)
         if directory not in self._observed_dirs:
@@ -326,6 +332,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             self._observed_dirs[directory] = watch
         self._included_files.append(path)
         self._included_dirs.append(directory)
+        if launchfile not in self._launch_includes:
+            self._launch_includes[launchfile] = []
+        self._launch_includes[launchfile].append(path)
 
     def _remove_file_from_observe(self, path):
         Log.debug('stop observe path: %s' % str(path))
@@ -344,7 +353,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
 
     def _add_launch_to_observer(self, path):
         try:
-            self._add_file_to_observe(path)
+            self._add_file_to_observe(path, path)
             search_in_ext = SEARCH_IN_EXT
             # search for loaded file and get the arguments
             resolve_args = {}
@@ -355,7 +364,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             # replay each file
             for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
                 if inc_file.exists:
-                    self._add_file_to_observe(inc_file.inc_path)
+                    self._add_file_to_observe(inc_file.inc_path, path)
         except Exception as e:
             Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
 
@@ -372,6 +381,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             # replay each file
             for inc_file in xml.find_included_files(path, True, True, search_in_ext, resolve_args):
                 self._remove_file_from_observe(inc_file.inc_path)
+            del self._launch_includes[path]
         except Exception as e:
             Log.error('_add_launch_to_observer %s:\n%s' % (str(path), e))
 
