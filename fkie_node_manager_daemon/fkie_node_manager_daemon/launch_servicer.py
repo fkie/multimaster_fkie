@@ -161,12 +161,17 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
 
     def on_any_event(self, event: FileSystemEvent):
         if event.src_path in self._included_files:
-            change_event = {event.event_type: event.src_path}
+            affected_launch_files = []
+            for launch_path, path_list in self._observed_launch_files.items():
+                if event.src_path in path_list:
+                    affected_launch_files.append(launch_path)
+            change_event = {event.event_type: event.src_path,
+                            'affected': affected_launch_files}
             Log.debug("observed change %s on %s" %
                       (event.event_type, event.src_path))
             self.publish_to('ros.path.changed', change_event)
 
-    def _add_file_to_observe(self, path):
+    def _add_file_to_observe(self, path: str):
         directory = os.path.dirname(path)
         Log.debug('observe path: %s' % path)
         if directory not in self._observed_dirs:
@@ -176,7 +181,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         self._included_files.append(path)
         self._included_dirs.append(directory)
 
-    def _remove_file_from_observe(self, path):
+    def _remove_file_from_observe(self, path: str):
         Log.debug('stop observe path: %s' % str(path))
         try:
             directory = os.path.dirname(path)

@@ -323,7 +323,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             pass
         return topic
 
-    def _add_file_to_observe(self, path, launchfile):
+    def _add_file_to_observe(self, path, launch_file):
         directory = os.path.dirname(path)
         Log.debug('observe path: %s' % path)
         if directory not in self._observed_dirs:
@@ -332,9 +332,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             self._observed_dirs[directory] = watch
         self._included_files.append(path)
         self._included_dirs.append(directory)
-        if launchfile not in self._launch_includes:
-            self._launch_includes[launchfile] = []
-        self._launch_includes[launchfile].append(path)
+        if launch_file not in self._launch_includes:
+            self._launch_includes[launch_file] = []
+        self._launch_includes[launch_file].append(path)
 
     def _remove_file_from_observe(self, path):
         Log.debug('stop observe path: %s' % str(path))
