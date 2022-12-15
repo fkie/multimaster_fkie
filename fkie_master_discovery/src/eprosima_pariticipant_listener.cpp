@@ -185,9 +185,9 @@ public:
                         RCLCPP_WARN(get_logger(), "rosgraph: participant; guid=%s not found while update", to_string(updated_participant).c_str());
                     }
                 }
-                removedParticipants_.clear();
-                updatedParticipants_.clear();
             }
+            removedParticipants_.clear();
+            updatedParticipants_.clear();
             RCLCPP_INFO(get_logger(), "rosgraph:     publish");
             publisher_->publish(rosmsg);
             RCLCPP_INFO(get_logger(), "rosgraph:     published");
@@ -315,10 +315,10 @@ public:
                 }
             }
             // copy all remaining nodes to removed nodes
-            if (old_nodes.size() > 0)
-            {
-                removedParticipants_.insert(guid);
-            }
+            // if (old_nodes.size() > 0)
+            // {
+            //     removedParticipants_.insert(guid);
+            // }
         }
         else
         {

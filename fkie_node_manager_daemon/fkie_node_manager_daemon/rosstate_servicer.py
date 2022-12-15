@@ -141,7 +141,7 @@ class RosStateServicer(CrossbarBaseSession):
         self._ros_node_list = None
         if not self._ros_state:
             if msg.full_state:
-                print("full state")
+                Log.info('  full update')
                 self._ros_state = {}
                 self.publish_to('ros.discovery.ready', {'status': True})
                 for participant in msg.participants:
@@ -152,18 +152,18 @@ class RosStateServicer(CrossbarBaseSession):
         else:
             if msg.full_state:
                 # update all nodes on full state
-                print("full state")
+                Log.info('  full update')
                 self._ros_state = {}
             else:
-                print("update state")
+                Log.info('  partially update')
             for participant in msg.participants:
                 guid = self._guid_to_str(participant.guid)
-                print("add partisipant", guid )
+                Log.info(f"    add participant {guid}")
                 self._ros_state[guid] = participant
             for gid in msg.removed_participants:
-                print("removed partisipant", gid)
                 try:
                     r_gid = self._guid_to_str(gid)
+                    Log.info(f"    removed participant {r_gid}")
                     del self._ros_state[r_gid]
                 except Exception as err:
                     Log.warn(f"error while remove participant: {err}")
