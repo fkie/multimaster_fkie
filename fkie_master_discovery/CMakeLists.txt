@@ -40,13 +40,9 @@ if ( ament_cmake_FOUND )
     find_package(fkie_multimaster_msgs REQUIRED)
     find_package(rclcpp REQUIRED)
     find_package(rclcpp_lifecycle REQUIRED)
-    find_package(rmw_dds_common QUIET)
-    if(rmw_dds_common_FOUND)
-        # rmw_dds_common available since ROS2 foxy
-        add_compile_options(-Drmw_dds_common_FOUND)
-        find_package(rmw_fastrtps_cpp REQUIRED)
-        find_package(rosidl_typesupport_fastrtps_cpp REQUIRED)
-    endif()
+    find_package(rmw_dds_common REQUIRED)
+    find_package(rmw_fastrtps_cpp REQUIRED)
+    find_package(rosidl_typesupport_fastrtps_cpp REQUIRED)
     find_package(rmw_fastrtps_shared_cpp REQUIRED)
     find_package(lifecycle_msgs REQUIRED)
 
@@ -73,13 +69,9 @@ if ( ament_cmake_FOUND )
         rmw_fastrtps_shared_cpp
         lifecycle_msgs
     )
-    if(rmw_dds_common_FOUND)
-    # rmw_dds_common available since ROS2 foxy
     list(APPEND DEPS rmw_dds_common)
     list(APPEND DEPS rmw_fastrtps_cpp)
     list(APPEND DEPS rosidl_typesupport_fastrtps_cpp)
-    endif()
-
     include_directories(${catkin_INCLUDE_DIRS})
     add_executable(master_discovery
         src/eprosima_pariticipant_listener.cpp

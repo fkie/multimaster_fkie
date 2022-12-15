@@ -50,6 +50,7 @@ from fkie_multimaster_msgs.system.host import get_hostname
 from fkie_multimaster_msgs.system.url import get_port
 from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
 from fkie_multimaster_msgs.msg import DiscoveredState
+from fkie_multimaster_msgs.msg import ParticipantEntitiesInfo
 from fkie_multimaster_msgs.msg import Endpoint
 
 import fkie_node_manager_daemon as nmd
@@ -61,7 +62,7 @@ class RosStateServicer(CrossbarBaseSession):
         Log.info("Create ros_state servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
-        self._ros_state: DiscoveredState = None
+        self._ros_state: Dict[str, ParticipantEntitiesInfo] = {}
         self._ros_node_list: List[RosNode] = None
         self.topic_name_state = '%s/%s/rosstate' % (
             NM_NAMESPACE, NM_DISCOVERY_NAME)
@@ -108,9 +109,9 @@ class RosStateServicer(CrossbarBaseSession):
 
     def _check_discovery_node(self):
         while not self._on_shutdown:
-            if self._ros_state is not None:
+            if self._ros_state:
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
-                    self._ros_state = None
+                    self._ros_state = {}
                     self.publish_to('ros.discovery.ready', {'status': False})
             elif nmd.ros_node.count_publishers(self.topic_name_state) > 0:
                 nmd.launcher.server.pub_endpoint.publish(
@@ -138,11 +139,36 @@ class RosStateServicer(CrossbarBaseSession):
         '''
         Log.info('new message on %s' % self.topic_name_state)
         self._ros_node_list = None
-        if self._ros_state is None:
-            self.publish_to('ros.discovery.ready', {'status': True})
-        self._ros_state = msg
-        self.publish_to('ros.nodes.changed', {"timestamp": time.time()})
-        nmd.launcher.server.screen_servicer.system_change()
+        if not self._ros_state:
+            if msg.full_state:
+                print("full state")
+                self._ros_state = {}
+                self.publish_to('ros.discovery.ready', {'status': True})
+                for participant in msg.participants:
+                    guid = self._guid_to_str(participant.guid)
+                    self._ros_state[guid] = participant
+                self.publish_to('ros.nodes.changed', {"timestamp": time.time()})
+                nmd.launcher.server.screen_servicer.system_change()
+        else:
+            if msg.full_state:
+                # update all nodes on full state
+                print("full state")
+                self._ros_state = {}
+            else:
+                print("update state")
+            for participant in msg.participants:
+                guid = self._guid_to_str(participant.guid)
+                print("add partisipant", guid )
+                self._ros_state[guid] = participant
+            for gid in msg.removed_participants:
+                print("removed partisipant", gid)
+                try:
+                    r_gid = self._guid_to_str(gid)
+                    del self._ros_state[r_gid]
+                except Exception as err:
+                    Log.warn(f"error while remove participant: {err}")
+            self.publish_to('ros.nodes.changed', {"timestamp": time.time()})
+            nmd.launcher.server.screen_servicer.system_change()
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
@@ -151,12 +177,22 @@ class RosStateServicer(CrossbarBaseSession):
         :type msg: fkie_multimaster_msgs.Endpoint<XXX>
         '''
         Log.info('new message on %s' % self.topic_name_endpoint)
+        is_new = False
         if msg.on_shutdown:
             if msg.uri in self._endpoints:
+                is_new = True
                 del self._endpoints[msg.uri]
+        elif msg.uri in self._endpoints:
+            other = self._endpoints[msg.uri]
+            is_new = msg.name != other.name
+            is_new |= msg.ros_name != other.ros_name
+            is_new |= msg.ros_domain_id != other.ros_domain_id
+            is_new |= msg.pid != other.pid
         else:
+            is_new = True
+        if is_new:
             self._endpoints[msg.uri] = msg
-        self._crossbar_publish_masters()
+            self._crossbar_publish_masters()
 
     @wamp.register('ros.provider.get_list')
     def crossbar_get_provider_list(self) -> str:
@@ -276,19 +312,19 @@ class RosStateServicer(CrossbarBaseSession):
 
     def to_crossbar(self) -> List[RosNode]:
         result = []
-        if self._ros_state is not None:
+        if self._ros_state:
             topic_by_id = {}
             topic_objs = {}
             service_by_id = {}
             service_objs = {}
-            for rp in self._ros_state.participants:
+            for p_guid, participant in self._ros_state.items():
                 # location = ''
                 # for loc in rp.unicast_locators:
                 #     if '127.0.0.' in loc or 'SHM' in loc:
                 #         location = 'local'
                 # if not location:
                 #     location = rp.unicast_locators
-                for te in rp.topic_entities:
+                for te in participant.topic_entities:
                     t_guid = self._guid_to_str(te.guid)
                     if te.name.startswith('rt/'):
                         if (te.name[2:], te.ttype) not in topic_objs:
@@ -310,29 +346,28 @@ class RosStateServicer(CrossbarBaseSession):
                             service_by_id[t_guid] = service_objs[(
                                 srv_name, srv_type)]
                 parent_node = None
-                for rn in rp.node_entities:
-                    n_guid = self._guid_to_str(rp.guid)
+                for rn in participant.node_entities:
                     full_name = os.path.join(rn.ns, rn.name)
                     Log.info(
-                        f"add node: {n_guid}|{full_name}, {rp.enclave}, {rp.unicast_locators}")
-                    ros_node = RosNode(f"{n_guid}|{full_name}", rn.name)
+                        f"add node: {p_guid}|{full_name}, {participant.enclave}, {participant.unicast_locators}")
+                    ros_node = RosNode(f"{p_guid}|{full_name}", rn.name)
                     discover_state_publisher = False
                     endpoint_publisher = False
-                    ros_node.location = rp.unicast_locators
+                    ros_node.location = participant.unicast_locators
                     ros_node.name = full_name
                     ros_node.namespace = rn.ns
                     for ntp in rn.publisher:
                         gid = self._guid_to_str(ntp)
                         try:
                             tp = topic_by_id[gid]
-                            tp.publisher.append(n_guid)
+                            tp.publisher.append(p_guid)
                             ros_node.publishers.append(tp)
                             discover_state_publisher = tp.msgtype == 'fkie_multimaster_msgs::msg::dds_::DiscoveredState_'
                             endpoint_publisher = tp.msgtype == 'fkie_multimaster_msgs::msg::dds_::Endpoint_'
                         except KeyError:
                             try:
                                 srv = service_by_id[gid]
-                                srv.provider.append(n_guid)
+                                srv.provider.append(p_guid)
                                 ros_node.services.append(srv)
                             except KeyError:
                                 pass
@@ -340,12 +375,12 @@ class RosStateServicer(CrossbarBaseSession):
                         gid = self._guid_to_str(nts)
                         try:
                             ts = topic_by_id[gid]
-                            ts.subscriber.append(n_guid)
+                            ts.subscriber.append(p_guid)
                             ros_node.subscribers.append(ts)
                         except KeyError:
                             try:
                                 srv = service_by_id[gid]
-                                srv.provider.append(n_guid)
+                                srv.provider.append(p_guid)
                                 ros_node.services.append(srv)
                             except KeyError:
                                 pass

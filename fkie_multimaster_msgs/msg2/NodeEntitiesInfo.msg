@@ -1,4 +1,4 @@
 string name
 string ns
-Guid[] subscriber
-Guid[] publisher
+Gid[] subscriber
+Gid[] publisher

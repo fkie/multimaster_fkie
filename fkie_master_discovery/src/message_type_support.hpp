@@ -4,8 +4,6 @@
 #include "fastrtps/Domain.h"
 #include "fastrtps/participant/ParticipantListener.h"
 
-#ifdef rmw_dds_common_FOUND
-// rmw_dds_common available since ROS2 foxy
 #include "rmw_dds_common/msg/participant_entities_info.hpp"
 #include <fastrtps/TopicDataType.h>
 #include "fastrtps/subscriber/SampleInfo.h"
@@ -46,7 +44,5 @@ _create_type_name(
 }
 
 std::string register_type(eprosima::fastrtps::Participant *participant, const void **type_support_impl);
-
-#endif // rmw_dds_common_FOUND
 
 #endif // MESSAGE_TYPE_SUPPORT_HPP_

@@ -30,9 +30,9 @@
   <depend condition="$ROS_VERSION == 2">lifecycle_msgs</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp</depend>
   <depend condition="$ROS_VERSION == 2">rclcpp_lifecycle</depend>
-  <depend condition="$ROS_VERSION == 2 and $ROS_DISTRO != eloquent">rosidl_typesupport_fastrtps_cpp</depend>
-  <depend condition="$ROS_VERSION == 2 and $ROS_DISTRO != eloquent">rmw_dds_common</depend>
-  <depend condition="$ROS_VERSION == 2 and $ROS_DISTRO != eloquent">rmw_fastrtps_cpp</depend>
+  <depend condition="$ROS_VERSION == 2">rosidl_typesupport_fastrtps_cpp</depend>
+  <depend condition="$ROS_VERSION == 2">rmw_dds_common</depend>
+  <depend condition="$ROS_VERSION == 2">rmw_fastrtps_cpp</depend>
   <depend condition="$ROS_VERSION == 2">rmw_fastrtps_shared_cpp</depend>
 
   <test_depend condition="$ROS_VERSION == 2">ament_cmake_gtest</test_depend>

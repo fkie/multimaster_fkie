@@ -1,4 +1,4 @@
-Guid guid
+Gid guid
 string name
 string ttype
 int8 info

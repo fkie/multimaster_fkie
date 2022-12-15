@@ -1,13 +1,8 @@
-# the timestamp of this state
-uint64 stamp
+# true if massage contains the complete discovered status.
+bool full_state
+
+# If full_state is False, the list contains only new or updated participants.
 ParticipantEntitiesInfo[] participants
 
-# Removed entities since last report
-# since the status with the timestamp
-uint64 since
-# removed nodes since last_message. Remove all nodes of the participant if node_entities is empty.
-# enclave, unicast_locators, topic_entities and publisher, subscriber of the underlined messages
-# are not valid!
-ParticipantEntitiesInfo[] removed_nodes
-# removed topic IDs
-Guid[] removed_topics
+# Removed_participants list is always empty if full_state is True, otherwise the list contains removed participants.
+Gid[] removed_participants

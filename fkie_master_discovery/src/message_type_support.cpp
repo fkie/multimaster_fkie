@@ -19,7 +19,6 @@
 
 #include "message_type_support.hpp"
 
-#ifdef rmw_dds_common_FOUND
 #define RMW_FASTRTPS_CPP_TYPESUPPORT_CPP rosidl_typesupport_fastrtps_cpp::typesupport_identifier
 
 using ParticipantEntitiesInfo = rmw_dds_common::msg::ParticipantEntitiesInfo;
@@ -211,5 +210,3 @@ namespace rmw_fastrtps_cpp
   }
 
 } // namespace rmw_fastrtps_cpp
-
-#endif // rmw_dds_common_FOUND
