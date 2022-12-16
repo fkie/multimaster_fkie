@@ -277,7 +277,7 @@ class MasterItem(QStandardItem):
                     [tooltip, '<dt>', 'Quality: ', str(quality), ' %', '</dt>'])
             else:
                 tooltip = ''.join(
-                    [tooltip, '<dt>', 'Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % DiscoveredMaster.MIN_HZ_FOR_QUALILTY])
+                    [tooltip, '<dt>', 'Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % DiscoveredMaster.MIN_HZ_FOR_QUALITY])
         else:
             tooltip = ''.join([tooltip, '<dt>', 'offline', '</dt>'])
         tooltip = ''.join([tooltip, '</dl>'])
@@ -654,7 +654,7 @@ class MasterIconsDelegate(QItemDelegate):
                         tooltip, item.quality)
                 else:
                     tooltip = '%s\n<dt>Quality: not available, start <b>master_discovery</b> with <b>heartbeat_hz</b> parameter >= %.02f</dt>' % (
-                        tooltip, DiscoveredMaster.MIN_HZ_FOR_QUALILTY)
+                        tooltip, DiscoveredMaster.MIN_HZ_FOR_QUALITY)
             else:
                 tooltip = '%s\n<dt>offline</dt>' % (tooltip)
             # update warnings
