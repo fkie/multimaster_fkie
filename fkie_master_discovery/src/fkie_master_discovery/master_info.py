@@ -1428,6 +1428,12 @@ class MasterInfo(object):
                 ros_node.masteruri = node.masteruri
                 ros_node.pid = node.pid
                 ros_node.location = 'local' if node.isLocal else 'remote'
+                status = 'unknown'
+                if node.pid is not None:
+                    status = 'running'
+                elif node.uri is not None:
+                    status = 'not available'
+                ros_node.status = status
 
                 # Include namespace in name
                 ros_node.name = names.ns_join(
