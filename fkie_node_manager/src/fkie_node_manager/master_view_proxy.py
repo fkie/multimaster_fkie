@@ -4157,7 +4157,7 @@ class MasterViewProxy(QWidget):
                                            {'host': host_addr,
                                             'package': 'fkie_node_manager_daemon',
                                             'binary': 'node_manager_daemon',
-                                            'name': 'node_manager_daemon',
+                                            'name': '',
                                             'args': [],
                                             'masteruri': self.masteruri,
                                             'use_nmd': False,

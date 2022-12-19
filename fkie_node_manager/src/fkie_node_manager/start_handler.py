@@ -98,11 +98,12 @@ class StartHandler(object):
         args2 = list(args)
         fullname = roslib.names.ns_join(roslib.names.SEP, name)
         namespace = ''
-        for a in args:
-            if a.startswith('__ns:='):
-                namespace = a.replace('__ns:=', '')
-                fullname = roslib.names.ns_join(namespace, name)
-        args2.append(''.join(['__name:=', name]))
+        if name:
+            for a in args:
+                if a.startswith('__ns:='):
+                    namespace = a.replace('__ns:=', '')
+                    fullname = roslib.names.ns_join(namespace, name)
+            args2.append(''.join(['__name:=', name]))
         # run on local host
         if nm.is_local(host, wait=True):
             if not use_nmd:
@@ -161,7 +162,7 @@ class StartHandler(object):
                 local_env = dict(os.environ)
                 local_env.update(new_env)
                 cmd_str = utf8(
-                    ' '.join([screen.get_cmd(fullname, local_env), cmd_type, ' '.join(args2)]))
+                    ' '.join([screen.get_cmd(fullname if name else binary, local_env), cmd_type, ' '.join(args2)]))
                 Log.info("Run without config: %s",
                          fullname if use_nmd else cmd_str)
                 SupervisedPopen(shlex.split(cmd_str), env=local_env, object_id="Run without config",
@@ -170,8 +171,12 @@ class StartHandler(object):
             # run on a remote machine
             startcmd = [nm.settings().start_remote_script,
                         '--package', utf8(package),
-                        '--node_type', utf8(binary),
-                        '--node_name', utf8(fullname)]
+                        '--node_type', utf8(binary)]
+            if name:
+                startcmd.append('--node_name')
+                startcmd.append(utf8(fullname))
+            else:
+                startcmd.append('--set_name false')
             startcmd[len(startcmd):] = args2
             if masteruri is not None:
                 startcmd.append('--masteruri')

@@ -2,6 +2,7 @@
 
 import os
 import psutil
+import re
 import shlex
 import socket
 import subprocess
@@ -49,7 +50,7 @@ def parse_arguments():
         description='Start nodes remotely using the host ROS configuration',
         epilog="Fraunhofer FKIE 2022")
 
-    parser.add_argument('--name', default=None, required=True,
+    parser.add_argument('--name', default=None,
                         help='The name of the node (with namespace) or script')
     parser.add_argument('--set_name', type=str2bool, nargs='?',
                         const=True, default=True,
@@ -110,52 +111,34 @@ def parse_arguments():
     return parser, args, additional_args
 
 
-def find_process_by_name(name: str, command: str, additional_args: List[str]):
-    "Return a list of processes matching 'name'. Ignores self node."
+def find_process_by_name(command: str, package: str, additional_args: List[str]):
+    "Return a list of processes matching 'package', 'command' and 'additional_args'. Ignores self node."
     self_name = psutil.Process().name()
-    arg_ns = f'__ns:={names.namespace(name, with_sep_suffix=False)}'
-    arg_name = f'__name:={names.basename(name)}'
+    pkg = package if package is not None else ''
+    cmd_args = f'{" ".join(additional_args)}'.strip()
+    if cmd_args:
+        cmd_args = f'\s*{cmd_args}'.replace('[', '\[').replace(']', '\]')
+    # try to compare the process with regex
+    cmd_reg = re.compile(f'{pkg}.*{command}{cmd_args}\Z')
 
-    for p in psutil.process_iter(["name", "exe", "cmdline"]):
+    result = []
+    for p in psutil.process_iter(["pid", "name", "exe", "cmdline"]):
         # ignore self node
         if self_name in p.info['name']:
             continue
+        cmdline = ' '.join(p.info['cmdline'])
+        if 'remote_node.py' in cmdline:
+            continue
 
-        cmd_found = False
-        if command is not None:
-            # try to find the command in the name or exe
-            # but it is not enough, we should check the parameter
-            if command == p.info['name']:
-                cmd_found = True
-            elif p.info['exe'] and command in os.path.basename(p.info['exe']):
-                cmd_found = True
-
-            if not cmd_found:
-                is_ros = p.info['name'] in ['ros2', 'ros']
-                # for ros nodes we check parameter for the name with namespace
-                if is_ros and arg_name in p.info['cmdline'] and arg_ns in p.info['cmdline']:
-                    return [p]
-
-                # check if a screen process is already running
-                cmd_args = f'{" ".join(additional_args)}'.strip()
-                cmd_line_text = ' '.join(p.info['cmdline']).strip()
-
-                # both commands and arguments are present on container process
-                if f'/{command} ' in cmd_line_text and cmd_args in cmd_line_text:
-                    Log.info(
-                        f'Found [{command}] running with the same arguments: [{cmd_args}] in [{cmd_line_text}]')
-                    return [p]
-
-            else:
-                # compare all parameter given to the executable
-                cmd_args = f'{command} {" ".join(additional_args)}'.strip()
-                cmd_line_text = ' '.join(p.info['cmdline']).strip()
-                if cmd_args == cmd_line_text:
-                    return [p]
-                else:
-                    Log.warn(
-                        f'Found node but with different arguments: [{cmd_args}] != [{cmd_line_text}]')
-    return []
+        for _ in cmd_reg.finditer(cmdline):
+            result.append(p)
+            break
+    if result:
+        Log.info(
+            f'Found running processes by pattern "{cmd_reg.pattern}" [{len(result)}]:')
+        for ps in result:
+            Log.info(f"  {ps.info['pid']}  ", ' '.join(ps.info['cmdline']))
+    return result
 
 
 def getCwdArg(arg, argv):
@@ -224,13 +207,14 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
         ' ') > -1 else a for a in args)
 
     # get namespace and basename from name
-    arg_ns = names.namespace(name, with_sep_suffix=False)
+    arg_ns = names.namespace(
+        name, with_sep_suffix=False, raise_err_on_none=False)
     arg_name = names.basename(name)
 
     arg_name_list = []
     if set_name:
         arg_name_list = [f'__name:={arg_name}', f'__ns:={arg_ns}']
-    cmd_args = [screen.get_cmd(node=arg_name, namespace=arg_ns),
+    cmd_args = [screen.get_cmd(node=arg_name if arg_name else executable, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd[0],
                 *arg_name_list, node_params]
     Log.info('run on remote host:', ' '.join(cmd_args))
@@ -267,18 +251,17 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     '''
 
     # get namespace and basename from name
-    arg_ns = names.namespace(name, with_sep_suffix=False)
+    arg_ns = names.namespace(
+        name, with_sep_suffix=False, raise_err_on_none=False)
     arg_name = names.basename(name)
 
-    print("set_name", set_name)
     arg_name_list = f'--ros-args -r __name:={arg_name} -r __ns:={arg_ns}' if set_name else ''
-    print("arg_name_list", arg_name_list)
     cmd = f'ros2 run {package} {executable} {arg_name_list}'
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args[1:])
     if not set_name and node_params:
         node_params = f'--ros-args {node_params}'
-    cmd_args = [screen.get_cmd(node=arg_name, namespace=arg_ns),
+    cmd_args = [screen.get_cmd(node=arg_name if arg_name else executable, namespace=arg_ns),
                 RESPAWN_SCRIPT if respawn is not None else '', prefix, cmd, node_params]
 
     screen_command = ' '.join(cmd_args)
@@ -311,12 +294,16 @@ def main(argv=sys.argv):
     if args.node_type is None:
         command = args.command
     running_processes = find_process_by_name(
-        args.name, command, additional_args)
+        command, args.package, additional_args)
     if len(running_processes) > 0:
-        Log.warn(
-            f'A process with the same name [{args.name}] is already running.',
-            'Skipping command because [force] is disable' if not args.force else "")
-
+        if args.name:
+            Log.warn(
+                f'A process with the same name [{args.name}] is already running.',
+                'Skipping command because [force] is disable' if not args.force else "")
+        else:
+            Log.warn(
+                f'A process of same package/executable [{args.package}/{args.node_type}] is already running.',
+                'Skipping command because [force] is disable' if not args.force else "")
         if not args.force:
             return
 
@@ -379,7 +366,7 @@ def main(argv=sys.argv):
                 os.remove(roslog)
             print_help = False
 
-        elif args.node_type and args.package and args.name:
+        elif args.node_type and args.package:
             if os.environ['ROS_VERSION'] == "1":
                 run_ROS1_node(args.package, args.node_type, args.name,
                               additional_args, args.prefix, args.respawn, args.masteruri, set_name=args.set_name)
