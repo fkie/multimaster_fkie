@@ -11,6 +11,8 @@ from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
 CROSSBAR_PATH = os.path.join(os.path.join(
     os.path.expanduser('~'), 'tmp'), '.crossbar')
 
+CROSSBAR_BIN_PATHS = ['crossbar', '/snap/bin/crossbar']
+
 CROSSBAR_CONFIG_JSON = {
     "version": 2,
     "controller": {},
@@ -104,7 +106,12 @@ def crossbar_create_config(port: int) -> None:
 
 def crossbar_start_server(port: int) -> str:
     crossbar_create_config(port)
-    if shutil.which('crossbar') is None:
+    crossbar_bin = None
+    for sbp in CROSSBAR_BIN_PATHS:
+        crossbar_bin = shutil.which(sbp)
+        if crossbar_bin is not None:
+            break
+    if crossbar_bin is None:
         try:
             Log.error(
                 "shutil.which('crossbar'): Could not find [crossbar], please check your PATH variable.")
@@ -115,7 +122,7 @@ def crossbar_start_server(port: int) -> str:
         return ""
 
     print(shutil.which('screen'), "-dmS", "_crossbar_server_%d" %
-          port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH)
+          port, crossbar_bin, "start", "--cbdir", CROSSBAR_PATH)
     p = subprocess.Popen([shutil.which('screen'), "-dmS", "_crossbar_server_%d" %
-                          port, shutil.which('crossbar'), "start", "--cbdir", CROSSBAR_PATH])
+                          port, crossbar_bin, "start", "--cbdir", CROSSBAR_PATH])
     return CROSSBAR_PATH
