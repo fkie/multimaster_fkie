@@ -106,7 +106,7 @@ else:
         test_suite="tests",
         entry_points={
             'console_scripts': [
-                'node_manager_daemon ='
+                'node_manager_daemon2 ='
                 ' fkie_node_manager_daemon:main',
             ],
         },
