@@ -21,6 +21,7 @@
 from typing import Dict
 from typing import List
 from numbers import Number
+from typing import Text
 from typing import Union
 
 import os
@@ -328,7 +329,7 @@ class RosStateServicer(CrossbarBaseSession):
                     t_guid = self._guid_to_str(te.guid)
                     if te.name.startswith('rt/'):
                         if (te.name[2:], te.ttype) not in topic_objs:
-                            tp = RosTopic(te.name[2:], te.ttype)
+                            tp = RosTopic(te.name[2:], self.get_message_type(te.ttype))
                             topic_objs[(te.name[2:], te.ttype)] = tp
                             topic_by_id[t_guid] = tp
                         else:
@@ -339,7 +340,7 @@ class RosStateServicer(CrossbarBaseSession):
                         # TODO: distinction between Reply/Request? Currently it is removed.
                         srv_name = self.get_service_name(te.name[2:])
                         if (srv_name, srv_type) not in service_objs:
-                            srv = RosService(srv_name, srv_type)
+                            srv = RosService(srv_name, self.get_service_type(srv_type))
                             service_objs[(srv_name, srv_type)] = srv
                             service_by_id[t_guid] = srv
                         else:
@@ -348,9 +349,10 @@ class RosStateServicer(CrossbarBaseSession):
                 parent_node = None
                 for rn in participant.node_entities:
                     full_name = os.path.join(rn.ns, rn.name)
+                    node_guid = f"{p_guid}|{full_name}"
                     Log.info(
-                        f"add node: {p_guid}|{full_name}, {participant.enclave}, {participant.unicast_locators}")
-                    ros_node = RosNode(f"{p_guid}|{full_name}", rn.name)
+                        f"add node: {node_guid}, {participant.enclave}, {participant.unicast_locators}")
+                    ros_node = RosNode(node_guid, rn.name)
                     discover_state_publisher = False
                     endpoint_publisher = False
                     ros_node.location = participant.unicast_locators
@@ -360,14 +362,14 @@ class RosStateServicer(CrossbarBaseSession):
                         gid = self._guid_to_str(ntp)
                         try:
                             tp = topic_by_id[gid]
-                            tp.publisher.append(p_guid)
+                            tp.publisher.append(node_guid)
                             ros_node.publishers.append(tp)
-                            discover_state_publisher = tp.msgtype == 'fkie_multimaster_msgs::msg::dds_::DiscoveredState_'
-                            endpoint_publisher = tp.msgtype == 'fkie_multimaster_msgs::msg::dds_::Endpoint_'
+                            discover_state_publisher = tp.msgtype == 'fkie_multimaster_msgs/msg/DiscoveredState'
+                            endpoint_publisher = tp.msgtype == 'fkie_multimaster_msgs/msg/Endpoint'
                         except KeyError:
                             try:
                                 srv = service_by_id[gid]
-                                srv.provider.append(p_guid)
+                                srv.provider.append(node_guid)
                                 ros_node.services.append(srv)
                             except KeyError:
                                 pass
@@ -375,12 +377,12 @@ class RosStateServicer(CrossbarBaseSession):
                         gid = self._guid_to_str(nts)
                         try:
                             ts = topic_by_id[gid]
-                            ts.subscriber.append(p_guid)
+                            ts.subscriber.append(node_guid)
                             ros_node.subscribers.append(ts)
                         except KeyError:
                             try:
                                 srv = service_by_id[gid]
-                                srv.provider.append(p_guid)
+                                srv.provider.append(node_guid)
                                 ros_node.services.append(srv)
                             except KeyError:
                                 pass
@@ -398,3 +400,31 @@ class RosStateServicer(CrossbarBaseSession):
                     result.append(ros_node)
         return result
 
+    @classmethod
+    def get_message_type(cls, dds_type:Text)->Text:
+        result = dds_type
+        if result:
+            result = result.replace('::', '/')
+            result = result.replace('/dds_', '')
+            # result = result.replace('/msg/dds_', '')
+            # result = result.replace('/srv/dds_', '')
+            result = result.rstrip('_')
+        return result
+
+    @classmethod
+    def get_service_type(cls, dds_service_type:Text)->Text:
+        result = dds_service_type
+        for suffix in ['_Response_', '_Request_']:
+            if result[-len(suffix):] == suffix:
+                result = result[:-len(suffix)+1]
+                break
+        return cls.get_message_type(result)
+
+    @classmethod
+    def get_service_name(cls, dds_service_name:Text)->Text:
+        result = dds_service_name
+        for suffix in ['Reply', 'Request']:
+            if result[-len(suffix):] == suffix:
+                result = result[:-len(suffix)]
+                break
+        return cls.get_message_type(result)
