@@ -4,6 +4,7 @@ import os
 import psutil
 import re
 import shlex
+import shutil
 import socket
 import subprocess
 import sys
@@ -83,6 +84,9 @@ def parse_arguments():
                         help='the ROS MASTER URI for started node')
     parser.add_argument('--force', default=None, action='store_false',
                         help='Force command even if a process with the same name is running')
+    parser.add_argument('--pre_check_binary', type=str2bool, nargs='?',
+                        const=True, default=False,
+                        help='Check if the binary exists and raise an error  if not (before run in screen). Only for commands!')
 
     args, additional_args = parser.parse_known_args()
 
@@ -104,6 +108,7 @@ def parse_arguments():
     argumentsStr += f'  pidkill: {args.pidkill}\n' if args.pidkill is not None else ""
     argumentsStr += f'  masteruri: {args.masteruri}\n' if args.masteruri is not None else ""
     argumentsStr += f'  force: {args.force}\n' if args.force is not None else ""
+    argumentsStr += f'  pre_check_binary: {args.pre_check_binary}\n'
 
     Log.info("[remote_node.py] Starting Remote script", "\nArguments:", argumentsStr,
              "\nAdditional Arguments:\n", additional_args, "\n")
@@ -270,10 +275,13 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     subprocess.Popen(shlex.split(screen_command), env=dict(os.environ))
 
 
-def run_command(name: str, command: str, additional_args: List[str], respawn=False):
+def run_command(name: str, command: str, additional_args: List[str], respawn: bool = False, pre_check_binary: bool = False):
     '''
     Runs a command remotely
     '''
+    if pre_check_binary:
+        if not shutil.which(command):
+            raise Exception(f"Cannot find '{command}': No such file or directory")
     # get namespace if given
     arg_ns = getCwdArg('__ns', additional_args)
 
@@ -287,7 +295,7 @@ def run_command(name: str, command: str, additional_args: List[str], respawn=Fal
     subprocess.Popen(shlex.split(screen_command), env=dict(os.environ))
 
 
-def main(argv=sys.argv):
+def main(argv=sys.argv) -> int:
     parser, args, additional_args = parse_arguments()
 
     command = args.node_type
@@ -305,14 +313,14 @@ def main(argv=sys.argv):
                 f'A process of same package/executable [{args.package}/{args.node_type}] is already running.',
                 'Skipping command because [force] is disable' if not args.force else "")
         if not args.force:
-            return
+            return 0
 
     try:
         print_help = True
         if args.command:
             run_command(args.name, args.command,
-                        additional_args, args.respawn)
-            return
+                        additional_args, args.respawn, args.pre_check_binary)
+            return 0
 
         if args.show_screen_log:
             logfile = screen.get_logfile(node=args.show_screen_log)
@@ -388,9 +396,12 @@ def main(argv=sys.argv):
             time.sleep(3)
 
     except Exception as e:
-        import traceback
-        Log.error(traceback.format_exc())
+        Log.error(f'Error while execute command: {e}')
+        print(f'Error while execute command: {e}', file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    result = main()
+    exit(result)
