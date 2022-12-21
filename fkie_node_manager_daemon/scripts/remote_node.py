@@ -119,7 +119,7 @@ def find_process_by_name(command: str, package: str, additional_args: List[str])
     if cmd_args:
         cmd_args = f'\s*{cmd_args}'.replace('[', '\[').replace(']', '\]')
     # try to compare the process with regex
-    cmd_reg = re.compile(f'{pkg}.*{command}{cmd_args}\Z')
+    cmd_reg = re.compile(f'{pkg}.*[\s\/]{command}{cmd_args}\Z')
 
     result = []
     for p in psutil.process_iter(["pid", "name", "exe", "cmdline"]):
