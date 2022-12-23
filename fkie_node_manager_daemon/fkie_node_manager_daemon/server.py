@@ -111,6 +111,8 @@ class Server:
             target=self._crossbar_notify_if_regsitered, daemon=True)
         self._crossbarNotificationThread.start()
         self.pub_endpoint.publish(self._endpoint_msg)
+        self.rosstate_servicer.start()
+        self.screen_servicer.start()
         return True
 
     def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:

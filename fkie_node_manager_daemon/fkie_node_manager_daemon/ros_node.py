@@ -80,14 +80,14 @@ class RosNodeLauncher(object):
         # start server and load launch files provided by arguments
         self.server = Server(
             self.rosnode, default_domain_id=self.ros_domain_id)
-        self.success_start = self.server.start(
-            '[::]:%d' % self._port, displayed_name=self._displayed_name)
-        if self.success_start:
-            self._load_launches()
+        self.success_start = False
 
     def spin(self):
         try:
+            self.success_start = self.server.start(
+                '[::]:%d' % self._port, displayed_name=self._displayed_name)
             if self.success_start:
+                self._load_launches()
                 self.executor.spin()
                 # rclpy.spin(self.rosnode)
         except KeyboardInterrupt:
@@ -140,7 +140,6 @@ class RosNodeLauncher(object):
         for sfile in start_files:
             self.server.load_launch_file(sfile, autostart=True)
 
-
     def call_service(self, srv_name: str, srv_type: SrvType, request: SrvTypeRequest, timeout_sec: float = 1.0) -> SrvTypeResponse:
         """
         Make a service request and wait for the result.
@@ -153,7 +152,8 @@ class RosNodeLauncher(object):
         client = self.rosnode.create_client(srv_type, srv_name)
         try:
             if not client.wait_for_service(timeout_sec=timeout_sec):
-                raise Exception(f"Service '{srv_name}' of type '{srv_type}' not available")
+                raise Exception(
+                    f"Service '{srv_name}' of type '{srv_type}' not available")
 
             event = threading.Event()
 

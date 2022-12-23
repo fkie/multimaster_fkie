@@ -39,9 +39,13 @@ class ScreenServicer(CrossbarBaseSession):
         Log.info("Create ROS2 screen servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
         self._is_running = True
+        self._multiple_screen_check_rate = 1
         self._multiple_screen_check_force_after_default = 10
         self._multiple_screen_check_force_after = self._multiple_screen_check_force_after_default
         self._multiple_screen_do_check = True
+        self._multiple_screen_thread = None
+
+    def start(self):
         self._multiple_screen_thread = threading.Thread(
             target=self._check_multiple_screens, daemon=True)
         self._multiple_screen_thread.start()
@@ -80,7 +84,7 @@ class ScreenServicer(CrossbarBaseSession):
                 last_check = 0
             else:
                 last_check += 1
-            time.sleep(1.0)
+            time.sleep(1.0 / self._multiple_screen_check_rate)
 
     def system_change(self) -> None:
         self._multiple_screen_do_check = True

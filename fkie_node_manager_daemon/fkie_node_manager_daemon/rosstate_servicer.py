@@ -69,6 +69,10 @@ class RosStateServicer(CrossbarBaseSession):
             NM_NAMESPACE, NM_DISCOVERY_NAME)
         self.topic_name_endpoint = '%s/daemons' % (
             NM_NAMESPACE)
+        self._rate_check_discovery_node = 1.0
+        self._thread_check_discovery_node = None
+
+    def start(self):
         qos_state_profile = QoSProfile(depth=100,
                                        # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                        # history=QoSHistoryPolicy.KEEP_LAST,
@@ -86,9 +90,9 @@ class RosStateServicer(CrossbarBaseSession):
                  self.topic_name_endpoint)
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
-        self._checkDiscoveryNodeThread = threading.Thread(
+        self._thread_check_discovery_node = threading.Thread(
             target=self._check_discovery_node, daemon=True)
-        self._checkDiscoveryNodeThread.start()
+        self._thread_check_discovery_node.start()
 
     def _endpoints_to_provider(self, endpoints) -> List[RosProvider]:
         result = []
@@ -117,12 +121,13 @@ class RosStateServicer(CrossbarBaseSession):
             elif nmd.ros_node.count_publishers(self.topic_name_state) > 0:
                 nmd.launcher.server.pub_endpoint.publish(
                     nmd.launcher.server._endpoint_msg)
-            time.sleep(1)
+            time.sleep(1.0 / self._rate_check_discovery_node)
 
     def stop(self):
         '''
         Unregister the subscribed topic
         '''
+        self._on_shutdown = True
         if hasattr(self, 'sub_discovered_state') and self.sub_discovered_state is not None:
             nmd.ros_node.destroy_subscription(self.sub_discovered_state)
             del self.sub_discovered_state
