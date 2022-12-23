@@ -1244,8 +1244,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
     def get_msg_struct(self, msg_type: str) -> LaunchMessageStruct:
         Log.debug(
             f"Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
+        result = LaunchMessageStruct(msg_type)
         try:
-            result = LaunchMessageStruct(msg_type)
             import ruamel
             import genpy
             from roslib import message
@@ -1253,10 +1253,11 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             yaml = ruamel.yaml.YAML(typ='safe')
             result.data = json.dumps(yaml.load(f"{msg_class}"))
             result.valid = True
-            return json.dumps(result, cls=SelfEncoder)
-        except Exception:
+        except Exception as err:
             import traceback
             print(traceback.format_exc())
+            result.error_msg = repr(err)
+        return json.dumps(result, cls=SelfEncoder)
 
     def _rem_empty_lists(self, param_dict):
         result = dict()

@@ -460,7 +460,9 @@ class LaunchIncludedFile:
 
 class LaunchMessageStruct:
     def __init__(self, msg_type: str, *,
-                 data: Dict = {}) -> None:
+                 data: Dict = {},
+                 valid: bool = False,
+                 error_msg: str = '') -> None:
         '''
         Represend the structure of a ROS message.
         :param str msg_type: Type of the message.
@@ -468,6 +470,8 @@ class LaunchMessageStruct:
         '''
         self.msg_type = msg_type
         self.data = data
+        self.valid = valid
+        self.error_msg = error_msg
 
 
 class LaunchPublishMessage:

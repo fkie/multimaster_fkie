@@ -37,6 +37,7 @@ from typing import List
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent
+from rosidl_runtime_py import message_to_ordereddict
 
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
@@ -55,6 +56,7 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathReply
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchMessageStruct
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
 from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
@@ -691,4 +693,25 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 text=text, status='ERROR', args=request.args)
             reply.status.msg = 'empty request'
             result.append(reply)
+        return json.dumps(result, cls=SelfEncoder)
+
+    @wamp.register('ros.launch.get_msg_struct')
+    def get_msg_struct(self, msg_type: str) -> LaunchMessageStruct:
+        Log.debug(
+            f"Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
+        result = LaunchMessageStruct(msg_type)
+        try:
+            splited_type = msg_type.replace('/', '.').split('.')
+            splited_type.reverse()
+            module = __import__(splited_type.pop())
+            sub_class = getattr(module, splited_type.pop())
+            while splited_type:
+                sub_class = getattr(sub_class, splited_type.pop())
+            result.data = message_to_ordereddict(sub_class())
+            result.valid = True
+        except Exception as err:
+            import traceback
+            print(traceback.format_exc())
+            result.error_msg = repr(err)
+            result.valid = False
         return json.dumps(result, cls=SelfEncoder)
