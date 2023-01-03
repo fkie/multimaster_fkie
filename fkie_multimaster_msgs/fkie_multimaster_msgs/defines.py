@@ -36,8 +36,10 @@ else:
 SEP = '/'
 PRIV_NAME = '~'
 NM_NAMESPACE = '/node_manager'
-ros_distro = f"_{os.environ['ROS_DISTRO']}" if 'ROS_DISTRO' in os.environ else ''
-nm_name_suffix = f"{ros_distro}_{ros_host_suffix()}"
+#ros_distro = f"_{os.environ['ROS_DISTRO']}" if 'ROS_DISTRO' in os.environ else ''
+nm_name_suffix = ros_host_suffix()
+if nm_name_suffix:
+    nm_name_suffix = f"_{nm_name_suffix}"
 NM_DISCOVERY_NAME = f'_discovery{nm_name_suffix}'
 NM_DAEMON_NAME = f'_daemon{nm_name_suffix}'
 EMPTY_PATTERN = re.compile('\b', re.I)
