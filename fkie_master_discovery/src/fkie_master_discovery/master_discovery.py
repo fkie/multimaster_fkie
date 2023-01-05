@@ -272,15 +272,15 @@ class DiscoveredMaster(object):
             if self.callback_master_state is not None:
                 Log.info('Set host to offline: %s' % self.mastername)
                 self.callback_master_state(MasterState(MasterState.STATE_CHANGED,
-                                                    ROSMaster(str(self.mastername),
-                                                                self.masteruri,
-                                                                rospy.Time(
-                                                                    self.timestamp),
-                                                                rospy.Time(
-                                                                    self.timestamp_local),
-                                                                False,
-                                                                self.discoverername,
-                                                                self.monitoruri)))
+                                                       ROSMaster(str(self.mastername),
+                                                                 self.masteruri,
+                                                                 rospy.Time(
+                                                           self.timestamp),
+                                                           rospy.Time(
+                                                           self.timestamp_local),
+                                                           False,
+                                                           self.discoverername,
+                                                           self.monitoruri)))
 
     def get_quality(self, interval=5, offline_after=1.4):
         '''
@@ -1050,10 +1050,12 @@ class Discoverer(object):
                 # TODO: Check provider port
                 if master.online:
                     cbmaster = RosProvider(name=master.mastername if len(master.mastername) > 0 else f'{addr}:{port}',
-                                        host=addr[0],
-                                        port=port + 300,
-                                        masteruri=master.masteruri if len(master.masteruri) > 0 else f'{addr}:{port}',
-                                        origin=master.masteruri==self.master_monitor.getMasteruri())
+                                           host=addr[0],
+                                           port=port + 300,
+                                           masteruri=master.masteruri if len(
+                                               master.masteruri) > 0 else f'{addr}:{port}',
+                                           origin=master.masteruri == self.master_monitor.getMasteruri(),
+                                           hostnames=list(set([addr[0], get_hostname(master.masteruri)])))
                     result.append(cbmaster)
                     crossbar_reported_masters.add(master.masteruri)
             if not (crossbar_reported_masters == self._crossbar_reported_masters):

@@ -99,7 +99,7 @@ class RosStateServicer(CrossbarBaseSession):
         for uri, endpoint in endpoints.items():
             origin = self.uri == uri
             provider = RosProvider(
-                name=endpoint.name, host=get_hostname(endpoint.uri), port=get_port(endpoint.uri), origin=origin)
+                name=endpoint.name, host=get_hostname(endpoint.uri), port=get_port(endpoint.uri), origin=origin, hostnames=[get_hostname(endpoint.uri)])
             result.append(provider)
         return result
 

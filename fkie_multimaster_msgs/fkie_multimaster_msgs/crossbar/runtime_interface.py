@@ -105,9 +105,10 @@ class RosProvider:
     :param int port: port of crossbar server
     :param str masteruri: master uri
     :param bool origin: True if the provider represents itself, otherwise it is a discovered provider.
+    :param str[] hostnames: All known hostnames for this provides, e.g. IPv4 IPv6 or names.
     '''
 
-    def __init__(self, name: str, host: str, port: int, masteruri: str = '', origin: bool = False) -> None:
+    def __init__(self, name: str, host: str, port: int, masteruri: str = '', origin: bool = False, hostnames: List[str] = None) -> None:
         # Add ROS and system information
         try:
             self.ros_version = os.environ['ROS_VERSION'] if 'ROS_VERSION' in os.environ else ''
@@ -127,6 +128,7 @@ class RosProvider:
         self.type = 'crossbar-wamp'
         self.masteruri = masteruri
         self.origin = origin
+        self.hostnames = hostnames if hostnames is not None else []
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
