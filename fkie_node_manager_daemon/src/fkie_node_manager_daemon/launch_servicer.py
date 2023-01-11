@@ -35,6 +35,8 @@ import grpc
 import os
 import re
 import rospy
+import roslib.message
+import roslib.msgs
 import roslib.names
 import roslib.packages
 import rospkg
@@ -84,6 +86,7 @@ from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import ros1_masteruri
 from fkie_multimaster_msgs.system.url import equal_uri
 
+from fkie_multimaster_msgs.msg import LinkStatesStamped
 
 OK = lmsg.ReturnStatus.StatusType.Value('OK')
 ERROR = lmsg.ReturnStatus.StatusType.Value('ERROR')
@@ -170,6 +173,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         self._monitor_servicer = monitor_servicer
         self._watchdog_observer.start()
         self.subscribe_to('ros.nodes.abort', self.crossbar_abort)
+        print(self.get_msg_struct("fkie_multimaster_msgs/LinkStatesStamped"))
 
     def _terminated(self):
         Log.info("terminated launch context")
@@ -1242,22 +1246,63 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
 
     @wamp.register('ros.launch.get_msg_struct')
     def get_msg_struct(self, msg_type: str) -> LaunchMessageStruct:
-        Log.debug(
+        Log.info(
             f"Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
         result = LaunchMessageStruct(msg_type)
+
         try:
-            import ruamel
-            import genpy
-            from roslib import message
-            msg_class = message.get_message_class(msg_type)()
-            yaml = ruamel.yaml.YAML(typ='safe')
-            result.data = json.dumps(yaml.load(f"{msg_class}"))
+            mclass = roslib.message.get_message_class(msg_type)
+            if mclass is None:
+                result.error_msg = f"invalid message type: '{msg_type}'. If this is a valid message type, perhaps you need to run 'catkin build'"
+                return json.dumps(result, cls=SelfEncoder)
+            slots = mclass.__slots__
+            types = mclass._slot_types
+            msg_dict = self._dict_from_slots(slots, types, {})
+            result.data = msg_dict
             result.valid = True
         except Exception as err:
             import traceback
             print(traceback.format_exc())
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
+
+    @classmethod
+    def _dict_from_slots(cls, slots, types, values={}):
+        result = dict()
+        for slot, msg_type in zip(slots, types):
+            base_type, is_array, _array_length = roslib.msgs.parse_type(
+                msg_type)
+            if base_type in roslib.msgs.PRIMITIVE_TYPES or base_type in ['time', 'duration']:
+                default_value = 'now' if base_type in [
+                    'time', 'duration'] else ''
+                if slot in values and values[slot]:
+                    default_value = values[slot]
+                result[slot] = {':type': msg_type, ':data': default_value}
+            else:
+                try:
+                    list_msg_class = roslib.message.get_message_class(
+                        base_type)
+                    if is_array and slot in values:
+                        subresult = []
+                        for slot_value in values[slot]:
+                            subvalue = cls._dict_from_slots(
+                                list_msg_class.__slots__, list_msg_class._slot_types, slot_value if slot in values and slot_value else {})
+                            subresult.append(subvalue)
+                        result[slot] = {':type': msg_type, ':data': subresult}
+                    else:
+                        subresult = cls._dict_from_slots(
+                            list_msg_class.__slots__, list_msg_class._slot_types, values[slot] if slot in values and values[slot] else {})
+                        if is_array:
+                            result[slot] = {
+                                ':type': msg_type, ':data': subresult}
+                        else:
+                            result[slot] = {':type': msg_type, ':data': subresult}
+                except ValueError as e:
+                    print(traceback.format_exc())
+                    Log.warn(
+                        f"Error while parse message type '{msg_type}': {e}")
+                    raise ValueError(f"Error while parse message type '{msg_type}': {e}")
+        return result
 
     def _rem_empty_lists(self, param_dict):
         result = dict()
