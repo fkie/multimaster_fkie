@@ -1257,7 +1257,9 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 return json.dumps(result, cls=SelfEncoder)
             slots = mclass.__slots__
             types = mclass._slot_types
-            msg_dict = self._dict_from_slots(slots, types, {})
+            msg_dict = {'type': msg_type,
+                        'name': '',
+                        'def': self._dict_from_slots(slots, types, {})}
             result.data = msg_dict
             result.valid = True
         except Exception as err:
@@ -1268,7 +1270,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
 
     @classmethod
     def _dict_from_slots(cls, slots, types, values={}):
-        result = dict()
+        result = []
         for slot, msg_type in zip(slots, types):
             base_type, is_array, _array_length = roslib.msgs.parse_type(
                 msg_type)
@@ -1277,7 +1279,8 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                     'time', 'duration'] else ''
                 if slot in values and values[slot]:
                     default_value = values[slot]
-                result[slot] = {':type': msg_type, ':data': default_value}
+                result.append({'type': msg_type, 'name': slot,
+                               'def': [], 'default_value': default_value, 'is_array': is_array})
             else:
                 try:
                     list_msg_class = roslib.message.get_message_class(
@@ -1288,29 +1291,40 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                             subvalue = cls._dict_from_slots(
                                 list_msg_class.__slots__, list_msg_class._slot_types, slot_value if slot in values and slot_value else {})
                             subresult.append(subvalue)
-                        result[slot] = {':type': msg_type, ':data': subresult}
+                        result.append(
+                            {'type': msg_type, 'name': slot, 'def': subresult, 'default_value': slot_value, 'is_array': is_array})
                     else:
                         subresult = cls._dict_from_slots(
                             list_msg_class.__slots__, list_msg_class._slot_types, values[slot] if slot in values and values[slot] else {})
-                        if is_array:
-                            result[slot] = {
-                                ':type': msg_type, ':data': subresult}
-                        else:
-                            result[slot] = {':type': msg_type, ':data': subresult}
+                        result.append(
+                            {'type': msg_type, 'name': slot, 'def': subresult, 'default_value': [], 'is_array': is_array})
                 except ValueError as e:
                     print(traceback.format_exc())
                     Log.warn(
                         f"Error while parse message type '{msg_type}': {e}")
-                    raise ValueError(f"Error while parse message type '{msg_type}': {e}")
+                    raise ValueError(
+                        f"Error while parse message type '{msg_type}': {e}")
         return result
 
-    def _rem_empty_lists(self, param_dict):
+    def _pubstr_from_dict(self, param_dict):
         result = dict()
-        for key, value in param_dict.items():
-            if isinstance(value, dict):
-                result[key] = self._rem_empty_lists(value)
-            elif not (isinstance(value, list) and not value):
-                result[key] = value
+        fields = param_dict if isinstance(param_dict, list) else param_dict['def']
+        for field in fields:
+            if not field['def']:
+                if 'value' in field and field['value']:
+                    result[field['name']] = field['value']
+            elif field['is_array']:
+                # TODO: create array for base types
+                result_array = []
+                if 'value' in field:
+                    for array_element in field['value']:
+                        result_array.append(
+                            self._pubstr_from_dict(array_element['def']))
+                result[field['name']] = result_array
+            else:
+                subresult = self._pubstr_from_dict(field['def'])
+                if subresult:
+                    result[field['name']] = subresult
         return result
 
     @wamp.register('ros.launch.publish_message')
@@ -1337,7 +1351,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                 opt_str += ' --use-rostime'
             # remove empty lists
             data = json.loads(request.data)
-            topic_params = self._rem_empty_lists(data)
+            topic_params = self._pubstr_from_dict(data)
             pub_cmd = f"pub {request.topic_name} {request.msg_type} \"{topic_params}\" {opt_str}"
             Log.debug(f"rostopic parameter: {pub_cmd}")
             startcfg = StartConfig('rostopic', 'rostopic')
