@@ -1311,16 +1311,24 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         fields = param_dict if isinstance(param_dict, list) else param_dict['def']
         for field in fields:
             if not field['def']:
+                # simple types
                 if 'value' in field and field['value']:
-                    result[field['name']] = field['value']
+                    if field['is_array']:
+                        # parse string to array
+                        result[field['name']] = field['value'].split(',')
+                    else:
+                        result[field['name']] = field['value']
             elif field['is_array']:
                 # TODO: create array for base types
                 result_array = []
+                # it is a complex field type
                 if 'value' in field:
                     for array_element in field['value']:
                         result_array.append(
-                            self._pubstr_from_dict(array_element['def']))
-                result[field['name']] = result_array
+                            self._pubstr_from_dict(array_element))
+                # append created array
+                if result_array:
+                    result[field['name']] = result_array
             else:
                 subresult = self._pubstr_from_dict(field['def'])
                 if subresult:
