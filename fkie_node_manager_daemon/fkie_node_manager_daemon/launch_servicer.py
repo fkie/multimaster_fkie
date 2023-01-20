@@ -19,11 +19,11 @@
 
 
 import os
+import re
 import shlex
 import sys
 import traceback
 
-import launch
 from launch.launch_context import LaunchContext
 import asyncio
 
@@ -37,7 +37,7 @@ from typing import List
 from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent
-from rosidl_runtime_py import message_to_ordereddict
+import rosidl_parser.definition
 
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
@@ -57,12 +57,15 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchMessageStruct
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchPublishMessage
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
 from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_msgs.system import screen
 from fkie_multimaster_msgs.system.host import is_local
 from fkie_multimaster_msgs.system.url import equal_uri
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 
 from . import launcher
 from .launch_config import LaunchConfig
@@ -105,7 +108,7 @@ class CfgId(object):
         return False
 
     def __ne__(self, other):
-        return not(self == other)
+        return not (self == other)
 
     def equal_hosts(self, daemonuri: str):
         '''
@@ -701,13 +704,23 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             f"Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
         result = LaunchMessageStruct(msg_type)
         try:
-            splited_type = msg_type.replace('/', '.').split('.')
-            splited_type.reverse()
-            module = __import__(splited_type.pop())
-            sub_class = getattr(module, splited_type.pop())
-            while splited_type:
-                sub_class = getattr(sub_class, splited_type.pop())
-            result.data = message_to_ordereddict(sub_class())
+            splitted_type = msg_type.replace('/', '.').split('.')
+            splitted_type.reverse()
+            module = __import__(splitted_type.pop())
+            sub_class = getattr(module, splitted_type.pop())
+            while splitted_type:
+                sub_class = getattr(sub_class, splitted_type.pop())
+            if sub_class is None:
+                result.error_msg = f"invalid message type: '{msg_type}'. If this is a valid message type, perhaps you need to run 'colcon build'"
+                return json.dumps(result, cls=SelfEncoder)
+            if not hasattr(sub_class, 'get_fields_and_field_types'):
+                result.error_msg = f"unexpected message class: '{sub_class}', no 'get_fields_and_field_types' attribute found!"
+                return json.dumps(result, cls=SelfEncoder)
+            field_and_types = sub_class.get_fields_and_field_types()
+            msg_dict = {'type': msg_type,
+                        'name': '',
+                        'def': self._expand_fields(field_and_types)}
+            result.data = msg_dict
             result.valid = True
         except Exception as err:
             import traceback
@@ -715,3 +728,110 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.error_msg = repr(err)
             result.valid = False
         return json.dumps(result, cls=SelfEncoder)
+
+    # create recursive dictionary for 'ros.launch.get_msg_struct'
+    def _expand_fields(self, field_and_types):
+        defs = []
+        for field_name, field_type in field_and_types.items():
+            field_struct = {'name': field_name, 'def': []}
+            is_array = False
+            base_type = field_type
+            seq_length = None
+            if field_type.startswith('sequence'):
+                # handle sequences defined with sequence<>
+                is_array = True
+                type_re = re.search('<(.*)>', field_type)
+                if type_re is not None:
+                    base_type = type_re.group(1)
+            elif '[' in field_type:
+                # handle arrays defined with []
+                is_array = True
+                type_re = re.search('(.*)\[(\d*)\]', field_type)
+                if type_re is not None:
+                    base_type = type_re.group(1)
+                    seq_length = type_re.group(2)
+            if base_type not in [*rosidl_parser.definition.BASIC_TYPES, 'string', 'str']:
+                # type is not a simple type
+                # try to import message definition
+                splitted_type = base_type.split('/')
+                module = __import__(splitted_type[0])
+                msg_class = getattr(module, 'msg')
+                msg_class = getattr(msg_class, splitted_type[1])
+                if msg_class is not None:
+                    sub_def = self._expand_fields(
+                        msg_class.get_fields_and_field_types())
+                field_struct['def'] = sub_def
+            field_struct['type'] = base_type
+            field_struct['is_array'] = is_array
+            if seq_length:
+                field_struct['length'] = seq_length
+            defs.append(field_struct)
+        return defs
+
+    def _str_from_dict(self, param_dict):
+        result = dict()
+        fields = param_dict if isinstance(
+            param_dict, list) else param_dict['def']
+        for field in fields:
+            if not field['def']:
+                # simple types
+                if 'value' in field and field['value']:
+                    if field['is_array']:
+                        # parse string to array
+                        result[field['name']] = field['value'].split(',')
+                    else:
+                        result[field['name']] = field['value']
+            elif field['is_array']:
+                # TODO: create array for base types
+                result_array = []
+                # it is a complex field type
+                if 'value' in field:
+                    for array_element in field['value']:
+                        result_array.append(
+                            self._str_from_dict(array_element))
+                # append created array
+                if result_array:
+                    result[field['name']] = result_array
+            else:
+                sub_result = self._str_from_dict(field['def'])
+                if sub_result:
+                    result[field['name']] = sub_result
+        return result
+
+    @wamp.register('ros.launch.publish_message')
+    def publish_message(self, request_json: LaunchPublishMessage) -> None:
+        try:
+            # Convert input dictionary into a proper python object
+            request = json.loads(json.dumps(request_json),
+                                 object_hook=lambda d: SimpleNamespace(**d))
+            Log.debug(
+                f"Request to [ros.launch.publish_message]: msg [{request.msg_type}]")
+            opt_str = ''
+            opt_name_suf = '__latch_'
+            if request.once:
+                opt_str = '-1'
+            elif request.latched:
+                # quality of service for latched topics
+                opt_str = '--qos-durability transient_local --qos-reliability reliable'
+            elif request.rate != 0.0:
+                opt_str = f"-r {request.rate}"
+            if request.verbose:
+                opt_str += ' -p 1'
+            else:
+                opt_str += ' -p 10'
+            if request.use_rostime:
+                opt_str += ' --use-rostime'
+            fullname = f"/rostopic_pub/{request.topic_name.strip('/')}".replace(
+                '/', '_')
+            opt_str += f' -n {fullname}'
+            data = json.loads(request.data)
+            topic_params = self._str_from_dict(data)
+            pub_cmd = f"pub {opt_str} {request.topic_name} {request.msg_type} \"{topic_params}\""
+            screen_prefix = ' '.join([screen.get_cmd(fullname)])
+            cmd = ' '.join([screen_prefix, 'ros2', 'topic', pub_cmd])
+            Log.debug(f"run ros2 publisher with: {cmd}")
+            SupervisedPopen(shlex.split(cmd),
+                            object_id=f"ros_topic_pub_{request.topic_name}", description=f"publish to topic {request.topic_name}")
+        except Exception:
+            import traceback
+            print(traceback.format_exc())

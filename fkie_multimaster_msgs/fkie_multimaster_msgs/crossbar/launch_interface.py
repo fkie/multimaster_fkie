@@ -466,7 +466,7 @@ class LaunchMessageStruct:
         '''
         Represend the structure of a ROS message.
         :param str msg_type: Type of the message.
-        :param dict data: structure of the ROS message as dictionary.
+        :param dict data: structure of the ROS message as dictionary. Each field is at least described by {type: 'msg_type', name: 'slot', def: 'subresult or []', default_value: '[]', is_array: 'true or false'}.
         :param bool valid: True if the data for the message type was loaded successfully.
         :param string error_msg: Error message if valid is False.
         '''
