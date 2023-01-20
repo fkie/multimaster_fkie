@@ -761,7 +761,10 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     sub_def = self._expand_fields(
                         msg_class.get_fields_and_field_types())
                 field_struct['def'] = sub_def
-            field_struct['type'] = base_type
+            reported_type = base_type
+            if (is_array):
+                reported_type += f'[{seq_length}]' if seq_length else '[]'
+            field_struct['type'] = reported_type
             field_struct['is_array'] = is_array
             if seq_length:
                 field_struct['length'] = seq_length
