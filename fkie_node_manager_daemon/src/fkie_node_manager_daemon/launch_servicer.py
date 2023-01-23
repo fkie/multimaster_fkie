@@ -1306,20 +1306,34 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                         f"Error while parse message type '{msg_type}': {e}")
         return result
 
+    def str2typedValue(self, value, value_type):
+        result = value
+        if 'int' in value_type:
+            result = int(value)
+        elif 'float' in value_type or 'double' in value_type:
+            result = float(value)
+        elif value_type.startswith('bool'):
+            result = value.lower() in ('yes', 'true', 't', 'y', '1')
+        return result
+
     def _pubstr_from_dict(self, param_dict):
         result = dict()
-        fields = param_dict if isinstance(param_dict, list) else param_dict['def']
+        fields = param_dict if isinstance(
+            param_dict, list) else param_dict['def']
         for field in fields:
             if not field['def']:
                 # simple types
                 if 'value' in field and field['value']:
+                    base_type = field['type'].replace(r'/\[\d*\]/', '')
                     if field['is_array']:
-                        # parse string to array
-                        result[field['name']] = field['value'].split(',')
+                        # parse to array
+                        listvals = field['value'].split(',')
+                        result[field['name']] = [self.str2typedValue(
+                            n, base_type) for n in listvals]
                     else:
-                        result[field['name']] = field['value']
+                        result[field['name']] = self.str2typedValue(
+                            field['value'], base_type)
             elif field['is_array']:
-                # TODO: create array for base types
                 result_array = []
                 # it is a complex field type
                 if 'value' in field:
