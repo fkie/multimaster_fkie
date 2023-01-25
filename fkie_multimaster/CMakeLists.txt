@@ -20,7 +20,6 @@ if ( ament_cmake_FOUND )
     message(STATUS "install prefix: ${CATKIN_INSTALL_INTO_PREFIX_ROOT}")
     message(STATUS "symlink install: ${CATKIN_SYMLINK_INSTALL}")
     # find dependencies
-    find_package(ament_cmake REQUIRED)
     ament_package()
 
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
@@ -31,6 +30,7 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
     message(STATUS "------------------------------------------")
     message(STATUS "FKIE multimaster is being built using CATKIN.")
+    message(STATUS "export compile commads: ${CMAKE_EXPORT_COMPILE_COMMANDS}")
     message(STATUS "------------------------------------------")
 
     catkin_package()

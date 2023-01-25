@@ -14,7 +14,7 @@ if ( ament_cmake_FOUND )
 
     add_definitions( -DUSING_ROS2 )
     message(STATUS "------------------------------------------")
-    message(STATUS "FKIE fkie_node_manager is being ignore using AMENT.")
+    message(STATUS "FKIE node_manager is being ignore using AMENT.")
     message(STATUS "------------------------------------------")
     # only to avoid warnings while build
     message(STATUS "install prefix: ${CATKIN_INSTALL_INTO_PREFIX_ROOT}")
@@ -26,7 +26,7 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
     add_definitions( -DUSING_ROS )
 
     message(STATUS "------------------------------------------")
-    message(STATUS "FKIE fkie_node_manager is being built using CATKIN.")
+    message(STATUS "FKIE node_manager is being built using CATKIN.")
     message(STATUS "------------------------------------------")
 
     find_package(catkin REQUIRED COMPONENTS
