@@ -291,7 +291,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
     #             launcher.run_node(startcfg)
 
     @wamp.register('ros.launch.load')
-    def load_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
+    def load_launch(self, request_json: LaunchLoadRequest, return_as_json: bool = True) -> LaunchLoadReply:
         '''
         Loads launch file by crossbar request
         '''
@@ -318,7 +318,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                     result.status.code = 'FILE_NOT_FOUND'
                     result.status.error_msg = "Launch files %s in package %s not found!" % (
                         request.launch, request.ros_package)
-                    return json.dumps(result, cls=SelfEncoder)
+                    return json.dumps(result, cls=SelfEncoder) if return_as_json else result
                 elif len(paths) > 1:
                     if request.force_first_file:
                         launchfile = paths[0]
@@ -329,7 +329,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                         for mp in paths:
                             result.paths.append(mp)
                         Log.debug('..load aborted, MULTIPLE_LAUNCHES')
-                        return json.dumps(result, cls=SelfEncoder)
+                        return json.dumps(result, cls=SelfEncoder) if return_as_json else result
                 else:
                     launchfile = paths[0]
             except LookupError as rnf:
@@ -337,7 +337,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 result.status.msg = "Package %s not found: %s" % (
                     request.ros_package, rnf)
                 Log.debug('..load aborted, FILE_NOT_FOUND')
-                return json.dumps(result, cls=SelfEncoder)
+                return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.paths.append(launchfile)
         # it is already loaded?
         print("self._loaded_files", self._loaded_files,
@@ -347,7 +347,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             result.status.msg = "Launch file %s already loaded!" % (
                 launchfile)
             Log.debug('..load aborted, ALREADY_OPEN')
-            return json.dumps(result, cls=SelfEncoder)
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
         # load launch configuration
         try:
@@ -366,7 +366,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                         result.status.code = 'PARAMS_REQUIRED'
                         Log.debug(
                             f"..load aborted, PARAMS_REQUIRED {[arg.name for arg in result.args]}; privided args {provided_args}")
-                        return json.dumps(result, cls=SelfEncoder)
+                        return json.dumps(result, cls=SelfEncoder) if return_as_json else result
             # argv = ["%s:=%s" % (arg.name, arg.value) for arg in request.args]  # if arg.name in req_args_dict]
             launch_arguments = [(arg.name, arg.value) for arg in request.args]
             # context=self.__launch_context
@@ -389,9 +389,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             Log.warn('Loading launch file: %s', err_details)
             result.status.code = 'ERROR'
             result.status.msg = err_details
-            return json.dumps(result, cls=SelfEncoder)
+            return json.dumps(result, cls=SelfEncoder) if return_as_json else result
         result.status.code = 'OK'
-        return json.dumps(result, cls=SelfEncoder)
+        return json.dumps(result, cls=SelfEncoder) if return_as_json else result
 
     @wamp.register('ros.launch.reload')
     def reload_launch(self, request_json: LaunchLoadRequest) -> LaunchLoadReply:
