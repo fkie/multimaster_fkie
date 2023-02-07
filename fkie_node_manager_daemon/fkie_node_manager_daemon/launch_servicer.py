@@ -20,6 +20,7 @@
 
 import os
 import re
+import rclpy
 import shlex
 import sys
 import traceback
@@ -38,12 +39,15 @@ from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 from watchdog.events import FileSystemEvent
 import rosidl_parser.definition
+from rosidl_runtime_py import message_to_ordereddict
+from rosidl_runtime_py import set_message_fields
 
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchCallService
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadReply
@@ -852,3 +856,84 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         except Exception:
             import traceback
             print(traceback.format_exc())
+
+    @wamp.register('ros.launch.get_srv_struct')
+    def get_srv_struct(self, srv_type: str) -> LaunchMessageStruct:
+        Log.debug(
+            f"Request to [ros.launch.get_srv_struct]: srv [{srv_type}]")
+        result = LaunchMessageStruct(srv_type)
+        try:
+            splitted_type = srv_type.replace('/', '.').split('.')
+            splitted_type.reverse()
+            module = __import__(splitted_type.pop())
+            sub_class = getattr(module, splitted_type.pop())
+            while splitted_type:
+                sub_class = getattr(sub_class, splitted_type.pop())
+            if sub_class is None:
+                result.error_msg = f"invalid service type: '{srv_type}'. If this is a valid service type, perhaps you need to run 'colcon build'"
+                return json.dumps(result, cls=SelfEncoder)
+            if not hasattr(sub_class.Request, 'get_fields_and_field_types'):
+                result.error_msg = f"unexpected service class: '{sub_class}', no 'get_fields_and_field_types' attribute found!"
+                return json.dumps(result, cls=SelfEncoder)
+            field_and_types = sub_class.Request.get_fields_and_field_types()
+            msg_dict = {'type': srv_type,
+                        'name': '',
+                        'def': self._expand_fields(field_and_types)}
+            result.data = msg_dict
+            result.valid = True
+        except Exception as err:
+            import traceback
+            print(traceback.format_exc())
+            result.error_msg = repr(err)
+            result.valid = False
+        return json.dumps(result, cls=SelfEncoder)
+
+    @wamp.register('ros.launch.call_service')
+    def call_service(self, request_json: LaunchCallService) -> None:
+        # Convert input dictionary into a proper python object
+        Log.debug(
+            f"Request to [ros.launch.call_service]: {request_json}")
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+        result = LaunchMessageStruct(request.srv_type)
+        try:
+            splitted_type = request.srv_type.replace('/', '.').split('.')
+            splitted_type.reverse()
+            module = __import__(splitted_type.pop())
+            sub_class = getattr(module, splitted_type.pop())
+            while splitted_type:
+                sub_class = getattr(sub_class, splitted_type.pop())
+            if sub_class is None:
+                result.error_msg = f"invalid service type: '{request.srv_type}'. If this is a valid service type, perhaps you need to run 'colcon build'"
+                return json.dumps(result, cls=SelfEncoder)
+            if not hasattr(sub_class.Request, 'get_fields_and_field_types'):
+                result.error_msg = f"unexpected service class: '{sub_class}', no 'get_fields_and_field_types' attribute found!"
+                return json.dumps(result, cls=SelfEncoder)
+
+            cli = nmd.ros_node.create_client(sub_class, request.service_name)
+
+            # create request message
+            service_request = sub_class.Request()
+            try:
+                data =  json.loads(request.data)
+                set_message_fields(service_request, self._str_from_dict(data))
+            except Exception as e:
+                result.error_msg = 'Failed to populate field: {0}'.format(e)
+
+            # call service
+            if not cli.service_is_ready():
+                Log.debug(f"waiting for service '{request.service_name}' to become available...")
+                cli.wait_for_service()
+            Log.debug('requester: making request: %r' % service_request)
+            future = cli.call_async(service_request)
+            rclpy.spin_until_future_complete(nmd.ros_node, future)
+            if future.result() is not None:
+                result.data = message_to_ordereddict(future.result())
+                result.valid = True
+            else:
+                result.error_msg = 'Exception while calling service: %r' % future.exception()
+        except Exception as err:
+            import traceback
+            print(traceback.format_exc())
+            result.error_msg = repr(err)
+        return json.dumps(result, cls=SelfEncoder)
