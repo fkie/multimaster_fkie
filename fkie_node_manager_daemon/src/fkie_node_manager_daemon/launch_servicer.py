@@ -40,6 +40,9 @@ import roslib.msgs
 import roslib.names
 import roslib.packages
 import rospkg
+import ruamel.yaml
+import shlex
+import subprocess
 import threading
 import traceback
 
@@ -65,6 +68,7 @@ from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
+from fkie_multimaster_msgs.crossbar.launch_interface import LaunchCallService
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadRequest
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadReply
@@ -85,6 +89,7 @@ from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import ros1_masteruri
 from fkie_multimaster_msgs.system.url import equal_uri
+from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
 
 from fkie_multimaster_msgs.msg import LinkStatesStamped
 
@@ -1268,6 +1273,30 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
 
+    @wamp.register('ros.launch.get_srv_struct')
+    def get_srv_struct(self, srv_type: str) -> LaunchMessageStruct:
+        Log.info(
+            f"Request to [ros.launch.get_srv_struct]: msg [{srv_type}]")
+        result = LaunchMessageStruct(srv_type)
+
+        try:
+            mclass = roslib.message.get_service_class(srv_type)
+            if mclass is None:
+                result.error_msg = f"invalid service type: '{srv_type}'. If this is a valid service type, perhaps you need to run 'catkin build'"
+                return json.dumps(result, cls=SelfEncoder)
+            slots = mclass._request_class.__slots__
+            types = mclass._request_class._slot_types
+            msg_dict = {'type': srv_type,
+                        'name': '',
+                        'def': self._dict_from_slots(slots, types, {})}
+            result.data = msg_dict
+            result.valid = True
+        except Exception as err:
+            import traceback
+            print(traceback.format_exc())
+            result.error_msg = repr(err)
+        return json.dumps(result, cls=SelfEncoder)
+
     @classmethod
     def _dict_from_slots(cls, slots, types, values={}):
         result = []
@@ -1377,12 +1406,43 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             pub_cmd = f"pub {request.topic_name} {request.msg_type} \"{topic_params}\" {opt_str}"
             Log.debug(f"rostopic parameter: {pub_cmd}")
             startcfg = StartConfig('rostopic', 'rostopic')
-            startcfg.fullname = f"/rostopic_pub/{request.topic_name.rstrip('/')}"
+            startcfg.fullname = f"/rostopic_pub/{request.topic_name.strip('/')}"
             startcfg.args = [f"__name:={startcfg.fullname}", pub_cmd]
             launcher.run_node(startcfg)
         except Exception:
             import traceback
             print(traceback.format_exc())
+
+    @wamp.register('ros.launch.call_service')
+    def call_service(self, request_json: LaunchCallService) -> None:
+        # Convert input dictionary into a proper python object
+        Log.debug(
+            f"Request to [ros.launch.call_service]: msg [{request_json}]")
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+        result = LaunchMessageStruct(request.srv_type)
+        try:
+            # remove empty lists
+            data = json.loads(request.data)
+            service_params = self._pubstr_from_dict(data)
+            call_cmd = f"rosservice call {request.service_name} \"{service_params}\""
+            fullname = f"/rosservice_call{request.service_name.rstrip('/')}"
+            Log.debug(f"call service with: {call_cmd}")
+            ps = SupervisedPopen(shlex.split(f"{call_cmd}"), stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, object_id=f"call_service_{fullname}", description=f"Call service with {call_cmd}")
+            output_err = ps.stderr.read()
+            if output_err:
+                result.error_msg = repr(output_err).replace('\\n', '\n')
+            output = ps.stdout.read()
+            if output:
+                result.data = ruamel.yaml.load(
+                    output, Loader=ruamel.yaml.Loader)
+                result.valid = True
+        except Exception as err:
+            import traceback
+            print(traceback.format_exc())
+            result.error_msg = repr(err)
+        return json.dumps(result, cls=SelfEncoder)
 
     def GetIncludedFiles(self, request, context):
         Log.debug('GetIncludedFiles request:\n%s' % str(request))

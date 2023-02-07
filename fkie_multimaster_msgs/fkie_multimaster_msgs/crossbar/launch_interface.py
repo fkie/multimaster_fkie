@@ -510,3 +510,21 @@ class LaunchPublishMessage:
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
+
+
+class LaunchCallService:
+    def __init__(self, service_name: str,
+                 srv_type: str, *,
+                 data: Dict = {}) -> None:
+        '''
+        Publisher configuration.
+        :param str service_name: the ROS service name.
+        :param str srv_type: Type of the request message.
+        :param dict data: structure of the ROS request message as dictionary.
+        '''
+        self.service_name = service_name
+        self.srv_type = srv_type
+        self.data = data
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
