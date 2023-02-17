@@ -39,6 +39,7 @@ import argparse
 import asyncio
 import json
 import threading
+import time
 
 import rospy
 from roslib import message
@@ -83,16 +84,25 @@ class SubscriberNode(CrossbarBaseSession):
         rospy.init_node(node_name, log_level=log_level)
         self._topic = parsed_args.topic
         self._message_type = parsed_args.message_type
+        self._count_received = 0
         self._no_data = parsed_args.no_data
         self._no_arr = parsed_args.no_arr
         self._no_str = parsed_args.no_str
         self._hz = parsed_args.hz
         self._window = parsed_args.window
+        if self._window == 0:
+            self._window = 5000
         self._tcp_no_delay = parsed_args.tcp_no_delay
         self._crossbar_port = parsed_args.crossbar_port
         self._crossbar_realm = parsed_args.crossbar_realm
 
         self._latched_messages = []
+        # stats parameter
+        self._last_received_ts = 0
+        self._msg_t0 = -1.
+        self._msg_tn = 0
+        self._times = []
+        self._bytes = []
 
         Log.info(f"start publisher for {self._topic}[{self._message_type}]")
         self.__msg_class = message.get_message_class(self._message_type)
@@ -151,11 +161,84 @@ class SubscriberNode(CrossbarBaseSession):
         return parser
 
     def _msg_handle(self, data):
+        self._count_received += 1
         self._latched = data._connection_header['latching'] != '0'
+        print(data._connection_header)
+        print(dir(data))
+        print("SIZE", data.__sizeof__())
         if self.crossbar_registered:
             print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
             event = SubscriberEvent(self._topic, self._message_type)
-            event.data = json.loads(json.dumps(data, cls=MsgEncoder, **{"no_arr": self._no_arr}))
+            event.latched = self._latched
+            if not self._no_data:
+                event.data = json.loads(json.dumps(data, cls=MsgEncoder, **{"no_arr": self._no_arr}))
+            event.count = self._count_received
+            self._calc_stats(data, event)
             self.publish_to('ros.subscriber.event', event)
         elif self._latched:
             self._latched_messages.append(data)
+
+    def _get_message_size(self, msg):
+        buff = None
+        from io import BytesIO  # Python 3.x
+        buff = BytesIO()
+        msg.serialize(buff)
+        return buff.getbuffer().nbytes
+
+
+    def _calc_stats(self, msg, event):
+        current_time = time.time()
+        if current_time - self._last_received_ts > 1:
+            pass
+        if self._msg_t0 < 0 or self._msg_t0 > current_time:
+            self._msg_t0 = current_time
+            self._msg_tn = current_time
+            self._times = []
+            self._bytes = []
+        else:
+            self._times.append(current_time - self._msg_tn)
+            self.msg_tn = current_time
+
+        msg_len = self._get_message_size(msg)
+        if msg_len > -1:
+            self._bytes.append(msg_len)
+        if len(self._bytes) > self._window:
+            self._bytes.pop(0)
+        if len(self._times) > self._window:
+            self._times.pop(0)
+
+        sum_times = sum(self._times)
+        if sum_times == 0:
+            sum_times = 1
+
+
+        if self._bytes:
+            sum_bytes = sum(self._bytes)
+            event.size = sum_bytes / len(self._bytes)
+            event.bw = float(sum_bytes) / float(sum_times)
+
+
+        # the code from ROS rostopic
+        n = len(self._times)
+        if n < 2:
+            return
+        mean = sum_times / n
+        event.rate = 1. / mean if mean > 0. else 0
+
+
+        # # min and max
+        # if self.SHOW_JITTER or self.show_only_rate:
+        #     max_delta = max(self.times)
+        #     min_delta = min(self.times)
+        #     message_jitter = "jitter[ min: %.3fs   max: %.3fs ]" % (
+        #         min_delta, max_delta)
+        # # std dev
+        # self.last_printed_count = self.message_count
+        # if self.SHOW_STD_DEV or self.show_only_rate:
+        #     std_dev = math.sqrt(
+        #         sum((x - mean) ** 2 for x in self.times) / n)
+        #     message_std_dev = "std dev: %.5fs" % (std_dev)
+        # if self.SHOW_WINDOW_SIZE or self.show_only_rate:
+        #     message_window = "window: %s" % (n + 1)
+
+        self._last_received_ts = current_time

@@ -321,12 +321,14 @@ class SubscriberEvent:
     Event message published by SubscriberNode.
     :param str topic: Name of the ROS topic to listen to (e.g. '/chatter').
     :param str message_type: Type of the ROS message (e.g. 'std_msgs/msg/String')
-    :param bool nodata: report only statistics without message content.
+    :param int count: Count of received messages since the start.
     '''
     def __init__(self,
                  topic: str,
                  message_type: str = '',
+                 latched: bool = False,
                  data: Dict = {},
+                 count: int = 0,
                  rate: float = -1,
                  bw: float = -1,
                  bw_min: float = -1,
@@ -339,7 +341,9 @@ class SubscriberEvent:
                  size_max: float = -1) -> None:
         self.topic = topic
         self.message_type = message_type
+        self.latched = latched
         self.data = data
+        self.count = count
         self.rate = rate
         self.bw = bw
         self.bw_min = bw_min
