@@ -65,6 +65,7 @@ from .launch_config import LaunchConfig
 from .startcfg import StartConfig
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
+from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberNode
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
@@ -141,7 +142,7 @@ class CfgId(object):
         return False
 
     def __ne__(self, other):
-        return not(self == other)
+        return not (self == other)
 
     def equal_masteruri(self, masteruri):
         '''
@@ -1626,3 +1627,34 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         result = lmsg.Empty()
         ros_pkg.reset_cache()
         return result
+
+    @wamp.register('ros.subscriber.start')
+    def start_subscriber(self, request_json: SubscriberNode) -> bool:
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+        topic = request.topic
+        Log.debug(
+            'Request to [ros.subscriber.start]: %s' % str(topic))
+        startcfg = StartConfig('fkie_node_manager_daemon',
+                               'node_manager_subscriber')
+        startcfg.fullname = f"/_node_manager_subscriber/{topic.strip('/')}"
+        startcfg.args = [f"__name:={startcfg.fullname}"]
+        startcfg.args.append(f'--crossbar_port={self.port}')
+        startcfg.args.append(f'--crossbar_realm={self.realm}')
+        startcfg.args.append(f'--topic={topic}')
+        startcfg.args.append(f'--message_type={request.message_type}')
+        if request.no_data:
+            startcfg.args.append('--no_data')
+        if request.no_arr:
+            startcfg.args.append('--no_arr')
+        if request.no_str:
+            startcfg.args.append('--nostr')
+        startcfg.args.append(f'--hz={request.hz}')
+        startcfg.args.append(f'--window={request.window}')
+        if request.no_str:
+            startcfg.args.append('--no_str')
+        if request.tcp_no_delay:
+            startcfg.args.append('--tcp_no_delay')
+        launcher.run_node(startcfg)
+        return True

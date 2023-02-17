@@ -22,12 +22,93 @@ def get_node_name(name):
     return result
 
 
+class RosDuration:
+    def __init__(self, sec: int = 0, nanosec: int = 0) -> None:
+        self.sec = sec
+        self.nanosec = nanosec
+
+
+class RosQos:
+    '''
+    Quality of service settings for a ros topic.
+    '''
+    class RELIABILITY:
+        # Implementation specific default
+        SYSTEM_DEFAULT = 0
+        # Guarantee that samples are delivered, may retry multiple times.
+        RELIABLE = 1
+        # Attempt to deliver samples, but some may be lost if the network is not robust
+        BEST_EFFORT = 2
+        # Reliability policy has not yet been set
+        UNKNOWN = 3
+
+    # QoS history enumerations describing how samples endure
+    class HISTORY:
+        # Implementation default for history policy
+        SYSTEM_DEFAULT = 0
+        # Only store up to a maximum number of samples, dropping oldest once max is exceeded
+        KEEP_LAST = 1
+        # Store all samples, subject to resource limits
+        KEEP_ALL = 2
+        # History policy has not yet been set
+        UNKNOWN = 3
+
+    # QoS durability enumerations describing how samples persist
+    class DURABILITY:
+        # Implementation specific default
+        SYSTEM_DEFAULT = 0
+        # The rmw publisher is responsible for persisting samples for “late-joining” subscribers
+        TRANSIENT_LOCAL = 1
+        # Samples are not persistent
+        VOLATILE = 2
+        # Durability policy has not yet been set
+        UNKNOWN = 3
+
+    # QoS liveliness enumerations that describe a publisher's reporting policy for its alive status.
+    # For a subscriber, these are its requirements for its topic's publishers.
+    class LIVELINESS:
+        # Implementation specific default
+        SYSTEM_DEFAULT = 0
+        # The signal that establishes a Topic is alive comes from the ROS rmw layer.
+        AUTOMATIC = 1
+        # Depricated: Explicitly asserting node liveliness is required in this case.
+        MANUAL_BY_NODE = 2
+        # The signal that establishes a Topic is alive is at the Topic level. Only publishing a message
+        # on the Topic or an explicit signal from the application to assert liveliness on the Topic
+        # will mark the Topic as being alive.
+        # Using `3` for backwards compatibility.
+        MANUAL_BY_TOPIC = 3
+        # Durability policy has not yet been set
+        UNKNOWN = 4
+
+    '''
+    Use default QoS settings for publishers and subscriptions
+    '''
+    def __init__(self, durability: int = DURABILITY.VOLATILE,
+                 history: int = HISTORY.KEEP_LAST,
+                 depth: int = 10,
+                 liveliness: int = LIVELINESS.SYSTEM_DEFAULT,
+                 reliability: int = RELIABILITY.RELIABLE,
+                 deadline: RosDuration = RosDuration(),
+                 lease_duration: RosDuration = RosDuration(),
+                 lifespan: RosDuration = RosDuration()) -> None:
+        self.durability = durability
+        self.history = history
+        self.depth = depth
+        self.liveliness = liveliness
+        self.reliability = reliability
+        self.deadline = deadline
+        self.lease_duration = lease_duration
+        self.lifespan = lifespan
+
+
 class RosTopic:
     def __init__(self, name: str, msgtype: str) -> None:
         self.name = name
         self.msgtype = msgtype
         self.publisher: List[str] = []
         self.subscriber: List[str] = []
+        self.qos = RosQos()
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
@@ -118,7 +199,8 @@ class RosProvider:
             self.platform_details = f'{platform.version()} {platform.machine()}'
         except:
             import traceback
-            Log.error(f'Error when initializing new provider [{name}]: {traceback.format_exc()}')
+            Log.error(
+                f'Error when initializing new provider [{name}]: {traceback.format_exc()}')
 
         # add distro to name, to prevent collisions when ROS1 and ROS2
         # run simultaneously on the same host
@@ -139,6 +221,7 @@ class ScreenRepetitions:
     :param str name: full node name
     :param [str] screens: list the screen names associated with given node.
     '''
+
     def __init__(self, name: str, screens: List[str]) -> None:
         self.name = name
         self.screens = screens
@@ -153,7 +236,8 @@ class SystemWarning:
     :param str details: long description.
     :param str hint: note on the possible solution.
     '''
-    def __init__(self, msg: str, details: str='', hint: str='') -> None:
+
+    def __init__(self, msg: str, details: str = '', hint: str = '') -> None:
         self.msg = msg
         self.details = details
         self.hint = hint
@@ -161,17 +245,18 @@ class SystemWarning:
 
 class SystemWarningGroup:
 
-    ID_ADDR_MISMATCH='ADDR_MISMATCH'
-    ID_RESOLVE_FAILED='RESOLVE_FAILED'
-    ID_UDP_SEND='UDP_SEND'
-    ID_EXCEPTION='EXCEPTION'
-    ID_TIME_JUMP='TIME_JUMP'
+    ID_ADDR_MISMATCH = 'ADDR_MISMATCH'
+    ID_RESOLVE_FAILED = 'RESOLVE_FAILED'
+    ID_UDP_SEND = 'UDP_SEND'
+    ID_EXCEPTION = 'EXCEPTION'
+    ID_TIME_JUMP = 'TIME_JUMP'
 
     '''
     :param str id: id of the warning group, on of ID_*.
     :param list[SystemWarning] warnings: list of warnings.
     '''
-    def __init__(self, id: str, warnings: List[SystemWarning]=None) -> None:
+
+    def __init__(self, id: str, warnings: List[SystemWarning] = None) -> None:
         self.id = id
         self.warnings = [] if warnings is None else warnings
 
@@ -192,3 +277,76 @@ class SystemWarningGroup:
             if not found:
                 return False
         return True
+
+
+class SubscriberNode:
+    '''
+    Parametrization of a subscriber to echo a topic.
+    :param str topic: Name of the ROS topic to listen to (e.g. '/chatter').
+    :param str message_type: Type of the ROS message (e.g. 'std_msgs/msg/String'). (Only ROS2)
+    :param bool nodata: report only statistics without message content.
+    :param bool no_arr: exclude arrays.
+    :param bool no_str: exclude string fields.
+    :param int hz: rate to forward messages. Ignored on latched topics. Disabled by 0. Default: 1
+    :param int window: window size, in # of messages, for calculating rate
+    :param bool tcp_no_delay: use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1)
+    :param bool use_sim_time: Enable ROS simulation time (Only ROS2)
+    '''
+
+    def __init__(self,
+                 topic: str,
+                 message_type: str = '',
+                 nodata: bool = False,
+                 no_arr: bool = False,
+                 no_str: bool = False,
+                 hz: float = 1,
+                 window: int = 0,
+                 tcp_no_delay: bool = False,
+                 use_sim_time: bool = False,
+                 qos: RosQos = RosQos()) -> None:
+        self.topic = topic
+        self.message_type = message_type
+        self.nodata = nodata
+        self.no_arr = no_arr
+        self.no_str = no_str
+        self.hz = hz
+        self.window = window
+        self.tcp_no_delay = tcp_no_delay
+        self.use_sim_time = use_sim_time
+        self.qos = qos
+
+
+class SubscriberEvent:
+    '''
+    Event message published by SubscriberNode.
+    :param str topic: Name of the ROS topic to listen to (e.g. '/chatter').
+    :param str message_type: Type of the ROS message (e.g. 'std_msgs/msg/String')
+    :param bool nodata: report only statistics without message content.
+    '''
+    def __init__(self,
+                 topic: str,
+                 message_type: str = '',
+                 data: Dict = {},
+                 rate: float = -1,
+                 bw: float = -1,
+                 bw_min: float = -1,
+                 bw_max: float = -1,
+                 delay: float = -1,
+                 delay_min: float = -1,
+                 delay_max: float = -1,
+                 size: float = -1,
+                 size_min: float = -1,
+                 size_max: float = -1) -> None:
+        self.topic = topic
+        self.message_type = message_type
+        self.data = data
+        self.rate = rate
+        self.bw = bw
+        self.bw_min = bw_min
+        self.bw_max = bw_max
+        self.delay = delay
+        self.delay_min = delay_min
+        self.delay_max = delay_max
+        self.size = size
+        self.size_min = size_min
+        self.size_max = size_max

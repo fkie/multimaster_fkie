@@ -36,3 +36,8 @@ def main():
     global launcher
     launcher = RosNodeLauncher()
     launcher.spin()
+
+def subscriber():
+    global launcher
+    launcher = RosNodeLauncher()
+    launcher.spin()

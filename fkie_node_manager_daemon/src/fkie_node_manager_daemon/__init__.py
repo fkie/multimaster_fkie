@@ -44,6 +44,7 @@ from .server import GrpcServer
 from fkie_multimaster_msgs.system import ros1_grpcuri
 from fkie_multimaster_msgs.system.screen import test_screen
 from fkie_multimaster_msgs.logging.logging import Log
+from .subscriber_node import SubscriberNode
 
 
 def set_terminal_name(name):
@@ -85,6 +86,7 @@ def init_arg_parser():
                                                            " statements like pkg://PACKAGE/subfolder/LAUNCH are resolved to absolute path;"
                                                            " comma separated for multiple files")
     return parser
+
 
 
 def start_server(node_name='node_manager_daemon'):
@@ -131,4 +133,28 @@ def start_server(node_name='node_manager_daemon'):
         Log.warn("Start server failed: %s", traceback.format_exc())
         sys.stdout.write(traceback.format_exc())
         sys.stdout.flush()
+        os.kill(os.getpid(), signal.SIGKILL)
+
+
+def create_subscriber(node_name='node_manager_subscriber'):
+    '''
+    Creates a subscriber to forward received messages to crossbar server.
+    '''
+    # setup the loglevel
+    log_level = rospy.DEBUG
+    try:
+        log_level = getattr(rospy, rospy.get_param(
+            '/%s/log_level' % node_name, "INFO"))
+    except Exception as e:
+        print("Error while set the log level: %s\n->INFO level will be used!" % e)
+    set_terminal_name(node_name)
+    set_process_name(node_name)
+    try:
+        subscriber_node = SubscriberNode(node_name, log_level=log_level)
+        rospy.spin()
+        subscriber_node.stop()
+    except Exception:
+        # on load error the process will be killed to notify user in node_manager
+        # about error
+        Log.error("Start subscriber node: %s", traceback.format_exc())
         os.kill(os.getpid(), signal.SIGKILL)

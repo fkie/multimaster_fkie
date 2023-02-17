@@ -8,7 +8,7 @@ if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
 
     d = generate_distutils_setup(
         # don't do this unless you want a globally visible script
-        scripts=['nodes/node_manager_daemon'],
+        scripts=['nodes/node_manager_daemon', 'nodes/node_manager_subscriber'],
         packages=[package_name, f'{package_name}.monitor'],
         package_dir={'': 'src'}
     )
@@ -108,6 +108,8 @@ else:
             'console_scripts': [
                 'node_manager_daemon2 ='
                 ' fkie_node_manager_daemon:main',
+                'node_manager_subscriber ='
+                ' fkie_node_manager_daemon:subscriber',
             ],
         },
     )

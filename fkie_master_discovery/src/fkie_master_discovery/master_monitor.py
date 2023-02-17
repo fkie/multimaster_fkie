@@ -1005,7 +1005,7 @@ class MasterMonitor(CrossbarBaseSession):
 
     @wamp.register('ros.nodes.stop_node')
     def stop_node(self, name: str) -> bool:
-        Log.info("Request to stop node '%s'", name)
+        Log.info(f"Request to stop node '{name}'")
         success = False
         self._multiple_screen_do_check = True
         if self.__master_state is not None:
@@ -1134,3 +1134,8 @@ class MasterMonitor(CrossbarBaseSession):
         asyncio.set_event_loop(loop)
         loop.run_forever()
         print("run_forever_exited")
+
+    @wamp.register('ros.subscriber.stop')
+    def stop_subscriber(self, topic_name: str) -> bool:
+        Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))
+        return self.stop_node(f"/_node_manager_subscriber/{topic_name.strip('/')}")

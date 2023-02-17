@@ -64,6 +64,7 @@ class CrossbarBaseSession(ApplicationSession):
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False) -> None:
         self.port = port
+        self.realm = realm
         self.crossbar_loop = loop
         self._on_shutdown = False
         self._crossbar_subscriptions = []  # list of tuples (topic, handler)

@@ -38,6 +38,7 @@ elseif(CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
     catkin_install_python(
         PROGRAMS
         nodes/node_manager_daemon
+        nodes/node_manager_subscriber
         scripts/remote_node.py
         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
