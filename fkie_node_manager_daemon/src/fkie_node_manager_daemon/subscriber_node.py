@@ -60,10 +60,11 @@ def str2bool(v):
 
 
 class MsgEncoder(json.JSONEncoder):
-    def __init__(self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True, allow_nan: bool = True, sort_keys: bool = False, indent: Union[int, str, None] = None, separators: Union[Tuple[str, str], None] = None, default: Union[ Callable[..., Any], None] = None,
+    def __init__(self, *, skipkeys: bool = False, ensure_ascii: bool = True, check_circular: bool = True, allow_nan: bool = True, sort_keys: bool = False, indent: Union[int, str, None] = None, separators: Union[Tuple[str, str], None] = None, default: Union[Callable[..., Any], None] = None,
                  no_arr: bool = True,
                  no_str: bool = True) -> None:
-        super().__init__(skipkeys=skipkeys, ensure_ascii=ensure_ascii, check_circular=check_circular, allow_nan=allow_nan, sort_keys=sort_keys, indent=indent, separators=separators, default=default)
+        super().__init__(skipkeys=skipkeys, ensure_ascii=ensure_ascii, check_circular=check_circular,
+                         allow_nan=allow_nan, sort_keys=sort_keys, indent=indent, separators=separators, default=default)
         self.no_arr = no_arr
         self.no_str = no_str
 
@@ -171,10 +172,12 @@ class SubscriberNode(CrossbarBaseSession):
             event = SubscriberEvent(self._topic, self._message_type)
             event.latched = self._latched
             if not self._no_data:
-                event.data = json.loads(json.dumps(data, cls=MsgEncoder, **{"no_arr": self._no_arr}))
+                event.data = json.loads(json.dumps(
+                    data, cls=MsgEncoder, **{"no_arr": self._no_arr}))
             event.count = self._count_received
             self._calc_stats(data, event)
-            self.publish_to('ros.subscriber.event', event)
+            self.publish_to(
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", event)
         elif self._latched:
             self._latched_messages.append(data)
 
@@ -184,7 +187,6 @@ class SubscriberNode(CrossbarBaseSession):
         buff = BytesIO()
         msg.serialize(buff)
         return buff.getbuffer().nbytes
-
 
     def _calc_stats(self, msg, event):
         current_time = time.time()
@@ -211,12 +213,10 @@ class SubscriberNode(CrossbarBaseSession):
         if sum_times == 0:
             sum_times = 1
 
-
         if self._bytes:
             sum_bytes = sum(self._bytes)
             event.size = sum_bytes / len(self._bytes)
             event.bw = float(sum_bytes) / float(sum_times)
-
 
         # the code from ROS rostopic
         n = len(self._times)
@@ -224,7 +224,6 @@ class SubscriberNode(CrossbarBaseSession):
             return
         mean = sum_times / n
         event.rate = 1. / mean if mean > 0. else 0
-
 
         # # min and max
         # if self.SHOW_JITTER or self.show_only_rate:
