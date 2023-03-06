@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>fkie_master_sync</name>
   <!-- <replace>master_sync_fkie</replace> -->
   <description>
@@ -14,6 +14,8 @@
   <url>http://ros.org/wiki/master_sync_fkie</url>
   
   <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend condition="$ROS_PYTHON_VERSION == 2">python-setuptools</buildtool_depend>
+  <buildtool_depend condition="$ROS_PYTHON_VERSION == 3">python3-setuptools</buildtool_depend>
   
   <build_depend>fkie_master_discovery</build_depend>
   <build_depend>fkie_multimaster_msgs</build_depend>

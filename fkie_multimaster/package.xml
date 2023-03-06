@@ -1,4 +1,4 @@
-<package format="2">
+<package format="3">
   <name>fkie_multimaster</name>
   <!-- <replace>multimaster_fkie</replace> -->
   <description>
