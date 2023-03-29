@@ -192,31 +192,40 @@ class SubscriberNode(CrossbarBaseSession):
         current_time = time.time()
         if current_time - self._last_received_ts > 1:
             pass
+        msg_len = self._get_message_size(msg)
+        if msg_len > -1:
+            event.size = msg_len
+            event.size_min = msg_len
+            event.size_max = msg_len
         if self._msg_t0 < 0 or self._msg_t0 > current_time:
             self._msg_t0 = current_time
             self._msg_tn = current_time
             self._times = []
             self._bytes = []
         else:
+            print("current_time:", current_time)
+            print("self._msg_tn:", self._msg_tn)
+            print("TM:", current_time - self._msg_tn)
             self._times.append(current_time - self._msg_tn)
-            self.msg_tn = current_time
+            self._msg_tn = current_time
 
-        msg_len = self._get_message_size(msg)
-        if msg_len > -1:
-            self._bytes.append(msg_len)
-        if len(self._bytes) > self._window:
-            self._bytes.pop(0)
-        if len(self._times) > self._window:
-            self._times.pop(0)
+            if msg_len > -1:
+                self._bytes.append(msg_len)
+            if len(self._bytes) > self._window:
+                self._bytes.pop(0)
+            if len(self._times) > self._window:
+                self._times.pop(0)
 
-        sum_times = sum(self._times)
-        if sum_times == 0:
-            sum_times = 1
+            sum_times = sum(self._times)
+            if sum_times == 0:
+                sum_times = 1
 
-        if self._bytes:
-            sum_bytes = sum(self._bytes)
-            event.size = sum_bytes / len(self._bytes)
-            event.bw = float(sum_bytes) / float(sum_times)
+            if self._bytes:
+                sum_bytes = sum(self._bytes)
+                event.bw = float(sum_bytes) / float(sum_times)
+                event.size_min = min(self._bytes)
+                event.size_max = max(self._bytes)
+
 
         # the code from ROS rostopic
         n = len(self._times)
