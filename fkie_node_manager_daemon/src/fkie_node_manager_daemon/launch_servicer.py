@@ -707,3 +707,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer):
         result = lmsg.Empty()
         reset_package_cache()
         return result
+
+    def list_nodes(self):
+        result = []
+        for cfgid in list(self._loaded_files.keys()):
+            lc = self._loaded_files[cfgid]
+            for item in lc.roscfg.nodes:
+                node_fullname = roslib.names.ns_join(item.namespace, item.name)
+                result.append(node_fullname)
+        return result
+

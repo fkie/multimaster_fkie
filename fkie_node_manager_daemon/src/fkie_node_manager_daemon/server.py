@@ -39,7 +39,7 @@ import os
 import threading
 import time
 
-from fkie_multimaster_msgs.srv import LoadLaunch, LoadLaunchResponse, Task
+from fkie_multimaster_msgs.srv import ListNodes, ListNodesResponse, LoadLaunch, LoadLaunchResponse, Task
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fgrpc
 import fkie_multimaster_msgs.grpc.launch_pb2_grpc as lgrpc
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
@@ -69,6 +69,7 @@ class GrpcServer:
         rospy.Service('~start_launch', LoadLaunch, self._rosservice_start_launch)
         rospy.Service('~load_launch', LoadLaunch, self._rosservice_load_launch)
         rospy.Service('~run', Task, self._rosservice_start_node)
+        rospy.Service('~list_nodes', ListNodes, self._rosservice_list_nodes)
 
     def __del__(self):
         self.server.stop(3)
@@ -157,3 +158,9 @@ class GrpcServer:
         '''
         self.launch_servicer.start_node(req.node)
         return []
+
+    def _rosservice_list_nodes(self, req):
+        '''
+        Callback for the ROS service to list all nodes loaded by all launch files.
+        '''
+        return ListNodesResponse(self.launch_servicer.list_nodes())

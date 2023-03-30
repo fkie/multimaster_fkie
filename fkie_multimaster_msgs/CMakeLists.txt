@@ -26,6 +26,7 @@ add_service_files(
   FILES
   DiscoverMasters.srv
   GetSyncInfo.srv
+  ListNodes.srv
   LoadLaunch.srv
   Task.srv
 )
