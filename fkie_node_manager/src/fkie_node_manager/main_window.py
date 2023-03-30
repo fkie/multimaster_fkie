@@ -499,9 +499,7 @@ class MainWindow(QMainWindow):
                             if m.is_local:
                                 self._stop_updating()
                                 self._stop_local_master = m
-                            m.stop_nodes_by_name(m.get_nodes_runningIfLocal(remove_system_nodes=True), True, [rospy.get_name(), '/rosout'])
-                            if not m.is_local:
-                                m.killall_roscore()
+                            m.stop_all_nodes(not m.is_local)
                     except Exception as e:
                         rospy.logwarn("Error while stop nodes on %s: %s" % (uri, utf8(e)))
                 QTimer.singleShot(200, self._test_for_finish)
@@ -648,7 +646,8 @@ class MainWindow(QMainWindow):
                 self.diagnostics_signal.connect(self.masters[masteruri].append_diagnostic)
             self.stackedLayout.addWidget(self.masters[masteruri])
             if masteruri == self.getMasteruri():
-                self.masters[masteruri].default_load_launch = self.default_load_launch
+                if not self.default_profile_load:
+                    self.masters[masteruri].default_load_launch = self.default_load_launch
         return self.masters[masteruri]
 
     def on_host_update_request(self, host):
@@ -1129,7 +1128,7 @@ class MainWindow(QMainWindow):
             if master2update.is_local:
                 time_dialog.dateFrame.setVisible(False)
             if time_dialog.exec_():
-                running_nodes = master2update.get_nodes_runningIfLocal(remove_system_nodes=True)
+                running_nodes = master2update.get_nodes_runningIfLocal(remove_system_nodes=False)
                 restart_ret = MessageBox.No
                 if running_nodes:
                     restart_ret = MessageBox.question(self, 'Set Time', 'There are running nodes. Stop them?\nNote: on "YES" only system nodes will be restarted automatically!', buttons=MessageBox.Yes | MessageBox.No)

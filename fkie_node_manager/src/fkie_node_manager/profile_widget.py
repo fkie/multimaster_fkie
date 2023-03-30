@@ -181,7 +181,9 @@ class ProfileWidget(QDockWidget):
 
         :param str grpc_url: the path of the profile file.
         '''
-        _url, path = nmdurl.split(grpc_url)
+        path = grpc_url
+        if grpc_url.startswith('grpc'):
+            _url, path = nmdurl.split(grpc_url)
         rospy.loginfo("Load profile %s" % path)
         self.progressBar.setValue(0)
         self.setVisible(True)
@@ -214,7 +216,7 @@ class ProfileWidget(QDockWidget):
                         if 'zeroconf' in master_dict:
                             self._start_node_from_profile(master, hostname, 'fkie_master_discovery', 'zeroconf', usr, cfg=master_dict['zeroconf'])
                             self._current_profile[rmuri].add('/zeroconf')
-                        if 'node_manager_daemon' in master_dict:
+                        if 'node_manager_daemon' in master_dict and not nm.is_local(master.mastername):
                             self._start_node_from_profile(master, hostname, 'fkie_node_manager_daemon', 'node_manager_daemon', usr, cfg=master_dict['node_manager_daemon'])
                             self._current_profile[rmuri].add('/node_manager_daemon')
                         try:
@@ -233,8 +235,8 @@ class ProfileWidget(QDockWidget):
                                     if 'args' in cmdict:
                                         args = cmdict['args']
                                     # do we need to load to load/reload launch file
-                                    if cfg_name in master.launchfiles:
-                                        reload_launch = set(master.launchfiles[cfg_name].args.values()) != set(args.values())
+                                    #if cfg_name in master.launchfiles:
+                                    #    reload_launch = set(master.launchfiles[cfg_name].args.values()) != set(args.values())
                                 if reload_launch:
                                     self._main_window.launch_dock.load_file(cfg_name, args, master.masteruri)
                                 if 'nodes' in cmdict:

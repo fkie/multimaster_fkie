@@ -403,11 +403,11 @@ class ParameterDescription(object):
             elif value:
                 if self.isArrayType():
                     if 'int' in self.baseType() or 'byte' in self.baseType():
-                        rvalue = map(int, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = list(map(int, value.lstrip('[').rstrip(']').split(',')))
                     elif 'float' in self.baseType():
-                        rvalue = map(float, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = list(map(float, value.lstrip('[').rstrip(']').split(',')))
                     elif 'bool' in self.baseType():
-                        rvalue = map(str2bool, value.lstrip('[').rstrip(']').split(','))
+                        rvalue = list(map(str2bool, value.lstrip('[').rstrip(']').split(',')))
                     elif self.isBinaryType():
                         rvalue = value
                     else:
