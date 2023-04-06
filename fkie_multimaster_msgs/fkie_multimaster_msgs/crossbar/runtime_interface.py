@@ -84,6 +84,7 @@ class RosQos:
     '''
     Use default QoS settings for publishers and subscriptions
     '''
+
     def __init__(self, durability: int = DURABILITY.VOLATILE,
                  history: int = HISTORY.KEEP_LAST,
                  depth: int = 10,
@@ -279,40 +280,50 @@ class SystemWarningGroup:
         return True
 
 
-class SubscriberNode:
+class SubscriberFilter:
     '''
     Parametrization of a subscriber to echo a topic.
-    :param str topic: Name of the ROS topic to listen to (e.g. '/chatter').
-    :param str message_type: Type of the ROS message (e.g. 'std_msgs/msg/String'). (Only ROS2)
     :param bool nodata: report only statistics without message content.
     :param bool no_arr: exclude arrays.
     :param bool no_str: exclude string fields.
     :param int hz: rate to forward messages. Ignored on latched topics. Disabled by 0. Default: 1
     :param int window: window size, in # of messages, for calculating rate
-    :param bool tcp_no_delay: use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1)
-    :param bool use_sim_time: Enable ROS simulation time (Only ROS2)
     '''
 
     def __init__(self,
-                 topic: str,
-                 message_type: str = '',
                  nodata: bool = False,
                  no_arr: bool = False,
                  no_str: bool = False,
                  hz: float = 1,
-                 window: int = 0,
-                 tcp_no_delay: bool = False,
-                 use_sim_time: bool = False,
-                 qos: RosQos = RosQos()) -> None:
-        self.topic = topic
-        self.message_type = message_type
+                 window: int = 0) -> None:
         self.nodata = nodata
         self.no_arr = no_arr
         self.no_str = no_str
         self.hz = hz
         self.window = window
+
+class SubscriberNode:
+    '''
+    Parametrization of a subscriber to echo a topic.
+    :param str topic: Name of the ROS topic to listen to (e.g. '/chatter').
+    :param str message_type: Type of the ROS message (e.g. 'std_msgs/msg/String'). (Only ROS2)
+    :param bool tcp_no_delay: use the TCP_NODELAY transport hint when subscribing to topics (Only ROS1)
+    :param bool use_sim_time: Enable ROS simulation time (Only ROS2)
+    :param SubscriberFilter filter: filter
+    '''
+
+    def __init__(self,
+                 topic: str,
+                 message_type: str = '',
+                 tcp_no_delay: bool = False,
+                 use_sim_time: bool = False,
+                 filter: SubscriberFilter = SubscriberFilter(),
+                 qos: RosQos = RosQos()) -> None:
+        self.topic = topic
+        self.message_type = message_type
         self.tcp_no_delay = tcp_no_delay
         self.use_sim_time = use_sim_time
+        self.filter = filter
         self.qos = qos
 
 
@@ -323,6 +334,7 @@ class SubscriberEvent:
     :param str message_type: Type of the ROS message (e.g. 'std_msgs/msg/String')
     :param int count: Count of received messages since the start.
     '''
+
     def __init__(self,
                  topic: str,
                  message_type: str = '',

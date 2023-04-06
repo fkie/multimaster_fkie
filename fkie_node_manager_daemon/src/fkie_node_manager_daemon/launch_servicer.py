@@ -1644,15 +1644,15 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         startcfg.args.append(f'--crossbar_realm={self.realm}')
         startcfg.args.append(f'--topic={topic}')
         startcfg.args.append(f'--message_type={request.message_type}')
-        if request.no_data:
+        if request.filter.no_data:
             startcfg.args.append('--no_data')
-        if request.no_arr:
+        if request.filter.no_arr:
             startcfg.args.append('--no_arr')
-        if request.no_str:
+        if request.filter.no_str:
             startcfg.args.append('--nostr')
-        startcfg.args.append(f'--hz={request.hz}')
-        startcfg.args.append(f'--window={request.window}')
-        if request.no_str:
+        startcfg.args.append(f'--hz={request.filter.hz}')
+        startcfg.args.append(f'--window={request.filter.window}')
+        if request.filter.no_str:
             startcfg.args.append('--no_str')
         if request.tcp_no_delay:
             startcfg.args.append('--tcp_no_delay')
