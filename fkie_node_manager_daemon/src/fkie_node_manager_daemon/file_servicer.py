@@ -395,22 +395,31 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                     pass
         return json.dumps(path_list, cls=SelfEncoder)
 
-    @wamp.register('ros.path.get_list_recursive')
-    def getPathListRecursive(self, inputPath: str) -> List[PathItem]:
-        Log.info(
-            'Request to [ros.path.get_list_recursive] for %s' % inputPath)
+    def _glob(self, inputPath: str, recursive: bool = True, withHidden: bool = False, filter: List[str] = []) -> List[PathItem]:
         path_list: List[PathItem] = []
-
-        for filename in glob.iglob(inputPath + '**/**', recursive=True):
-            if filename == inputPath:
+        dir_list: List[str] = []
+        for name in os.listdir(inputPath):
+            if not withHidden and name.startswith('.'):
                 continue
-
+            filename = os.path.join(inputPath, name)
             if os.path.isfile(filename):
                 path_list.append(PathItem(path=filename, mtime=os.path.getmtime(
                     filename), size=os.path.getsize(filename), path_type='file'))
+            elif os.path.isdir(filename) and recursive:
+                if name not in filter:
+                    dir_list.append(filename)
+        # glob the directories at the end
+        for filename in dir_list:
+            path_list.extend(self._glob(inputPath=filename, recursive=recursive, withHidden=withHidden, filter=filter))
+        return path_list
 
+
+    @wamp.register('ros.path.get_list_recursive')
+    def getPathListRecursive(self, inputPath: str, filter=['node_modules']) -> List[PathItem]:
+        Log.info(
+            'Request to [ros.path.get_list_recursive] for %s' % inputPath)
+        path_list: List[PathItem] = self._glob(inputPath, recursive=True, withHidden=False, filter=['node_modules'])
         return json.dumps(path_list, cls=SelfEncoder)
-
 
     def ListPackages(self, request, context):
         if request.clear_ros_cache:
