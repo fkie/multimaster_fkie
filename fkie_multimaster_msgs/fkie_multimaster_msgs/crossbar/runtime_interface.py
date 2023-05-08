@@ -283,7 +283,7 @@ class SystemWarningGroup:
 class SubscriberFilter:
     '''
     Parametrization of a subscriber to echo a topic.
-    :param bool nodata: report only statistics without message content.
+    :param bool no_data: report only statistics without message content.
     :param bool no_arr: exclude arrays.
     :param bool no_str: exclude string fields.
     :param int hz: rate to forward messages. Ignored on latched topics. Disabled by 0. Default: 1
@@ -291,12 +291,12 @@ class SubscriberFilter:
     '''
 
     def __init__(self,
-                 nodata: bool = False,
+                 no_data: bool = False,
                  no_arr: bool = False,
                  no_str: bool = False,
                  hz: float = 1,
                  window: int = 0) -> None:
-        self.nodata = nodata
+        self.no_data = no_data
         self.no_arr = no_arr
         self.no_str = no_str
         self.hz = hz

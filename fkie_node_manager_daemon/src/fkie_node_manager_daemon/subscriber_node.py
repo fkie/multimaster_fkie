@@ -40,11 +40,14 @@ import asyncio
 import json
 import threading
 import time
+from types import SimpleNamespace
 
 import rospy
 from roslib import message
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberEvent
+from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberFilter
 from fkie_multimaster_msgs.logging.logging import Log
 
 
@@ -104,6 +107,7 @@ class SubscriberNode(CrossbarBaseSession):
         self._msg_tn = 0
         self._times = []
         self._bytes = []
+        self._bws = []
 
         Log.info(f"start publisher for {self._topic}[{self._message_type}]")
         self.__msg_class = message.get_message_class(self._message_type)
@@ -116,6 +120,8 @@ class SubscriberNode(CrossbarBaseSession):
             self._crossbarThread.start()
             self.sub = rospy.Subscriber(
                 self._topic, self.__msg_class, self._msg_handle)
+            self.subscribe_to(
+                f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
         else:
             raise Exception(
                 f"Cannot load message class for [{self._message_type}]. Did you build messages?")
@@ -217,22 +223,24 @@ class SubscriberNode(CrossbarBaseSession):
                 self._times.pop(0)
 
             sum_times = sum(self._times)
-            if sum_times == 0:
-                sum_times = 1
 
             if self._bytes:
                 sum_bytes = sum(self._bytes)
-                event.bw = float(sum_bytes) / float(sum_times)
+                if sum_times > 3:
+                    event.bw = float(sum_bytes) / float(sum_times)
+                    self._bws.append(event.bw)
+                    if len(self._bws) > self._window:
+                        self._bws.pop(0)
+                    event.bw_min = min(self._bws)
+                    event.bw_max = max(self._bws)
                 event.size_min = min(self._bytes)
                 event.size_max = max(self._bytes)
 
-
         # the code from ROS rostopic
         n = len(self._times)
-        if n < 2:
-            return
-        mean = sum_times / n
-        event.rate = 1. / mean if mean > 0. else 0
+        if n > 1:
+            avg = sum_times / n
+            event.rate = 1. / avg if avg > 0. else 0
 
         # # min and max
         # if self.SHOW_JITTER or self.show_only_rate:
@@ -250,3 +258,20 @@ class SubscriberNode(CrossbarBaseSession):
         #     message_window = "window: %s" % (n + 1)
 
         self._last_received_ts = current_time
+
+    def _clb_update_filter(self, json_filter: SubscriberFilter):
+        # Convert filter settings into a proper python object
+        request = json.loads(json.dumps(json_filter),
+                             object_hook=lambda d: SimpleNamespace(**d))
+        self._no_data = request.no_data
+        self._no_arr = request.no_arr
+        self._no_str = request.no_str
+        self.hz = request.hz
+        if self.window != request.window:
+            while len(self._bytes) > request._window:
+                self._bytes.pop(0)
+            while len(self._times) > request._window:
+                self._times.pop(0)
+            while len(self._bws) > self._window:
+                self._bws.pop(0)
+        self.window = request.window
