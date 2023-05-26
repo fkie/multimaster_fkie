@@ -50,6 +50,7 @@ import threading
 import traceback
 
 from fkie_node_manager_daemon.common import utf8
+from fkie_node_manager_daemon.common import interpret_path
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.editor.line_edit import EnhancedLineEdit
 from fkie_node_manager.parameter_handler import ParameterHandler
@@ -57,11 +58,11 @@ from fkie_node_manager.parameter_handler import ParameterHandler
 import fkie_node_manager as nm
 try:
     from python_qt_binding.QtGui import QApplication, QComboBox, QCheckBox, QLineEdit, QScrollArea, QWidget
-    from python_qt_binding.QtGui import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
+    from python_qt_binding.QtGui import QAction, QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
     from python_qt_binding.QtGui import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
 except Exception:
     from python_qt_binding.QtWidgets import QApplication, QComboBox, QCheckBox, QLineEdit, QScrollArea, QWidget
-    from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
+    from python_qt_binding.QtWidgets import QAction, QFormLayout, QHBoxLayout, QVBoxLayout, QSpacerItem, QSizePolicy
     from python_qt_binding.QtWidgets import QFrame, QDialog, QDialogButtonBox, QFileDialog, QLabel, QPushButton, QTextEdit
 
 
@@ -78,6 +79,33 @@ class MyComboBox(QComboBox):
 
     def __init__(self, parent=None):
         QComboBox.__init__(self, parent=parent)
+        copy_action = QAction("Copy all", self, statusTip="", triggered=self._on_copy)
+        self.addAction(copy_action)
+        paste_action = QAction("Paste && replace all", self, statusTip="", triggered=self._on_paste)
+        self.addAction(paste_action)
+        sep_action = QAction("", self)
+        sep_action.setSeparator(True)
+        self.addAction(sep_action)
+        browse_action = QAction("Browse", self, statusTip="", triggered=self._on_browse)
+        self.addAction(browse_action)
+        self.setContextMenuPolicy(Qt.ActionsContextMenu)
+
+    def _on_browse(self):
+        dialog = QFileDialog(self)
+        dialog.setOption(QFileDialog.HideNameFilterDetails, True)
+        # dialog.setFileMode(QFileDialog.Directory)
+        pkg_dir = os.path.dirname(interpret_path(self.currentText()))
+        if (pkg_dir):
+            dialog.setDirectory(pkg_dir)
+        if dialog.exec_():
+            fileNames = dialog.selectedFiles()
+            self.setEditText(fileNames[0])
+
+    def _on_copy(self):
+      QApplication.clipboard().setText(self.currentData())
+
+    def _on_paste(self):
+      self.setEditText(QApplication.clipboard().text())
 
     def keyPressEvent(self, event):
         key_mod = QApplication.keyboardModifiers()
