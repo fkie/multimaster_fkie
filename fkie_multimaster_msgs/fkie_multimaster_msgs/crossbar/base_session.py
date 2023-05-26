@@ -106,7 +106,7 @@ class CrossbarBaseSession(ApplicationSession):
     Last failed message will be send on connect.
     '''
 
-    def publish_to(self, topic: str, msg: Union[str, Any]):
+    def publish_to(self, topic: str, msg: Union[str, Any], resend_after_connect=True):
         encoded_msg = msg
         if not isinstance(msg, str):
             encoded_msg = json.dumps(msg, cls=SelfEncoder)
@@ -114,8 +114,9 @@ class CrossbarBaseSession(ApplicationSession):
             Log.debug(f"Publish '{topic}': {encoded_msg}")
             self.publish(topic, encoded_msg)
         except TransportLost as e:
-            Log.info(f"add {topic}: {encoded_msg}")
-            self._crossbar_failed_publications[topic] = encoded_msg
+            if (resend_after_connect):
+                Log.info(f"add {topic}: {encoded_msg}")
+                self._crossbar_failed_publications[topic] = encoded_msg
         except Exception:
             import traceback
             Log.warn(

@@ -74,7 +74,13 @@ class MsgEncoder(json.JSONEncoder):
     def default(self, obj):
         result = {}
         for key in obj.__slots__:
-            result[key] = getattr(obj, key)
+            skip = False
+            if self.no_arr and isinstance(getattr(obj, key), (list, dict)):
+                skip = True
+            if self.no_str and isinstance(getattr(obj, key), str):
+                skip = True
+            if not skip:
+                result[key] = getattr(obj, key)
         return result
 
 
@@ -170,22 +176,19 @@ class SubscriberNode(CrossbarBaseSession):
     def _msg_handle(self, data):
         self._count_received += 1
         self._latched = data._connection_header['latching'] != '0'
-        print(data._connection_header)
-        print(dir(data))
-        print("SIZE", data.__sizeof__())
-        if self.crossbar_registered:
-            print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
-            event = SubscriberEvent(self._topic, self._message_type)
-            event.latched = self._latched
-            if not self._no_data:
-                event.data = json.loads(json.dumps(
-                    data, cls=MsgEncoder, **{"no_arr": self._no_arr}))
-            event.count = self._count_received
-            self._calc_stats(data, event)
-            self.publish_to(
-                f"ros.subscriber.event.{self._topic.replace('/', '_')}", event)
-        elif self._latched:
-            self._latched_messages.append(data)
+        # print(data._connection_header)
+        # print(dir(data))
+        # print("SIZE", data.__sizeof__())
+        print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
+        event = SubscriberEvent(self._topic, self._message_type)
+        event.latched = self._latched
+        if not self._no_data:
+            event.data = json.loads(json.dumps(
+                data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
+        event.count = self._count_received
+        self._calc_stats(data, event)
+        self.publish_to(
+            f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
 
     def _get_message_size(self, msg):
         buff = None
@@ -209,9 +212,6 @@ class SubscriberNode(CrossbarBaseSession):
             self._times = []
             self._bytes = []
         else:
-            print("current_time:", current_time)
-            print("self._msg_tn:", self._msg_tn)
-            print("TM:", current_time - self._msg_tn)
             self._times.append(current_time - self._msg_tn)
             self._msg_tn = current_time
 
@@ -263,10 +263,11 @@ class SubscriberNode(CrossbarBaseSession):
         # Convert filter settings into a proper python object
         request = json.loads(json.dumps(json_filter),
                              object_hook=lambda d: SimpleNamespace(**d))
+        Log.info(f"update filter for {self._topic}[{self._message_type}]")
         self._no_data = request.no_data
         self._no_arr = request.no_arr
         self._no_str = request.no_str
-        self.hz = request.hz
+        self._hz = request.hz
         if self.window != request.window:
             while len(self._bytes) > request._window:
                 self._bytes.pop(0)
