@@ -44,6 +44,7 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
 from fkie_multimaster_msgs.defines import NM_DISCOVERY_NAME
 from fkie_multimaster_msgs.defines import NM_NAMESPACE
 from fkie_multimaster_msgs.defines import NMD_DEFAULT_PORT
+from fkie_multimaster_msgs.defines import ros2_subscriber_nodename_tuple
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.names import ns_join
 from fkie_multimaster_msgs.system import screen
@@ -153,7 +154,8 @@ class RosStateServicer(CrossbarBaseSession):
                 for participant in msg.participants:
                     guid = self._guid_to_str(participant.guid)
                     self._ros_state[guid] = participant
-                self.publish_to('ros.nodes.changed', {"timestamp": time.time()})
+                self.publish_to('ros.nodes.changed', {
+                                "timestamp": time.time()})
                 nmd.launcher.server.screen_servicer.system_change()
         else:
             if msg.full_state:
@@ -227,6 +229,12 @@ class RosStateServicer(CrossbarBaseSession):
             return json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
         nmd.launcher.server.screen_servicer.system_change()
         return nmd.launcher.server.screen_servicer.kill_node(name.split('|')[-1])
+
+    @wamp.register('ros.subscriber.stop')
+    def stop_subscriber(self, topic_name: str) -> bool:
+        Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))
+        ns, name = ros2_subscriber_nodename_tuple(topic_name)
+        return self.stop_node(os.path.join(ns, name))
 
     def stop_composed_node(self, node: RosNode) -> None:
         # try to unload node from container
@@ -334,7 +342,8 @@ class RosStateServicer(CrossbarBaseSession):
                     t_guid = self._guid_to_str(te.guid)
                     if te.name.startswith('rt/'):
                         if (te.name[2:], te.ttype) not in topic_objs:
-                            tp = RosTopic(te.name[2:], self.get_message_type(te.ttype))
+                            tp = RosTopic(
+                                te.name[2:], self.get_message_type(te.ttype))
                             topic_objs[(te.name[2:], te.ttype)] = tp
                             topic_by_id[t_guid] = tp
                         else:
@@ -345,7 +354,8 @@ class RosStateServicer(CrossbarBaseSession):
                         # TODO: distinction between Reply/Request? Currently it is removed.
                         srv_name = self.get_service_name(te.name[2:])
                         if (srv_name, srv_type) not in service_objs:
-                            srv = RosService(srv_name, self.get_service_type(srv_type))
+                            srv = RosService(
+                                srv_name, self.get_service_type(srv_type))
                             service_objs[(srv_name, srv_type)] = srv
                             service_by_id[t_guid] = srv
                         else:
@@ -406,7 +416,7 @@ class RosStateServicer(CrossbarBaseSession):
         return result
 
     @classmethod
-    def get_message_type(cls, dds_type:Text)->Text:
+    def get_message_type(cls, dds_type: Text) -> Text:
         result = dds_type
         if result:
             result = result.replace('::', '/')
@@ -417,7 +427,7 @@ class RosStateServicer(CrossbarBaseSession):
         return result
 
     @classmethod
-    def get_service_type(cls, dds_service_type:Text)->Text:
+    def get_service_type(cls, dds_service_type: Text) -> Text:
         result = dds_service_type
         for suffix in ['_Response_', '_Request_']:
             if result[-len(suffix):] == suffix:
@@ -426,7 +436,7 @@ class RosStateServicer(CrossbarBaseSession):
         return cls.get_message_type(result)
 
     @classmethod
-    def get_service_name(cls, dds_service_name:Text)->Text:
+    def get_service_name(cls, dds_service_name: Text) -> Text:
         result = dds_service_name
         for suffix in ['Reply', 'Request']:
             if result[-len(suffix):] == suffix:

@@ -19,6 +19,7 @@
 
 from rclpy.node import Node 
 from .ros_node import RosNodeLauncher
+from .subscriber_node import RosSubscriberLauncher
 
 # from pkg_resources import get_distribution, DistributionNotFound
 # try:
@@ -39,5 +40,5 @@ def main():
 
 def subscriber():
     global launcher
-    launcher = RosNodeLauncher()
+    launcher = RosSubscriberLauncher()
     launcher.spin()

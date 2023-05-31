@@ -45,6 +45,7 @@ from rosidl_runtime_py import set_message_fields
 from fkie_multimaster_msgs import ros_pkg
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberNode
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchCallService
@@ -62,6 +63,8 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesR
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchMessageStruct
 from fkie_multimaster_msgs.crossbar.launch_interface import LaunchPublishMessage
+from fkie_multimaster_msgs.defines import NM_NAMESPACE
+from fkie_multimaster_msgs.defines import ros2_subscriber_nodename_tuple
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
 from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
@@ -915,14 +918,15 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             # create request message
             service_request = sub_class.Request()
             try:
-                data =  json.loads(request.data)
+                data = json.loads(request.data)
                 set_message_fields(service_request, self._str_from_dict(data))
             except Exception as e:
                 result.error_msg = 'Failed to populate field: {0}'.format(e)
 
             # call service
             if not cli.service_is_ready():
-                Log.debug(f"waiting for service '{request.service_name}' to become available...")
+                Log.debug(
+                    f"waiting for service '{request.service_name}' to become available...")
                 cli.wait_for_service()
             Log.debug('requester: making request: %r' % service_request)
             future = cli.call_async(service_request)
@@ -937,3 +941,59 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             print(traceback.format_exc())
             result.error_msg = repr(err)
         return json.dumps(result, cls=SelfEncoder)
+
+    @wamp.register('ros.subscriber.start')
+    def start_subscriber(self, request_json: SubscriberNode) -> bool:
+        # Covert input dictionary into a proper python object
+        request = json.loads(json.dumps(request_json),
+                             object_hook=lambda d: SimpleNamespace(**d))
+        topic = request.topic
+        Log.debug(
+            'Request to [ros.subscriber.start]: %s' % str(topic))
+        package_name = 'fkie_node_manager_daemon'
+        executable = 'node_manager_subscriber'
+        cmd = f"ros2 run {package_name} {executable}"
+        # fullname = f"/_node_manager_subscriber/{topic.replace('.', '/').strip('/')}"
+        self.namespace, self.name = ros2_subscriber_nodename_tuple(topic)
+        fullname = os.path.join(self.namespace, self.name)
+        # args = [f"__name:={fullname}"]
+        # args.append(f'--name={fullname}')
+        args = []
+        args.append(f'--crossbar_port={self.port}')
+        args.append(f'--crossbar_realm={self.realm}')
+        args.append(f'--topic={topic}')
+        args.append(f'--message_type={request.message_type}')
+        if request.filter.no_data:
+            args.append('--no_data')
+        if request.filter.no_arr:
+            args.append('--no_arr')
+        if request.filter.no_str:
+            args.append('--no_str')
+        args.append(f'--hz={request.filter.hz}')
+        args.append(f'--window={request.filter.window}')
+        if request.tcp_no_delay:
+            args.append('--tcp_no_delay')
+
+        # run on local host
+        # set environment
+        new_env = dict(os.environ)
+
+        # set display variable to local display
+        if 'DISPLAY' in new_env:
+            if not new_env['DISPLAY'] or new_env['DISPLAY'] == 'remote':
+                del new_env['DISPLAY']
+        else:
+            new_env['DISPLAY'] = ':0'
+
+        # start
+        screen_prefix = ' '.join(
+            [screen.get_cmd(fullname, new_env, new_env.keys())])
+        Log.info(
+            f"{screen_prefix} {cmd} {' '.join(args)}")
+        # Log.debug(
+        #     f"environment while run node '{fullname}': '{new_env}'")
+        # Log.debug(
+        #     f"args while run node '{fullname}': '{args}', JOINED: {' '.join([screen_prefix, cmd] + args)}")
+        SupervisedPopen(shlex.split(' '.join([screen_prefix, cmd] + args)), env=new_env,
+                        object_id=f"run_node_{fullname}", description=f"Run [{package_name}]{executable}")
+        return True

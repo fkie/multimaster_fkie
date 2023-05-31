@@ -1,53 +1,56 @@
-# Software License Agreement (BSD License)
+# ROS 2 Node Manager
+# Graphical interface to manage the running and configured ROS 2 nodes on different hosts.
 #
-# Copyright (c) 2018, Fraunhofer FKIE/CMS, Alexander Tiderko
-# All rights reserved.
+# Author: Alexander Tiderko
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# Copyright 2020 Fraunhofer FKIE
 #
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above
-#    copyright notice, this list of conditions and the following
-#    disclaimer in the documentation and/or other materials provided
-#    with the distribution.
-#  * Neither the name of Fraunhofer nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+
+import argparse
+import asyncio
+import json
+import os
+import signal
+import sys
+import threading
+import time
+import traceback
+from types import SimpleNamespace
 from typing import Any
 from typing import Callable
 from typing import Union
 from typing import Tuple
 
-import argparse
-import asyncio
-import json
-import threading
-import time
-from types import SimpleNamespace
-
-import rospy
-from roslib import message
+import rclpy
+from rclpy.client import SrvType
+from rclpy.client import SrvTypeRequest
+from rclpy.client import SrvTypeResponse
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
+from rcl_interfaces.msg import ParameterDescriptor
+from fkie_node_manager_daemon.server import Server
+from fkie_multimaster_msgs.crossbar import server
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberEvent
 from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberFilter
+from fkie_multimaster_msgs.defines import NM_NAMESPACE
+from fkie_multimaster_msgs.defines import ros2_subscriber_nodename_tuple
+from fkie_multimaster_msgs.system.host import ros_host_suffix
+from fkie_multimaster_msgs.system.screen import test_screen
+
+import fkie_node_manager_daemon as nmd
 from fkie_multimaster_msgs.logging.logging import Log
 
 
@@ -73,7 +76,10 @@ class MsgEncoder(json.JSONEncoder):
 
     def default(self, obj):
         result = {}
-        for key in obj.__slots__:
+        fields = obj.__slots__
+        if hasattr(obj, 'get_fields_and_field_types'):
+            fields = obj.get_fields_and_field_types()
+        for key in fields:
             skip = False
             if self.no_arr and isinstance(getattr(obj, key), (list, dict)):
                 skip = True
@@ -84,16 +90,36 @@ class MsgEncoder(json.JSONEncoder):
         return result
 
 
-class SubscriberNode(CrossbarBaseSession):
+class RosSubscriberLauncher(CrossbarBaseSession):
+    '''
+    Launches the ROS node to forward a topic subscription.
+    '''
 
     DEFAULT_WINDOWS_SIZE = 5000
 
-    def __init__(self, node_name: str, log_level: int = rospy.INFO, test_env: bool = False):
+    def __init__(self, test_env=False):
+        self.ros_domain_id = 0
         self.parser = self._init_arg_parser()
+        # change terminal name
         parsed_args, remaining_args = self.parser.parse_known_args()
         if parsed_args.help:
             return None
-        rospy.init_node(node_name, log_level=log_level)
+        self.namespace, self.name = ros2_subscriber_nodename_tuple(parsed_args.topic)
+        print('\33]0;%s\a' % (self.name), end='', flush=True)
+        # self._displayed_name = parsed_args.name
+        # self._port = parsed_args.port
+        # self._load = parsed_args.load
+        if 'ROS_DOMAIN_ID' in os.environ:
+            self.ros_domain_id = int(os.environ['ROS_DOMAIN_ID'])
+            # TODO: switch domain id
+            # os.environ.pop('ROS_DOMAIN_ID')
+        rclpy.init(args=remaining_args)
+        #NM_NAMESPACE
+        self.rosnode = rclpy.create_node(self.name, namespace=self.namespace)
+
+        self.executor = MultiThreadedExecutor(num_threads=3)
+        self.executor.add_node(self.rosnode)
+
         self._topic = parsed_args.topic
         self._message_type = parsed_args.message_type
         self._count_received = 0
@@ -117,33 +143,63 @@ class SubscriberNode(CrossbarBaseSession):
         self._bytes = []
         self._bws = []
 
+        nmd.ros_node = self.rosnode
+        # set loglevel to DEBUG
+        nmd.ros_node.get_logger().set_level(rclpy.logging.LoggingSeverity.DEBUG)
+
+        # get a reference to the global node for logging
+        Log.set_ros2_logging_node(self.rosnode)
+
         Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
-        self.__msg_class = message.get_message_class(self._message_type)
-        if self.__msg_class:
-            self.crossbar_loop = asyncio.get_event_loop()
-            CrossbarBaseSession.__init__(
-                self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env)
-            self._crossbarThread = threading.Thread(
-                target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
-            self._crossbarThread.start()
-            self.sub = rospy.Subscriber(
-                self._topic, self.__msg_class, self._msg_handle)
-            self.subscribe_to(
-                f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
-        else:
-            raise Exception(
-                f"Cannot load message class for [{self._message_type}]. Did you build messages?")
+        splitted_type = self._message_type.replace('/', '.').split('.')
+        splitted_type.reverse()
+        module = __import__(splitted_type.pop())
+        sub_class = getattr(module, splitted_type.pop())
+        while splitted_type:
+            sub_class = getattr(sub_class, splitted_type.pop())
+        if sub_class is None:
+            raise ImportError(f"invalid message type: '{self._message_type}'. If this is a valid message type, perhaps you need to run 'colcon build'")
+
+        self.__msg_class = sub_class
+        self.crossbar_loop = asyncio.get_event_loop()
+        CrossbarBaseSession.__init__(
+            self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env)
+        self._crossbarThread = threading.Thread(
+            target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+        self._crossbarThread.start()
+        qos_state_profile = QoSProfile(depth=100,
+                                    # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+                                    # history=QoSHistoryPolicy.KEEP_LAST,
+                                    # reliability=QoSReliabilityPolicy.RELIABLE)
+                                    )
+        self.sub = nmd.ros_node.create_subscription(
+            self.__msg_class, self._topic, self._msg_handle, qos_profile=qos_state_profile)
+        self.subscribe_to(
+            f"ros.subscriber.filter.{self._topic.replace('/', '_')}", self._clb_update_filter)
 
     def __del__(self):
         self.stop()
 
-    def stop(self):
-        if hasattr(self, 'crossbar_loop'):
-            self.crossbar_loop.stop()
-
-    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
+    def spin(self):
+        try:
+            self.executor.spin()
+                # rclpy.spin(self.rosnode)
+        except KeyboardInterrupt:
+            pass
+        except Exception:
+            # on load error the process will be killed to notify user
+            # in node_manager about error
+            self.rosnode.get_logger().warning('Start failed: %s' %
+                                              traceback.format_exc())
+            sys.stdout.write(traceback.format_exc())
+            sys.stdout.flush()
+            # TODO: how to notify user in node manager about start errors
+            # os.kill(os.getpid(), signal.SIGKILL)
+        self.sub.destroy()
+        print('shutdown rclpy')
+        self.executor.shutdown()
+        rclpy.shutdown()
+        print('bye!')
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser()
@@ -175,13 +231,22 @@ class SubscriberNode(CrossbarBaseSession):
         parser.set_defaults(help=False)
         return parser
 
+    def stop(self):
+        if hasattr(self, 'crossbar_loop'):
+            self.crossbar_loop.stop()
+
+    def run_crossbar_forever(self, loop: asyncio.AbstractEventLoop) -> None:
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
     def _msg_handle(self, data):
         self._count_received += 1
-        self._latched = data._connection_header['latching'] != '0'
+        self._latched = False
+        #self._latched = data._connection_header['latching'] != '0'
         # print(data._connection_header)
         # print(dir(data))
         # print("SIZE", data.__sizeof__())
-        print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
+        #print(f"LATCHEND: {data._connection_header['latching'] != '0'}")
         event = SubscriberEvent(self._topic, self._message_type)
         event.latched = self._latched
         if not self._no_data:
@@ -189,15 +254,21 @@ class SubscriberNode(CrossbarBaseSession):
                 data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
         event.count = self._count_received
         self._calc_stats(data, event)
+        print(f"publish_to: ", f"ros.subscriber.event.{self._topic.replace('/', '_')}")
         self.publish_to(
             f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
 
     def _get_message_size(self, msg):
+        # print("size:", msg.__sizeof__())
+        # print("dir:", dir(msg))
+        return msg.__sizeof__()
         buff = None
         from io import BytesIO  # Python 3.x
         buff = BytesIO()
-        msg.serialize(buff)
-        return buff.getbuffer().nbytes
+        print(dir(msg))
+        #msg.serialize(buff)
+        #return buff.getbuffer().nbytes
+        return 0
 
     def _calc_stats(self, msg, event):
         current_time = time.time()

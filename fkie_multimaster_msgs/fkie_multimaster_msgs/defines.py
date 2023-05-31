@@ -19,6 +19,7 @@
 
 import os
 import re
+from typing import Tuple
 from fkie_multimaster_msgs.system.host import ros_host_suffix
 
 
@@ -42,6 +43,7 @@ if nm_name_suffix:
     nm_name_suffix = f"_{nm_name_suffix}"
 NM_DISCOVERY_NAME = f'_discovery{nm_name_suffix}'
 NM_DAEMON_NAME = f'_daemon{nm_name_suffix}'
+NM_SUBSCRIBER_NAME = f'_subscriber{nm_name_suffix}'
 EMPTY_PATTERN = re.compile('\b', re.I)
 SEARCH_IN_EXT = ['.launch', '.yaml', '.conf', '.cfg',
                  '.iface', '.nmprofile', '.sync', '.test', '.xml', '.xacro']
@@ -71,3 +73,16 @@ GRPC_SERVER_PORT_OFFSET = 1010
 
 NMD_DEFAULT_PORT = 11811
 ''':var NMD_DEFAULT_PORT: default port of node manager daemon.'''
+
+
+# def ros1_subscriber_nodename_tuple(topic: str) -> Tuple[str, str]:  # namespace, name
+#     return ('', '')
+
+def ros2_subscriber_nodename_tuple(topic: str) -> Tuple[str, str]:  # namespace, name
+    namespace = os.path.join(NM_NAMESPACE, NM_SUBSCRIBER_NAME)
+    topic_parts = topic.strip('/').split('/')
+    node_name = topic_parts[-1]
+    topic_ns = '/'.join(topic_parts[:-1])
+    if topic_ns:
+        namespace = os.path.join(namespace, topic_ns)
+    return (namespace, node_name)
