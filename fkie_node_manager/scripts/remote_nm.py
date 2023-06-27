@@ -222,7 +222,7 @@ def runNode(package, executable, name, args, prefix='', repawn=False, masteruri=
         raise StartException(' '.join([executable, 'in package [', package, '] not found!\n\nThe package was created?\nIs the binary executable?\n']))
     # create string for node parameter. Set arguments with spaces into "'".
     cmd = remove_src_binary(cmd)
-    node_params = ' '.join(''.join(["'", a, "'"]) if a.find(' ') > -1 else a for a in args[1:])
+    node_params = ' '.join(''.join(['"', a.replace('"', "'"), '"']) if a.find(' ') > -1 else a for a in args[1:])
     cmd_args = [screen.get_cmd(name), RESPAWN_SCRIPT if repawn else '', prefix, cmd[0], node_params]
     print('run on remote host:', ' '.join(cmd_args))
     # determine the current working path

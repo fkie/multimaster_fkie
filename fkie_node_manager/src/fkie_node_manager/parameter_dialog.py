@@ -733,13 +733,16 @@ class MainBox(QFrame):
         Remove the references between parameter and corresponding widgets
         (ComboBox, CheckBox, ..) and remove these widgets from layouts.
         '''
-        for child in self.param_widget.children():
-            if isinstance(child, MyComboBox):
-                child.parameter_description.setWidget(None)
-                self.params.remove(child.parameter_description)
-            elif isinstance(child, MainBox):
-                child.removeAllFields()
-                self.param_widget.layout().removeWidget(child)
+        try:
+            for child in self.param_widget.children():
+                if isinstance(child, MyComboBox):
+                    child.parameter_description.setWidget(None)
+                    self.params.remove(child.parameter_description)
+                elif isinstance(child, MainBox):
+                    child.removeAllFields()
+                    self.param_widget.layout().removeWidget(child)
+        except RuntimeError:
+            pass
 
     def filter(self, arg, force_show=False):
         '''
