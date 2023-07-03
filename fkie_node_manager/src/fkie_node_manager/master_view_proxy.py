@@ -3518,7 +3518,7 @@ class MasterViewProxy(QWidget):
                             i = float(rate)
                         if i > 0:
                             opt_str = ''.join(['-r ', rate])
-                            opt_name_suf = '__%sHz_' % (
+                            opt_name_suf = '__%shz_' % (
                                 utf8(rate).replace('.', '_'))
                     except Exception:
                         pass

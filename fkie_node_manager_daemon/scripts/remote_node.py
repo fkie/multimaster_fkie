@@ -281,7 +281,8 @@ def run_command(name: str, command: str, additional_args: List[str], respawn: bo
     '''
     if pre_check_binary:
         if not shutil.which(command):
-            raise Exception(f"Cannot find '{command}': No such file or directory")
+            raise Exception(
+                f"Cannot find '{command}': No such file or directory")
     # get namespace if given
     arg_ns = getCwdArg('__ns', additional_args)
 

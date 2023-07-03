@@ -87,6 +87,7 @@ from fkie_multimaster_msgs.crossbar.launch_interface import LaunchPublishMessage
 from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
 from fkie_multimaster_msgs.launch import xml
 from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_msgs.names import ns_join
 from fkie_multimaster_msgs.system import exceptions
 from fkie_multimaster_msgs.system import ros1_masteruri
 from fkie_multimaster_msgs.system.url import equal_uri
@@ -1658,3 +1659,13 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
             startcfg.args.append('--tcp_no_delay')
         launcher.run_node(startcfg)
         return True
+
+
+    def list_nodes(self):
+        result = []
+        for cfgid in list(self._loaded_files.keys()):
+            lc = self._loaded_files[cfgid]
+            for item in lc.roscfg.nodes:
+                node_fullname = ns_join(item.namespace, item.name)
+                result.append(node_fullname)
+        return result

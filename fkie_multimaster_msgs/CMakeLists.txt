@@ -30,6 +30,7 @@ if ( ament_cmake_FOUND )
       "msg2/ParticipantEntitiesInfo.msg"
       "msg2/Qos.msg"
       "msg2/TopicEntity.msg"
+      "srv/ListNodes.srv"
       "srv/LoadLaunch.srv"
       "srv/Task.srv"
       DEPENDENCIES builtin_interfaces
@@ -73,6 +74,7 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
       FILES
       DiscoverMasters.srv
       GetSyncInfo.srv
+      ListNodes.srv
       LoadLaunch.srv
       Task.srv
     )
