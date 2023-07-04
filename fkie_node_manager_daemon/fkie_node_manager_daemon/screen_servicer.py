@@ -27,7 +27,7 @@ import time
 from typing import Dict, List
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
+from fkie_multimaster_msgs.crossbar.runtime_interface import ScreensMapping
 from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.system import screen
 import fkie_node_manager_daemon as nmd
@@ -39,60 +39,78 @@ class ScreenServicer(CrossbarBaseSession):
         Log.info("Create ROS2 screen servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
         self._is_running = True
-        self._multiple_screen_check_rate = 1
-        self._multiple_screen_check_force_after_default = 10
-        self._multiple_screen_check_force_after = self._multiple_screen_check_force_after_default
-        self._multiple_screen_do_check = True
-        self._multiple_screen_thread = None
+        self._screen_check_rate = 1
+        self._screen_check_force_after_default = 10
+        self._screen_check_force_after = self._screen_check_force_after_default
+        self._screen_do_check = True
+        self._screen_thread = None
+        self._screens_set = set()
+        self._screen_nodes_set = set()
+        self._sceen_crossbar_msg: List(ScreensMapping) = []
 
     def start(self):
-        self._multiple_screen_thread = threading.Thread(
-            target=self._check_multiple_screens, daemon=True)
-        self._multiple_screen_thread.start()
+        self._screen_thread = threading.Thread(
+            target=self._check_screens, daemon=True)
+        self._screen_thread.start()
 
     def stop(self):
         self._is_running = False
         self.shutdown()
 
-    def _check_multiple_screens(self):
+    def _check_screens(self):
         last_check = 0
-        notified_about_multiple = True
         while self._is_running:
-            if self._multiple_screen_do_check or last_check >= self._multiple_screen_check_force_after:
+            if self._screen_do_check or last_check >= self._screen_check_force_after:
                 screen.wipe()
-                if self._multiple_screen_do_check:
-                    self._multiple_screen_check_force_after = self._multiple_screen_check_force_after_default
+                if self._screen_do_check:
+                    self._screen_check_force_after = self._screen_check_force_after_default
                 else:
-                    self._multiple_screen_check_force_after += self._multiple_screen_check_force_after
-                self._multiple_screen_do_check = False
+                    self._screen_check_force_after += self._screen_check_force_after
+                self._screen_do_check = False
+                new_screens_set = set()
+                new_screen_nodes_set = set()
+                # get screens
                 screens = screen.get_active_screens()
-                screen_dict: Dict[str, ScreenRepetitions] = {}
+                screen_dict: Dict[str, ScreensMapping] = {}
                 for session_name, node_name in screens.items():
                     if node_name in screen_dict:
                         screen_dict[node_name].screens.append(session_name)
                     else:
-                        screen_dict[node_name] = ScreenRepetitions(
+                        screen_dict[node_name] = ScreensMapping(
                             name=node_name, screens=[session_name])
-                crossbar_msg: List(ScreenRepetitions) = []
+                    new_screens_set.add(session_name)
+                    new_screen_nodes_set.add(node_name)
+                # create crossbar message
+                crossbar_msg: List(ScreensMapping) = []
                 for node_name, msg in screen_dict.items():
-                    if len(msg.screens) > 1:
-                        crossbar_msg.append(msg)
-                if crossbar_msg or notified_about_multiple:
-                    Log.debug(f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
-                    self.publish_to('ros.screen.multiple', crossbar_msg)
-                    notified_about_multiple = len(crossbar_msg) > 0
+                    crossbar_msg.append(msg)
+                # add nodes without screens send by the last message
+                gone_screen_nodes = self._screen_nodes_set - new_screen_nodes_set
+                for sn in gone_screen_nodes:
+                    crossbar_msg.append(ScreensMapping(name=sn, screens=[]))
+
+                # publish the message only on difference
+                div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
+                div_screens = self._screens_set ^ new_screens_set
+                if div_screen_nodes or div_screens:
+                    Log.debug(
+                        f"publish ros.screen.list with {len(crossbar_msg)} nodes.")
+                    self.publish_to('ros.screen.list', crossbar_msg)
+                    self._screen_crossbar_msg = crossbar_msg
+                    self._screen_nodes_set = new_screen_nodes_set
+                    self._screens_set = new_screens_set
                 last_check = 0
             else:
                 last_check += 1
-            time.sleep(1.0 / self._multiple_screen_check_rate)
+            time.sleep(1.0 / self._screen_check_rate)
 
     def system_change(self) -> None:
-        self._multiple_screen_do_check = True
+        self._screen_do_check = True
 
     @wamp.register('ros.screen.kill_node')
     def kill_node(self, name: str) -> bool:
         Log.info(f"Kill node '{name}'")
-        self._multiple_screen_do_check = True
+        self._screen_do_check = True
         success = False
         screens = screen.get_active_screens(name)
         if len(screens.items()) == 0:
@@ -103,3 +121,8 @@ class ScreenServicer(CrossbarBaseSession):
             os.kill(pid, signal.SIGKILL)
             success = True
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
+
+    @wamp.register('ros.screen.get_list')
+    def get_screen_list(self) -> str:
+        Log.info('Request to [ros.screen.get_list]')
+        return json.dumps(self._screen_crossbar_msg, cls=SelfEncoder)

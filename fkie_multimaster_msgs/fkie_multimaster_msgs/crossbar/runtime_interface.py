@@ -217,7 +217,7 @@ class RosProvider:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
-class ScreenRepetitions:
+class ScreensMapping:
     '''
     :param str name: full node name
     :param [str] screens: list the screen names associated with given node.

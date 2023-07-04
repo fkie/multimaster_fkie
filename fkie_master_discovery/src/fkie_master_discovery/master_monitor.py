@@ -72,7 +72,7 @@ from fkie_multimaster_msgs.logging.logging import Log
 from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
 from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
-from fkie_multimaster_msgs.crossbar.runtime_interface import ScreenRepetitions
+from fkie_multimaster_msgs.crossbar.runtime_interface import ScreensMapping
 from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarning
 from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarningGroup
 from fkie_multimaster_msgs.system import screen
@@ -186,7 +186,7 @@ class MasterMonitor(CrossbarBaseSession):
         self.__cached_nodes = dict()
         self.__cached_services = dict()
         self._on_shutdown = False
-        self._multiple_screen_check_force_after = 10
+        self._screen_check_force_after = 10
         self.ros_node_name = str(rospy.get_name())
         if rospy.has_param('~name'):
             self.__mastername = rospy.get_param('~name')
@@ -201,6 +201,9 @@ class MasterMonitor(CrossbarBaseSession):
         self._printed_errors = dict()
         self._last_clearup_ts = time.time()
         self._crossbar_warning_groups = {}
+        self._screens_set = set()
+        self._screen_nodes_set = set()
+        self._sceen_crossbar_msg: List(ScreensMapping) = []
 
         self._master_errors = list()
         # Create an XML-RPC server
@@ -291,11 +294,11 @@ class MasterMonitor(CrossbarBaseSession):
                     '/roslaunch/uris', k)] = v
         self._update_launch_uris()
         # === END: UPDATE THE LAUNCH URIS Section ===
-        self._multiple_screen_do_check = False
+        self._screen_do_check = False
         if self.connect_crossbar:
-            self._multiple_screen_thread = threading.Thread(
-                target=self.checkMultipleScreens, daemon=True)
-            self._multiple_screen_thread.start()
+            self._screen_thread = threading.Thread(
+                target=self.checkScreens, daemon=True)
+            self._screen_thread.start()
             self.publish_to('ros.discovery.ready', {'status': True})
 
     def __update_param(self, key, value):
@@ -949,7 +952,7 @@ class MasterMonitor(CrossbarBaseSession):
             if result and self.connect_crossbar:
                 result = {"timestamp": self.__new_master_state.timestamp}
                 self.publish_to('ros.nodes.changed', result)
-                self._multiple_screen_do_check = True
+                self._screen_do_check = True
             return result
 
     def _timejump_exit(self):
@@ -1007,7 +1010,7 @@ class MasterMonitor(CrossbarBaseSession):
     def stop_node(self, name: str) -> bool:
         Log.info(f"Request to stop node '{name}'")
         success = False
-        self._multiple_screen_do_check = True
+        self._screen_do_check = True
         if self.__master_state is not None:
             try:
                 node_uri = ''
@@ -1085,34 +1088,54 @@ class MasterMonitor(CrossbarBaseSession):
                 socket.setdefaulttimeout(None)
         return json.dumps({'result': success, 'message': ''}, cls=SelfEncoder)
 
-    def checkMultipleScreens(self):
-        notified_about_multiple = True
+    def checkScreens(self):
         last_check = 0
         while not self._on_shutdown:
-            if self._multiple_screen_do_check or last_check >= self._multiple_screen_check_force_after:
+            if self._screen_do_check or last_check >= self._screen_check_force_after:
                 screen.wipe()
-                self._multiple_screen_do_check = False
+                self._screen_do_check = False
+                new_screens_set = set()
+                new_screen_nodes_set = set()
                 screens = screen.get_active_screens()
-                screen_dict: Dict[str, ScreenRepetitions] = {}
+                screen_dict: Dict[str, ScreensMapping] = {}
+                # get screens
                 for session_name, node_name in screens.items():
                     if node_name in screen_dict:
                         screen_dict[node_name].screens.append(session_name)
                     else:
-                        screen_dict[node_name] = ScreenRepetitions(
+                        screen_dict[node_name] = ScreensMapping(
                             name=node_name, screens=[session_name])
-                crossbar_msg: List(ScreenRepetitions) = []
+                    new_screens_set.add(session_name)
+                    new_screen_nodes_set.add(node_name)
+                # create crossbar message
+                crossbar_msg: List(ScreensMapping) = []
                 for node_name, msg in screen_dict.items():
-                    if len(msg.screens) > 1:
-                        crossbar_msg.append(msg)
-                if crossbar_msg or notified_about_multiple:
+                    crossbar_msg.append(msg)
+                # add nodes without screens send by the last message
+                gone_screen_nodes = self._screen_nodes_set - new_screen_nodes_set
+                for sn in gone_screen_nodes:
+                    crossbar_msg.append(ScreensMapping(name=sn, screens=[]))
+                # publish the message only on difference
+                div_screen_nodes = self._screen_nodes_set ^ new_screen_nodes_set
+                div_screens = self._screens_set ^ new_screens_set
+                if div_screen_nodes or div_screens:
                     Log.debug(
-                        f"ros.screen.multiple with {len(crossbar_msg)} nodes with multiple screens.")
-                    self.publish_to('ros.screen.multiple', crossbar_msg)
-                    notified_about_multiple = len(crossbar_msg) > 0
+                        f"publish ros.screen.list with {len(crossbar_msg)} nodes.")
+                    self.publish_to('ros.screen.list', crossbar_msg)
+                    self._screen_crossbar_msg = crossbar_msg
+                    self._screen_nodes_set = new_screen_nodes_set
+                    self._screens_set = new_screens_set
                 last_check = 0
             else:
                 last_check += 1
             time.sleep(1.0)
+
+    @wamp.register('ros.screen.get_list')
+    def getScreenList(self) -> str:
+        Log.info('Request to [ros.screen.get_list]')
+        # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
+        return json.dumps(self._screen_crossbar_msg, cls=SelfEncoder)
+
 
     def setProviderList(self, provider_list):
         self.provider_list = provider_list
