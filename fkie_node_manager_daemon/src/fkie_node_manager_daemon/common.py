@@ -390,6 +390,21 @@ def replace_arg(value, resolve_args):
     for arg in re_if.findall(value):
         if arg in resolve_args:
             result = result.replace('$(arg %s)' % arg, resolve_args[arg])
+    if value.startswith('$(eval'):
+        # resolve args in eval statement
+        re_if = re.compile(r"arg\(\'(?P<name>.*?)\'\)")
+        for arg in re_if.findall(value):
+            if arg in resolve_args:
+                result = result.replace("arg('%s')" % arg, f"'{resolve_args[arg]}'")
+        re_items = '|'.join([f"({item})" for item in list(resolve_args.keys())])
+        re_if = re.compile(re_items)
+        for matches in re_if.findall(value):
+            for arg in matches:
+                if arg:
+                    if arg in resolve_args:
+                        result = result.replace("%s" % arg, f"\'{resolve_args[arg]}\'")
+        result = result.replace('$(eval', '').rstrip(')')
+        result = 'true' if eval(result) else 'false'
     return result
 
 
