@@ -242,8 +242,22 @@ def replace_arg(content: str, resolve_args: Dict[str, str]) -> str:
     for arg in re_if.findall(content):
         if arg in resolve_args:
             result = result.replace('$(arg %s)' % arg, resolve_args[arg])
+    if content.startswith('$(eval'):
+        # resolve args in eval statement
+        re_if = re.compile(r"arg\(\'(?P<name>.*?)\'\)")
+        for arg in re_if.findall(content):
+            if arg in resolve_args:
+                result = result.replace("arg('%s')" % arg, f"'{resolve_args[arg]}'")
+        re_items = '|'.join([f"({item})" for item in list(resolve_args.keys())])
+        re_if = re.compile(re_items)
+        for matches in re_if.findall(content):
+            for arg in matches:
+                if arg:
+                    if arg in resolve_args:
+                        result = result.replace("%s" % arg, f"\'{resolve_args[arg]}\'")
+        result = result.replace('$(eval', '').rstrip(')')
+        result = 'true' if eval(result) else 'false'
     return result
-
 
 def __get_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
     included_files = []
