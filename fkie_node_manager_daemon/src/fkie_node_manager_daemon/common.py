@@ -513,49 +513,49 @@ def find_included_files(string,
         if groups.lastindex is None:
             continue
         for index in range(groups.lastindex):
-            filename = remove_after_space(groups.groups()[index])
-            rawname = filename
-            if filename:
+            fname = remove_after_space(groups.groups()[index])
+            rawname = fname
+            if fname:
                 try:
                     forward_args = {}
-                    if inc_files_forward_args and inc_files_forward_args[0][0] == filename:
+                    if inc_files_forward_args and inc_files_forward_args[0][0] == fname:
                         forward_args = inc_files_forward_args[0][1]
                         inc_files_forward_args.pop(0)
                     resolve_args_all = dict(resolve_args)
                     resolve_args_all.update(forward_args)
                     try:
                         # try to resolve path
-                        filename = replace_arg(filename, resolve_args_all)
-                        filename = replace_arg(filename, resolve_args_intern)
-                        filename = interpret_path(filename, pwd)
+                        fname = replace_arg(fname, resolve_args_all)
+                        fname = replace_arg(fname, resolve_args_intern)
+                        fname = interpret_path(fname, pwd)
                     except Exception as err:
                         rospy.logwarn("Interpret file failed: %s" % utf8(err))
-                    if os.path.isdir(filename):
-                        filename = ''
-                    exists = os.path.isfile(filename)
-                    if filename:
-                        publish = not unique or (unique and filename not in my_unique_files)
+                    if os.path.isdir(fname):
+                        fname = ''
+                    exists = os.path.isfile(fname)
+                    if fname:
+                        publish = not unique or (unique and fname not in my_unique_files)
                         if publish:
-                            my_unique_files.append(filename)
+                            my_unique_files.append(fname)
                             # transform found position to line number
                             content_tmp = content
                             if sys.version_info < (3, 0):
                                 content_tmp = content.decode('utf-8')
                             position = content_tmp.count("\n", 0, groups.start()) + 1
-                            yield IncludedFile(string, position, filename, exists, rawname, rec_depth, forward_args)
+                            yield IncludedFile(string, position, fname, exists, rawname, rec_depth, forward_args)
                     # for recursive search
                     if exists:
                         if recursive:
                             try:
-                                ext = os.path.splitext(filename)
+                                ext = os.path.splitext(fname)
                                 if ext[1] in search_in_ext:
-                                    for res_item in find_included_files(filename, recursive, False, include_pattern, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
+                                    for res_item in find_included_files(fname, recursive, False, include_pattern, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1, filename=fname):
                                         publish = not unique or (unique and res_item.inc_path not in my_unique_files)
                                         if publish:
                                             my_unique_files.append(res_item.inc_path)
                                             yield res_item
                             except Exception as e:
-                                rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (filename, utf8(e)))
+                                rospy.logwarn("Error while recursive search for include pattern in %s: %s" % (fname, utf8(e)))
                 except Exception as e:
                     rospy.logwarn("Error while parse %s for include pattern: %s" % (content_info, utf8(e)))
 
