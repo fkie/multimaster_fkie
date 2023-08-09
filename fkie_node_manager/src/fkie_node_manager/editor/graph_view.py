@@ -76,7 +76,8 @@ class GraphViewWidget(QDockWidget):
     DATA_ARGS = Qt.UserRole + 7
     DATA_DEF_ARGS_NOT_SET = Qt.UserRole + 8
     DATA_ARG_NAME = Qt.UserRole + 9
-    ITEM_TYPE = Qt.UserRole + 10
+    DATA_FILE_EXISTS = Qt.UserRole + 10
+    ITEM_TYPE = Qt.UserRole + 11
     ITEM_TYPE_INC_FILE = 1
     ITEM_TYPE_INC_GROUP_ARG = 2
     ITEM_TYPE_INC_ARG = 3
@@ -216,6 +217,21 @@ class GraphViewWidget(QDockWidget):
                         result[arg].append(incargs[arg])
         return result
 
+    def get_included_files(self, from_file, inc_string=''):
+        '''
+        Returns all included files. If inc_string is not empty only files with raw string containing in inc_string are returned.
+        :rtype: Tuple(path, raw_data, line, exists)
+        '''
+        result = []
+        file_items = self.graphTreeView.model().match(self.graphTreeView.model().index(0, 0), self.DATA_INC_FILE, from_file, 10, Qt.MatchRecursive)
+        for index in file_items:
+            item = self.graphTreeView.model().itemFromIndex(index)
+            for row_idx in range(item.rowCount()):
+                inc_item = item.child(row_idx)
+                if not inc_string or inc_item.data(self.DATA_RAW) in inc_string:
+                    result.append((inc_item.data(self.DATA_INC_FILE), inc_item.data(self.DATA_RAW), inc_item.data(self.DATA_LINE), inc_item.data(self.DATA_FILE_EXISTS)))
+        return result
+
     def _refill_tree(self, tree, create_tree=True):
         deep = 0
         file_dsrc = self._root_path
@@ -304,6 +320,7 @@ class GraphViewWidget(QDockWidget):
                     inc_item.setData(inc_file.raw_inc_path, self.DATA_RAW)
                     inc_item.setData(inc_file.args, self.DATA_ARGS)
                     inc_item.setData(inc_file.unset_default_args, self.DATA_DEF_ARGS_NOT_SET)
+                    inc_item.setData(inc_file.exists, self.DATA_FILE_EXISTS)
                     # add included arguments
                     if inc_file.unset_default_args or inc_file.args:
                         arg_item = QStandardItem('arguments')
@@ -316,6 +333,7 @@ class GraphViewWidget(QDockWidget):
                                 da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
                                 da_item.setData(inc_file.path_or_str, self.DATA_FILE)
                                 da_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
+                                da_item.setData(inc_file.exists, self.DATA_FILE_EXISTS)
                                 da_item.setData(da_name, self.DATA_ARG_NAME)
                                 da_item.setToolTip("This argument is definded as default, but no set while include.")
                                 arg_item.appendRow(da_item)
@@ -325,6 +343,7 @@ class GraphViewWidget(QDockWidget):
                                 da_item.setData(self.ITEM_TYPE_INC_ARG, self.ITEM_TYPE)
                                 da_item.setData(inc_file.path_or_str, self.DATA_FILE)
                                 da_item.setData(inc_file.inc_path, self.DATA_INC_FILE)
+                                da_item.setData(inc_file.exists, self.DATA_FILE_EXISTS)
                                 da_item.setData(da_name, self.DATA_ARG_NAME)
                                 arg_item.appendRow(da_item)
                         inc_item.appendRow(arg_item)

@@ -31,7 +31,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-
 from python_qt_binding.QtCore import QRegExp, Qt, Signal, QEvent
 from python_qt_binding.QtGui import QColor, QFont, QKeySequence, QTextCursor, QTextDocument
 import os
@@ -318,7 +317,9 @@ class TextEdit(QTextEdit):
 
     def _strip_bad_parts(self, textblock, current_position):
         result = textblock
-        startidx = textblock.rfind('$(find ', 0, current_position)
+        startidx = textblock.rfind('$(dirname)', 0, current_position)
+        if startidx == -1:
+            startidx = textblock.rfind('$(find ', 0, current_position)
         if startidx == -1:
             startidx = textblock.rfind(' /', 0, current_position)
         if startidx == -1:
@@ -351,67 +352,76 @@ class TextEdit(QTextEdit):
         if event.modifiers() == Qt.ControlModifier or event.modifiers() == Qt.ShiftModifier:
             cursor = self.cursorForPosition(event.pos())
             try:
-                textblock = self._strip_bad_parts(cursor.block().text(), cursor.positionInBlock())
-                for inc_file in find_included_files(textblock, False, False, search_in_ext=[]):
-                    aval = inc_file.raw_inc_path
-                    aitems = aval.split("'")
-                    for search_for in aitems:
-                        if not search_for:
-                            continue
-                        try:
-                            rospy.logdebug("try to interpret: %s" % search_for)
-                            args_in_name = get_arg_names(search_for)
+                textblock = self._strip_bad_parts(
+                    cursor.block().text(), cursor.positionInBlock())
+                r = self.parent.graph_view.get_included_files(
+                    self.filename, textblock)
+                for inc_file, _raw_text, _line, file_exists in r:
+                    try:
+                        rospy.logdebug(
+                            f"found included file: {inc_file}, exists: {file_exists}")
+                        if file_exists:
+                            event.setAccepted(True)
+                            self.load_request_signal.emit(inc_file)
+                        else:
+                            rospy.logdebug(
+                                f" included files does not exists, look for arguments in {inc_file}")
+                            args_in_name = get_arg_names(inc_file)
                             resolved_args = {}
                             # if found arg in the name, try to detect values
                             if args_in_name:
-                                rospy.logdebug("  args %s in filename found, try to resolve..." % args_in_name)
-                                resolved_args = self.parent.graph_view.get_include_args(args_in_name, search_for, self.filename)
-                            if resolved_args:
-                                params = {}
-                                self._internal_args
-                                # create parameter dialog
-                                for key, val in resolved_args.items():
-                                    values = list(val)
-                                    # add args defined in current file
-                                    if key in self._internal_args and self._internal_args[key] not in values:
-                                        values.append(self._internal_args[key])
-                                    params[key] = {':type': 'string', ':value': values}
-                                dia = ParameterDialog(params, store_geometry="open_launch_on_click")
-                                dia.setFilterVisible(False)
-                                dia.setWindowTitle('Select Parameter')
-                                if dia.exec_():
-                                    params = dia.getKeywords()
-                                    search_for = replace_arg(search_for, params)
-                                else:
-                                    # canceled -> cancel interpretation
-                                    QTextEdit.mouseReleaseEvent(self, event)
-                                    return
-                            # now resolve find-statements
-                            rospy.logdebug("  send interpret request to daemon: %s" % search_for)
-                            inc_files = nm.nmd().launch.get_interpreted_path(self.filename, text=[search_for])
-                            for path, exists in inc_files:
-                                try:
-                                    rospy.logdebug("  received interpret request from daemon: %s, exists: %d" % (path, exists))
-                                    if exists:
-                                        event.setAccepted(True)
-                                        self.load_request_signal.emit(path)
+                                rospy.logdebug(
+                                    f"  args {args_in_name} in filename found, try to resolve...")
+                                resolved_args = self.parent.graph_view.get_include_args(
+                                    args_in_name, _raw_text, self.filename)
+                                if resolved_args:
+                                    params = {}
+                                    self._internal_args
+                                    # create parameter dialog
+                                    for key, val in resolved_args.items():
+                                        values = list(val)
+                                        # add args defined in current file
+                                        if key in self._internal_args and self._internal_args[key] not in values:
+                                            values.append(
+                                                self._internal_args[key])
+                                        params[key] = {
+                                            ':type': 'string', ':value': values}
+                                    dia = ParameterDialog(
+                                        params, store_geometry="open_launch_on_click")
+                                    dia.setFilterVisible(False)
+                                    dia.setWindowTitle('Select Parameter')
+                                    if dia.exec_():
+                                        params = dia.getKeywords()
+                                        inc_file = replace_arg(
+                                            inc_file, params)
+                                        self.load_request_signal.emit(
+                                            inc_file)
                                     else:
-                                        _filename, file_extension = os.path.splitext(path)
-                                        if file_extension in nm.settings().launch_view_file_ext:
-                                            # create a new file, if it does not exists
-                                            result = MessageBox.question(self, "File not exists", '\n\n'.join(["Create a new file?", path]), buttons=MessageBox.Yes | MessageBox.No)
-                                            if result == MessageBox.Yes:
-                                                content = '<launch>\n\n</launch>' if path.endswith('.launch') else ''
-                                                nm.nmd().file.save_file(path, content.encode(), 0)
-                                                event.setAccepted(True)
-                                                self.load_request_signal.emit(path)
-                                except Exception as e:
-                                    MessageBox.critical(self, "Error", "File not found %s" % path, detailed_text=utf8(e))
-                        except exceptions.ResourceNotFound as not_found:
-                            MessageBox.critical(self, "Error", "Resource not found %s" % search_for, detailed_text=utf8(not_found.error))
+                                        # canceled -> cancel interpretation
+                                        QTextEdit.mouseReleaseEvent(
+                                            self, event)
+                                        return
+                            else:
+                                _filename, file_extension = os.path.splitext(
+                                    inc_file)
+                                if file_extension in nm.settings().launch_view_file_ext:
+                                    # create a new file, if it does not exists
+                                    result = MessageBox.question(self, "File not exists", '\n\n'.join(
+                                        ["Create a new file?", inc_file]), buttons=MessageBox.Yes | MessageBox.No)
+                                    if result == MessageBox.Yes:
+                                        content = '<launch>\n\n</launch>' if inc_file.endswith(
+                                            '.launch') else ''
+                                        nm.nmd().file.save_file(inc_file, content.encode(), 0)
+                                        event.setAccepted(True)
+                                        self.load_request_signal.emit(
+                                            inc_file)
+                    except (Exception, exceptions.ResourceNotFound) as e:
+                        MessageBox.critical(
+                            self, "Error", "File not found %s" % inc_file, detailed_text=utf8(e))
             except Exception as err:
                 print(traceback.format_exc())
-                MessageBox.critical(self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
+                MessageBox.critical(
+                    self, "Error", "Error while request included file %s" % self.filename, detailed_text=utf8(err))
         QTextEdit.mouseReleaseEvent(self, event)
 
     def mouseMoveEvent(self, event):

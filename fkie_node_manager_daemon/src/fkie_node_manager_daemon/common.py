@@ -46,6 +46,7 @@ MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
 EMPTY_PATTERN = re.compile('\b', re.I)
 INCLUDE_PATTERN = [r"\s*(\$\(find.*?\)[^\"]*)",
+                   r"\s*(\$\(dirname\)[^\"]*)",
                    r"file=\"(.*?)\"",
                    r"textfile=\"(.*?)\"",
                    r"binfile=\"(.*?)\"",
@@ -257,7 +258,7 @@ def interpret_path(path, pwd='.'):
              Otherwise the parameter itself normalized by :py:func:`os.path.normpath` will be returned.
     :rtype: str
     '''
-    result = path.strip()
+    result = path.strip().replace("$(dirname)", pwd)
     # try replace package name by package path
     pkg_pattern = re.compile(r"\$\(find (.*?)\)/|pkg:\/\/(.*?)/|package:\/\/(.*?)/")
     for groups in pkg_pattern.finditer(path):
@@ -302,7 +303,7 @@ def replace_paths(text, pwd='.'):
     Like meth:interpret_path(), but replaces all matches in the text and retain other text.
     '''
     result = text
-    path_pattern = re.compile(r"(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
+    path_pattern = re.compile(r"(\$\(dirname\)|\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
     for groups in path_pattern.finditer(text):
         for index in range(groups.lastindex):
             path = groups.groups()[index]
@@ -455,7 +456,8 @@ def find_included_files(string,
                         search_in_ext=SEARCH_IN_EXT,
                         resolve_args={},
                         unique_files=[],
-                        rec_depth=0):
+                        rec_depth=0,
+                        filename=None):
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
@@ -492,6 +494,10 @@ def find_included_files(string,
                 count_nl = content[match.start():match.end()].count('\n')
                 content = content[:match.start()] + '\n' * count_nl + content[match.end():]
                 match = comment_pattern.search(content, match.start())
+    if filename is not None:
+        pwd = os.path.dirname(filename)
+        if '://' in pwd:
+            pwd = re.sub(r"^.*://[^/]*", "", pwd)
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     resolve_args_intern = {}
