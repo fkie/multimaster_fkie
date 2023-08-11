@@ -23,7 +23,7 @@ import time
 
 import fkie_multimaster_pylib.system.host as host
 
-PKG = 'fkie_multimaster_msgs'
+PKG = 'fkie_multimaster_pylib'
 
 
 class TestHost(unittest.TestCase):

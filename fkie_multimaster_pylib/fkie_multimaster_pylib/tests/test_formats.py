@@ -36,7 +36,7 @@ from datetime import tzinfo, timedelta
 
 from fkie_multimaster_pylib import formats
 
-PKG = 'fkie_multimaster_msgs'
+PKG = 'fkie_multimaster_pylib'
 
 
 class TestFormatsLib(unittest.TestCase):

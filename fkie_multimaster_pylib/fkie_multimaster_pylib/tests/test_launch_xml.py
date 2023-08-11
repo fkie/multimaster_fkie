@@ -37,7 +37,7 @@ import rospkg
 from fkie_multimaster_pylib import ros_pkg
 from fkie_multimaster_pylib.launch import xml
 
-PKG = 'fkie_multimaster_msgs'
+PKG = 'fkie_multimaster_pylib'
 
 
 class TestLaunchXmlLib(unittest.TestCase):
@@ -66,7 +66,7 @@ class TestLaunchXmlLib(unittest.TestCase):
             inc_file_str, '%s' % inc_file))
 
     def test_interpret_path(self):
-        text_path = "$(find fkie_multimaster_msgs)/%s/include_dummy.launch" % self.res_dir
+        text_path = f"$(find {PKG})/{self.res_dir}/include_dummy.launch"
         path = xml.interpret_path(text_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted path, expected: %s, got: %s" % (
             self.test_include_file, path))
@@ -75,19 +75,19 @@ class TestLaunchXmlLib(unittest.TestCase):
         exp_path = os.path.join(self.pkg_path, text_path)
         self.assertEqual(
             exp_path, path, "wrong interpreted relative path, expected: %s, got: %s" % (exp_path, path))
-        text_path = "pkg://fkie_multimaster_msgs/%s/include_dummy.launch" % self.res_dir
+        text_path = f"pkg://{PKG}/{self.res_dir}/include_dummy.launch"
         path = xml.interpret_path(text_path, self.pkg_path)
         self.assertEqual(self.test_include_file, path,
                          "wrong interpreted pkg:// path, expected: %s, got: %s" % (self.test_include_file, path))
-        text_path = "package://fkie_multimaster_msgs/%s/include_dummy.launch" % self.res_dir
+        text_path = f"package://{PKG}/{self.res_dir}/include_dummy.launch"
         path = xml.interpret_path(text_path, self.pkg_path)
         self.assertEqual(self.test_include_file, path,
                          "wrong interpreted package:// path, expected: %s, got: %s" % (self.test_include_file, path))
-        text_path = "file://fkie_multimaster_msgs/tests/test_launch/include_dummy.launch"
+        text_path = f"file://{PKG}/tests/test_launch/include_dummy.launch"
         path = xml.interpret_path(text_path, self.pkg_path)
         self.assertEqual(self.test_include_file, path,
                          "wrong interpreted file:// path, expected: %s, got: %s" % (self.test_include_file, path))
-        text_path = "pkg://fkie_multimaster_msgs///include_dummy.launch"
+        text_path = f"pkg://{PKG}///include_dummy.launch"
         path = xml.interpret_path(text_path, self.pkg_path)
         self.assertEqual(self.test_include_file, path,
                          "wrong interpreted path with replace the subdirectory by `///`, expected: %s, got: %s" % (self.test_include_file, path))
@@ -96,17 +96,16 @@ class TestLaunchXmlLib(unittest.TestCase):
         self.assertRaises(rospkg.ResourceNotFound, xml.interpret_path, text_path,
                           "No rospkg.ResourceNotFound raises on invalid pacakge name")
 
-        text_path = "some other --args here '$(find fkie_multimaster_msgs)/%s/include_dummy.launch'" % self.res_dir
+        text_path = f"some other --args here '$(find {PKG})/{self.res_dir}/include_dummy.launch'"
         path = xml.interpret_path(text_path)
         self.assertEqual(self.test_include_file, path, "wrong interpreted path, expected: %s, got: %s" % (
             self.test_include_file, path))
 
     def test_replace_paths(self):
-        text_path = "$(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch/include_dummy.launch, $(find fkie_node_manager_daemon)/launch/demo_bar.launch"
+        text_path = f"$(find {PKG})/{PKG}/tests/test_launch/include_dummy.launch, $(find fkie_node_manager_daemon)/launch/demo_bar.launch"
         path = xml.replace_paths(text_path)
         nm_path = os.path.dirname(self.pkg_path.rstrip(os.path.sep))
-        path_exp = "%s/fkie_multimaster_msgs/fkie_multimaster_msgs/tests/test_launch/include_dummy.launch, %s/launch/demo_bar.launch" % (
-            nm_path, self.nmgr_path.rstrip(os.path.sep))
+        path_exp = f"{nm_path}]/{PKG}/{PKG}/tests/test_launch/include_dummy.launch, {self.nmgr_path.rstrip(os.path.sep)}/launch/demo_bar.launch"
         self.assertEqual(
             path_exp, path, "wrong replace_paths, expected: %s, got: %s" % (path_exp, path))
 

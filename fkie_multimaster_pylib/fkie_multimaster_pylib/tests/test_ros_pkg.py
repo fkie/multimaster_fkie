@@ -37,7 +37,7 @@ import rospkg
 from fkie_multimaster_pylib import ros_pkg
 from fkie_multimaster_pylib.launch import xml
 
-PKG = 'fkie_multimaster_msgs'
+PKG = 'fkie_multimaster_pylib'
 
 
 class TestRosPkgLib(unittest.TestCase):

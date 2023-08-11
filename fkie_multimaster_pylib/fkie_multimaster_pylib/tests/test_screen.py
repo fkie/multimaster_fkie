@@ -23,7 +23,7 @@ import unittest
 import fkie_multimaster_pylib.system.screen as screen
 from fkie_multimaster_pylib.system.screen import SCREEN_SLASH_SEP
 
-PKG = 'fkie_multimaster_msgs'
+PKG = 'fkie_multimaster_pylib'
 TEST_NODE_NAME = f'{SCREEN_SLASH_SEP}test{SCREEN_SLASH_SEP}node'
 
 
