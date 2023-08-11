@@ -3,7 +3,7 @@ import os
 package_name = 'fkie_node_manager_daemon'
 
 if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == '1':
-    from distutils.core import setup
+    from setuptools import setup
     from catkin_pkg.python_setup import generate_distutils_setup
 
     d = generate_distutils_setup(

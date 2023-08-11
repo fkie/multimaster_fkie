@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 	<!--
-	<include file="$(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch/included1.launch">
+	<include file="$(find fkie_multimaster_pylib)/fkie_multimaster_pylib/tests/test_launch/included1.launch">
 	-->
-	<include file="$(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch/included1.launch">
+	<include file="$(find fkie_multimaster_pylib)/fkie_multimaster_pylib/tests/test_launch/included1.launch">
 		<arg name="inc" value= "included2" />
 	</include>
-	<!--	<include file="$(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch/included1.launch"> -->
-	<include file="$(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch/included1.launch" />
-	<include file="$(find invalid_package)/fkie_multimaster_msgs/tests/test_launch/included1.launch"/>
-	<arg name="include1" value= "$(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch/included1.launch" />
-	<rosparam param="paramter" file="$(find fkie_multimaster_msgs)/fkie_multimaster_msgs/tests/test_launch/included1.launch" command="load" subst_value="true"/>
-	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find fkie_multimaster_msgs)/launch/invalid_cfg.rviz"/>
+	<!--	<include file="$(find fkie_multimaster_pylib)/fkie_multimaster_pylib/tests/test_launch/included1.launch"> -->
+	<include file="$(find fkie_multimaster_pylib)/fkie_multimaster_pylib/tests/test_launch/included1.launch" />
+	<include file="$(find invalid_package)/fkie_multimaster_pylib/tests/test_launch/included1.launch"/>
+	<arg name="include1" value= "$(find fkie_multimaster_pylib)/fkie_multimaster_pylib/tests/test_launch/included1.launch" />
+	<rosparam param="paramter" file="$(find fkie_multimaster_pylib)/fkie_multimaster_pylib/tests/test_launch/included1.launch" command="load" subst_value="true"/>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find fkie_multimaster_pylib)/launch/invalid_cfg.rviz"/>
 
 </launch>
