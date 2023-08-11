@@ -20,7 +20,7 @@
 from lxml import etree
 from io import StringIO
 
-from fkie_multimaster_msgs import ros_pkg
+from fkie_multimaster_pylib import ros_pkg
 
 
 class LaunchValidator(object):

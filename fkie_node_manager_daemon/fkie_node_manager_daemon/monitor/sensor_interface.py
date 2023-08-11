@@ -24,8 +24,8 @@ import threading
 from typing import Callable
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from fkie_multimaster_msgs import formats
-from fkie_multimaster_msgs.settings import Settings
+from fkie_multimaster_pylib import formats
+from fkie_multimaster_pylib.settings import Settings
 import fkie_node_manager_daemon as nmd
 
 

@@ -49,8 +49,8 @@ import rospy
 from fkie_master_discovery.common import resolve_url, read_interface, create_pattern, is_empty_pattern, get_hostname
 from fkie_master_discovery.master_info import MasterInfo
 import fkie_master_discovery.interface_finder as interface_finder
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 from .sync_thread import SyncThread
 

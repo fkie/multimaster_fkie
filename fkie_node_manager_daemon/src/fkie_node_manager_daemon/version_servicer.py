@@ -31,11 +31,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-import rospy
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 import fkie_multimaster_msgs.grpc.version_pb2 as vmsg
 from . import version
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class VersionServicer(vgrpc.VersionServiceServicer):

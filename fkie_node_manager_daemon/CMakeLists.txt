@@ -16,6 +16,7 @@ elseif(CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
     find_package(catkin REQUIRED COMPONENTS
         diagnostic_msgs
         fkie_multimaster_msgs
+        fkie_multimaster_pylib
         roslaunch
         rospy
     )
@@ -25,6 +26,7 @@ elseif(CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
         CATKIN_DEPENDS
         diagnostic_msgs
         fkie_multimaster_msgs
+        fkie_multimaster_pylib
         roslaunch
         rospy
     )

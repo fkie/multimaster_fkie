@@ -5,9 +5,8 @@ import signal
 import sys
 import traceback
 
-import roslib
 import rospy
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 rospy.init_node("launch_test_node", log_level=rospy.DEBUG)

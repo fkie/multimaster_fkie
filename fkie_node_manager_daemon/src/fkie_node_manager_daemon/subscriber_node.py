@@ -44,11 +44,11 @@ from types import SimpleNamespace
 
 import rospy
 from roslib import message
-from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberEvent
-from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberFilter
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.crossbar.runtime_interface import SubscriberEvent
+from fkie_multimaster_pylib.crossbar.runtime_interface import SubscriberFilter
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 def str2bool(v):

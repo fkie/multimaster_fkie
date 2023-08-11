@@ -43,14 +43,14 @@ import roslib
 import rospy
 
 from fkie_node_manager_daemon.strings import isstring, utf8
-from fkie_multimaster_msgs import settings as nmd_settings
+from fkie_multimaster_pylib import settings as nmd_settings
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.common import get_ros_home
-from fkie_multimaster_msgs.defines import LOG_PATH
-from fkie_multimaster_msgs.defines import SEARCH_IN_EXT as DEFAULT_SEARCH_IN_EXT
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib.defines import LOG_PATH
+from fkie_multimaster_pylib.defines import SEARCH_IN_EXT as DEFAULT_SEARCH_IN_EXT
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 
 

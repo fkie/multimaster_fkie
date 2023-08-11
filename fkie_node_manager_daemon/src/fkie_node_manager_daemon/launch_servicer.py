@@ -63,35 +63,35 @@ from . import launcher
 from fkie_node_manager_daemon.strings import utf8
 from .launch_config import LaunchConfig
 from .startcfg import StartConfig
-from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
-from fkie_multimaster_msgs.crossbar.runtime_interface import SubscriberNode
-from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchCallService
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchFile
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadRequest
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchLoadReply
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchContent
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchAssociations
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNode
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeInfo
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeReply
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathRequest
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchInterpretPathReply
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFilesRequest
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchIncludedFile
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchMessageStruct
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchPublishMessage
-from fkie_multimaster_msgs.defines import SEARCH_IN_EXT
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.names import ns_join
-from fkie_multimaster_msgs.system import exceptions
-from fkie_multimaster_msgs.system import ros1_masteruri
-from fkie_multimaster_msgs.system.url import equal_uri
-from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
+from fkie_multimaster_pylib import ros_pkg
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosParameter
+from fkie_multimaster_pylib.crossbar.runtime_interface import SubscriberNode
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchArgument
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchCallService
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchFile
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchLoadRequest
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchLoadReply
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchContent
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchAssociations
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchNode
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchNodeInfo
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchNodeReply
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchInterpretPathRequest
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchInterpretPathReply
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchIncludedFilesRequest
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchIncludedFile
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchMessageStruct
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchPublishMessage
+from fkie_multimaster_pylib.defines import SEARCH_IN_EXT
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.names import ns_join
+from fkie_multimaster_pylib.system import exceptions
+from fkie_multimaster_pylib.system import ros1_masteruri
+from fkie_multimaster_pylib.system.url import equal_uri
+from fkie_multimaster_pylib.system.supervised_popen import SupervisedPopen
 
 from fkie_multimaster_msgs.msg import LinkStatesStamped
 
@@ -117,7 +117,7 @@ class CfgId(object):
     def __init__(self, path, masteruri=''):
         '''
         :param str path: absolute path of the launch file.
-        :param str masteruri: ROS-Masteruri if empty the masteruri will be determine by :meth:`from fkie_multimaster_msgs.system.ros1_masteruri
+        :param str masteruri: ROS-Masteruri if empty the masteruri will be determine by :meth:`from fkie_multimaster_pylib.system.ros1_masteruri
 .from_master()`
         '''
         self.path = path

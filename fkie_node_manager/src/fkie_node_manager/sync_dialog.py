@@ -50,10 +50,10 @@ except Exception:
     from python_qt_binding.QtWidgets import QApplication, QVBoxLayout, QSizePolicy
     from python_qt_binding.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QFileDialog, QToolButton
 import fkie_node_manager as nm
-from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.defines import LOG_PATH
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_pylib import ros_pkg
+from fkie_multimaster_pylib.defines import LOG_PATH
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import screen
 
 
 class SyncHighlighter(YamlHighlighter):

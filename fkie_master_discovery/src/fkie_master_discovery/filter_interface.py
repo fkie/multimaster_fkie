@@ -35,8 +35,8 @@ import sys
 
 from .common import create_pattern, gen_pattern, is_empty_pattern
 from .common import get_ros_param, resolve_url, read_interface
-from fkie_multimaster_msgs.defines import EMPTY_PATTERN
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.defines import EMPTY_PATTERN
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class FilterInterface(object):

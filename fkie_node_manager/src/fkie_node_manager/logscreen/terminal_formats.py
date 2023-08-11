@@ -34,7 +34,7 @@
 
 from python_qt_binding.QtCore import QRegExp, Qt, QObject
 from python_qt_binding.QtGui import QColor, QFont, QFontDatabase, QTextCharFormat, QTextCursor
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 import re
 import rospy

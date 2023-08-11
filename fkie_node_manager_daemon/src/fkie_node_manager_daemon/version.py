@@ -38,7 +38,7 @@ import sys
 import xml.dom.minidom as dom
 
 from fkie_node_manager_daemon.strings import utf8
-from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
+from fkie_multimaster_pylib.system.supervised_popen import SupervisedPopen
 
 VERSION = 'unknown'
 DATE = 'unknown'

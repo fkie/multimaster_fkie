@@ -48,17 +48,17 @@ from launch.launch_description import LaunchDescription
 import launch_ros
 import composition_interfaces.srv
 
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchArgument
-from fkie_multimaster_msgs.crossbar.launch_interface import LaunchNodeInfo
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs import names
-from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
-from fkie_multimaster_msgs.defines import SEP
-from fkie_multimaster_msgs.system import exceptions
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosNode
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchArgument
+from fkie_multimaster_pylib.crossbar.launch_interface import LaunchNodeInfo
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib import names
+from fkie_multimaster_pylib import ros_pkg
+from fkie_multimaster_pylib.defines import RESPAWN_SCRIPT
+from fkie_multimaster_pylib.defines import SEP
+from fkie_multimaster_pylib.system import exceptions
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system.supervised_popen import SupervisedPopen
 
 import fkie_node_manager_daemon as nmd
 

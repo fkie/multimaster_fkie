@@ -68,15 +68,15 @@ from .common import get_hostname
 from .common import gen_pattern
 from .filter_interface import FilterInterface
 from .master_info import MasterInfo
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
-from fkie_multimaster_msgs.crossbar.runtime_interface import ScreensMapping
-from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarning
-from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarningGroup
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosNode
+from fkie_multimaster_pylib.crossbar.runtime_interface import ScreensMapping
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemWarning
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemWarningGroup
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site

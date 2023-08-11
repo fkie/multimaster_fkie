@@ -44,23 +44,23 @@ from ros2run.api import MultipleExecutables
 from ros2run.api import run_executable
 import composition_interfaces.srv
 
-from fkie_multimaster_msgs.grpc_helper import remote
+from fkie_multimaster_pylib.grpc_helper import remote
 from .launch_config import LaunchConfig
 from .launch_config import LaunchNodeWrapper
 from launch.launch_context import LaunchContext
 # from .launch_stub import LaunchStub  <- TODO: use crossbar instead
 from .startcfg import StartConfig
 import fkie_node_manager_daemon as nmd
-from fkie_multimaster_msgs import names
-from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.defines import LOG_PATH
-from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import exceptions
-from fkie_multimaster_msgs.system import host
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
+from fkie_multimaster_pylib import names
+from fkie_multimaster_pylib import ros_pkg
+from fkie_multimaster_pylib.defines import LOG_PATH
+from fkie_multimaster_pylib.defines import RESPAWN_SCRIPT
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import exceptions
+from fkie_multimaster_pylib.system import host
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system.supervised_popen import SupervisedPopen
 
 
 STARTED_BINARIES = dict()

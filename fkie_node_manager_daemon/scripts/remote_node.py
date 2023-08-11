@@ -12,15 +12,15 @@ import time
 import argparse
 from typing import List
 
-from fkie_multimaster_msgs.defines import LOG_PATH
-from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import host as nmdhost
-from fkie_multimaster_msgs.system import screen
-import fkie_multimaster_msgs.names as names
+from fkie_multimaster_pylib.defines import LOG_PATH
+from fkie_multimaster_pylib.defines import RESPAWN_SCRIPT
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import host as nmdhost
+from fkie_multimaster_pylib.system import screen
+import fkie_multimaster_pylib.names as names
 
 if 'ROS_VERSION' in os.environ and os.environ['ROS_VERSION'] == "1":
-    from fkie_multimaster_msgs.system import ros1_masteruri
+    from fkie_multimaster_pylib.system import ros1_masteruri
     from fkie_node_manager_daemon.strings import isstring
     from rosgraph.network import get_local_addresses
     try:

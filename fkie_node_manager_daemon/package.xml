@@ -17,6 +17,7 @@
   <depend>diagnostic_msgs</depend>
   <depend>fkie_master_discovery</depend>
   <depend>fkie_multimaster_msgs</depend>
+  <depend>fkie_multimaster_pylib</depend>
   <depend condition="$ROS_VERSION == 1">roslaunch</depend>
   <depend condition="$ROS_VERSION == 1">rospy</depend>
 

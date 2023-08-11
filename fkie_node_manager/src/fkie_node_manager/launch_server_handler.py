@@ -42,7 +42,7 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 import rospy
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class LaunchServerHandler(QObject):

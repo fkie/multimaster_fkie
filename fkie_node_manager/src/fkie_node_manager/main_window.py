@@ -56,13 +56,13 @@ import ruamel.yaml
 
 from fkie_master_discovery.common import resolve_url
 from fkie_node_manager_daemon.strings import utf8
-from fkie_multimaster_msgs.defines import LOG_PATH
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system.host import get_hostname
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system import ros1_grpcuri
-from fkie_multimaster_msgs.system import ros1_masteruri
-from fkie_multimaster_msgs.system.host import subdomain
+from fkie_multimaster_pylib.defines import LOG_PATH
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system.host import get_hostname
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system import ros1_grpcuri
+from fkie_multimaster_pylib.system import ros1_masteruri
+from fkie_multimaster_pylib.system.host import subdomain
 
 import fkie_node_manager as nm
 

@@ -52,7 +52,7 @@ except:
     _use_netifaces = False
 
 from rosgraph.network import get_local_addresses
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 SEND_ERRORS = {}

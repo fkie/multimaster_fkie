@@ -50,7 +50,7 @@ except ImportError:
     from urllib.parse import urlparse
 
 import rospy
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 from .common import get_hostname

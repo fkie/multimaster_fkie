@@ -49,10 +49,10 @@ try:
 except Exception:
     from python_qt_binding.QtWidgets import QDockWidget, QAbstractItemView
     from python_qt_binding.QtCore import QItemSelectionModel
-from fkie_multimaster_msgs import formats
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_pylib import formats
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import exceptions
 
 
 class GraphViewWidget(QDockWidget):

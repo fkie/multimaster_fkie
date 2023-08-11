@@ -10,7 +10,7 @@ except ImportError:
     from rqt_reconfigure.dynreconf_client_widget import DynreconfClientWidget
 import dynamic_reconfigure.client
 import rospy
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 app = None

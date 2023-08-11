@@ -38,8 +38,8 @@ from python_qt_binding.QtCore import Signal
 import fkie_node_manager_daemon.monitor_stub as mstub
 
 from .channel_interface import ChannelInterface
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_grpcuri
 
 
 class MonitorChannel(ChannelInterface):

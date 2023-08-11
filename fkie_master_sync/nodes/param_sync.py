@@ -5,8 +5,8 @@
 import rospy
 
 from fkie_multimaster_msgs.msg import MasterState
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 
 def master_changed(msg, cb_args):

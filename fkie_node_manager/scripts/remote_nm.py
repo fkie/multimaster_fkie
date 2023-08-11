@@ -26,12 +26,12 @@ except Exception:
     from fkie_node_manager.reduced_nm import StartHandler
     from fkie_node_manager.reduced_nm import StartException
 
-from fkie_multimaster_msgs.defines import LOG_PATH
-from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import host as nmdhost
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib.defines import LOG_PATH
+from fkie_multimaster_pylib.defines import RESPAWN_SCRIPT
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import host as nmdhost
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 
 def _get_optparse():

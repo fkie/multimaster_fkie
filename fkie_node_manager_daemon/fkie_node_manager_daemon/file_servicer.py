@@ -27,15 +27,15 @@ from autobahn import wamp
 import json
 import os
 from typing import List
-from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.crossbar.file_interface import RosPackage
-from fkie_multimaster_msgs.crossbar.file_interface import PathItem
-from fkie_multimaster_msgs.crossbar.file_interface import LogPathItem
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system.screen import get_logfile
-from fkie_multimaster_msgs.system.screen import get_ros_logfile
+from fkie_multimaster_pylib import ros_pkg
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.crossbar.file_interface import RosPackage
+from fkie_multimaster_pylib.crossbar.file_interface import PathItem
+from fkie_multimaster_pylib.crossbar.file_interface import LogPathItem
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system.screen import get_logfile
+from fkie_multimaster_pylib.system.screen import get_ros_logfile
 
 
 class FileServicer(CrossbarBaseSession):

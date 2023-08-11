@@ -36,7 +36,6 @@ import os
 import signal
 import sys
 
-import roslib
 import rospy
 import time
 
@@ -45,7 +44,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse
 
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 # MCAST_GROUP = "ff02::1"# ipv6 multicast group
@@ -56,7 +55,7 @@ PROCESS_NAME = "master_discovery"
 
 def get_default_rtcp_port(zeroconf=False):
     try:
-        from fkie_multimaster_msgs.system.ros1_masteruri import from_ros
+        from fkie_multimaster_pylib.system.ros1_masteruri import from_ros
         masteruri = from_ros()
         # Log.info(f'ROS Master URI: {masteruri}')
         return urlparse(masteruri).port + (600 if zeroconf else 300)

@@ -48,8 +48,8 @@ import rospy
 
 from fkie_master_discovery.common import get_hostname
 from fkie_master_discovery.filter_interface import FilterInterface
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 
 class SyncThread(object):

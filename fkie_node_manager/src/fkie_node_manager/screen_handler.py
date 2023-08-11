@@ -38,13 +38,13 @@ import sys
 import grpc
 import rospy
 
-from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
+from fkie_multimaster_pylib.system.supervised_popen import SupervisedPopen
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.strings import utf8
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_masteruri
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_masteruri
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system.host import get_hostname
 
 
 class NoScreenOpenLogRequest(Exception):

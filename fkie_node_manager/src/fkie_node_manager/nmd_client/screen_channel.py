@@ -35,9 +35,9 @@ import rospy
 from python_qt_binding.QtCore import Signal
 
 import fkie_node_manager_daemon.screen_stub as sstub
-from fkie_multimaster_msgs import formats
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_pylib import formats
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_grpcuri
 
 
 from .channel_interface import ChannelInterface

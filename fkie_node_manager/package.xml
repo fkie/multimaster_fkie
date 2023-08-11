@@ -22,12 +22,14 @@
   <!-- <build_depend condition="$ROS_PYTHON_VERSION == 3">python3-catkin-pkg</build_depend> -->
   <build_depend condition="$ROS_VERSION == 1">fkie_master_discovery</build_depend>
   <build_depend condition="$ROS_VERSION == 1">fkie_multimaster_msgs</build_depend>
+  <build_depend condition="$ROS_VERSION == 1">fkie_multimaster_pylib</build_depend>
   <build_depend condition="$ROS_VERSION == 1">fkie_node_manager_daemon</build_depend>
   <build_depend condition="$ROS_VERSION == 1">diagnostic_msgs</build_depend>
 
   <exec_depend condition="$ROS_VERSION == 1">fkie_master_discovery</exec_depend>
   <exec_depend condition="$ROS_VERSION == 1">fkie_master_sync</exec_depend>
   <exec_depend condition="$ROS_VERSION == 1">fkie_multimaster_msgs</exec_depend>
+  <exec_depend condition="$ROS_VERSION == 1">fkie_multimaster_pylib</exec_depend>
   <exec_depend condition="$ROS_VERSION == 1">fkie_node_manager_daemon</exec_depend>
   <exec_depend condition="$ROS_VERSION == 1">rospy</exec_depend>
   <exec_depend condition="$ROS_VERSION == 1">roslib</exec_depend>

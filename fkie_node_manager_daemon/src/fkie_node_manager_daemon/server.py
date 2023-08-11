@@ -50,11 +50,11 @@ import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.screen_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as stgrpc
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
-from fkie_multimaster_msgs.defines import GRPC_SERVER_PORT_OFFSET
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.crossbar import server
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.defines import GRPC_SERVER_PORT_OFFSET
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.crossbar import server
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
 
 
 # crossbar-io dependencies

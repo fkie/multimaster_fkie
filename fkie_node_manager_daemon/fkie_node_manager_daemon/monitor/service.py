@@ -37,8 +37,8 @@ import time
 from rclpy.clock import Clock
 
 import fkie_node_manager_daemon as nmd
-from fkie_multimaster_msgs.settings import Settings
-from fkie_multimaster_msgs.system.host import get_host_name
+from fkie_multimaster_pylib.settings import Settings
+from fkie_multimaster_pylib.system.host import get_host_name
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from fkie_node_manager_daemon.time_helpers import rostime2float
 from .cpu_load import CpuLoad

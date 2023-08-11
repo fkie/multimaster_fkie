@@ -39,11 +39,11 @@ import time
 
 from fkie_node_manager_daemon.file_item import FileItem
 from fkie_node_manager_daemon.server import GrpcServer
-from fkie_multimaster_msgs.grpc_helper import remote
+from fkie_multimaster_pylib.grpc_helper import remote
 import fkie_node_manager_daemon.file_stub as fstub
 import fkie_node_manager_daemon.launch_stub as lstub
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.system import exceptions
 
 
 PKG = 'fkie_node_manager_daemon'

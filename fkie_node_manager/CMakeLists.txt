@@ -33,6 +33,7 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
         diagnostic_msgs
         fkie_master_discovery
         fkie_multimaster_msgs
+        fkie_multimaster_pylib
         fkie_node_manager_daemon
     )
 

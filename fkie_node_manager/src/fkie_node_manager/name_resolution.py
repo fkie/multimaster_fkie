@@ -39,9 +39,9 @@ except ImportError:
 import socket
 
 import rospy
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system.host import get_hostname
-from fkie_multimaster_msgs.system.url import equal_uri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system.host import get_hostname
+from fkie_multimaster_pylib.system.url import equal_uri
 
 
 RESOLVE_CACHE = {}  # hostname : address

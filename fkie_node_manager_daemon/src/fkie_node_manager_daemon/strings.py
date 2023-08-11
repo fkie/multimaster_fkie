@@ -31,11 +31,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from datetime import datetime
-import os
 import sys
 
-import rospkg
 
 
 def utf8(s, errors='replace'):

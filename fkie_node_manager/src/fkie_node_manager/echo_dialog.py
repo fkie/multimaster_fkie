@@ -52,7 +52,7 @@ import rospy
 
 import fkie_node_manager as nm
 from fkie_node_manager_daemon.strings import isstring, utf8
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 def _convert_getattr(val, f, t):

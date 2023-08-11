@@ -32,12 +32,12 @@ from fkie_multimaster_msgs.msg import Endpoint
 from fkie_multimaster_msgs.srv import ListNodes
 from fkie_multimaster_msgs.srv import LoadLaunch
 from fkie_multimaster_msgs.srv import Task
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.names import ns_join
-from fkie_multimaster_msgs.crossbar import server
-from fkie_multimaster_msgs.system.host import get_host_name
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.names import ns_join
+from fkie_multimaster_pylib.crossbar import server
+from fkie_multimaster_pylib.system.host import get_host_name
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.logging.logging import Log
 import fkie_node_manager_daemon as nmd
 
 from fkie_node_manager_daemon.file_servicer import FileServicer

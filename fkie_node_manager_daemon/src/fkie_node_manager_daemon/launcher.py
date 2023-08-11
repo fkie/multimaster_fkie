@@ -44,23 +44,23 @@ except ImportError:
     import xmlrpc.client as xmlrpcclient
 
 from rosgraph.network import get_local_addresses
-from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.defines import LOG_PATH
-from fkie_multimaster_msgs.defines import RESPAWN_SCRIPT
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import exceptions
-from fkie_multimaster_msgs.system import host
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib import ros_pkg
+from fkie_multimaster_pylib.defines import LOG_PATH
+from fkie_multimaster_pylib.defines import RESPAWN_SCRIPT
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import exceptions
+from fkie_multimaster_pylib.system import host
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 
-from fkie_multimaster_msgs.grpc_helper import remote
+from fkie_multimaster_pylib.grpc_helper import remote
 from .launch_stub import LaunchStub
 from fkie_node_manager_daemon.strings import isstring
 from fkie_node_manager_daemon.strings import utf8
 
-from fkie_multimaster_msgs.system.supervised_popen import SupervisedPopen
+from fkie_multimaster_pylib.system.supervised_popen import SupervisedPopen
 from .startcfg import StartConfig
 
 STARTED_BINARIES = dict()

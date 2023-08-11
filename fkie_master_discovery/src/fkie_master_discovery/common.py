@@ -41,8 +41,8 @@ except ImportError:
 import roslib.names
 import rospy
 
-from fkie_multimaster_msgs.defines import EMPTY_PATTERN
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.defines import EMPTY_PATTERN
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 IP4_PATTERN = re.compile(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")

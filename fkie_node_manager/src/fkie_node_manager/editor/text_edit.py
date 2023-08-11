@@ -47,9 +47,9 @@ import fkie_node_manager as nm
 
 from .xml_highlighter import XmlHighlighter
 from .yaml_highlighter import YamlHighlighter
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import exceptions
 
 
 try:

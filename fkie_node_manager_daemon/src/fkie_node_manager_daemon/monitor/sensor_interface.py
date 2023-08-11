@@ -35,7 +35,7 @@ import rospy
 import threading
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from fkie_multimaster_msgs import formats
+from fkie_multimaster_pylib import formats
 
 
 class SensorInterface(threading.Thread):

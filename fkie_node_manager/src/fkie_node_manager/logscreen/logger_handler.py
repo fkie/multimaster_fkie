@@ -58,7 +58,7 @@ import rospy
 
 from .logger_item import LoggerItem
 import fkie_node_manager as nm
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class LoggerHandler(QObject):

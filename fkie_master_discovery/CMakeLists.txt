@@ -25,6 +25,7 @@ if(POLICY CMP0057)
 endif()
 
 find_package(ament_cmake QUIET)
+find_package(fkie_multimaster_msgs REQUIRED)
 
 if ( ament_cmake_FOUND )
 
@@ -36,8 +37,6 @@ if ( ament_cmake_FOUND )
     set(BUILD_TOOL_INCLUDE_DIRS ${ament_INCLUDE_DIRS})
 
     # find dependencies
-    find_package(ament_cmake REQUIRED)
-    find_package(fkie_multimaster_msgs REQUIRED)
     find_package(rclcpp REQUIRED)
     find_package(rclcpp_lifecycle REQUIRED)
     find_package(rmw_dds_common REQUIRED)
@@ -50,7 +49,7 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
 
     set(catkin_FOUND 1)
     add_definitions( -DUSING_ROS )
-    find_package(catkin REQUIRED COMPONENTS fkie_multimaster_msgs rosgraph roslib rospy std_srvs)
+    find_package(catkin REQUIRED COMPONENTS fkie_multimaster_pylib rosgraph roslib rospy std_srvs)
     find_package(GTest)
 
     message(STATUS "------------------------------------------")
@@ -58,7 +57,7 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
     message(STATUS "------------------------------------------")
 
     catkin_python_setup()
-    catkin_package( CATKIN_DEPENDS fkie_multimaster_msgs rosgraph roslib rospy std_srvs )
+    catkin_package( CATKIN_DEPENDS fkie_multimaster_msgs fkie_multimaster_pylib rosgraph roslib rospy std_srvs )
 
 endif()
 

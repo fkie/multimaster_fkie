@@ -44,11 +44,11 @@ import fkie_node_manager as nm
 
 from fkie_node_manager_daemon.strings import isstring, utf8
 from fkie_node_manager_daemon.file_item import FileItem
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_grpcuri
-from fkie_multimaster_msgs.system import ros1_masteruri
-from fkie_multimaster_msgs.system.host import get_hostname
-from fkie_multimaster_msgs.system.url import equal_uri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_grpcuri
+from fkie_multimaster_pylib.system import ros1_masteruri
+from fkie_multimaster_pylib.system.host import get_hostname
+from fkie_multimaster_pylib.system.url import equal_uri
 
 
 from .common import package_name

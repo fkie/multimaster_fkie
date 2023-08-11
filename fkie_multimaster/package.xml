@@ -15,6 +15,7 @@
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
 
   <exec_depend>fkie_multimaster_msgs</exec_depend>
+  <exec_depend>fkie_multimaster_pylib</exec_depend>
   <exec_depend>fkie_master_discovery</exec_depend>
   <exec_depend>fkie_node_manager_daemon</exec_depend>
   <exec_depend condition="$ROS_VERSION == 1">fkie_master_sync</exec_depend>

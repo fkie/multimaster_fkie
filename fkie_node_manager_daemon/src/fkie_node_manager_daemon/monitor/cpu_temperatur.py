@@ -37,7 +37,7 @@ import time
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
 from fkie_node_manager_daemon.strings import utf8
 from .sensor_interface import SensorInterface
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class CpuTemperatur(SensorInterface):

@@ -32,7 +32,7 @@
 
 
 from . import file_item
-from fkie_multimaster_msgs import settings
+from fkie_multimaster_pylib import settings
 import fkie_multimaster_msgs.grpc.file_pb2_grpc as fgrpc
 import fkie_multimaster_msgs.grpc.file_pb2 as fmsg
 

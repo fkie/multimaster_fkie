@@ -53,7 +53,7 @@ from roslaunch.core import Param, Node, Test, Machine, RLException
 from roslaunch import loader
 from roslaunch import substitution_args
 
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 # use in our namespace
 SubstitutionException = substitution_args.SubstitutionException

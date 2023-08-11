@@ -40,7 +40,7 @@ import rospy
 from fkie_node_manager_daemon.strings import utf8
 from fkie_node_manager.detailed_msg_box import MessageBox, DetailedError
 import fkie_node_manager as nm
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class InteractionNeededError(Exception):

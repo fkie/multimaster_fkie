@@ -37,7 +37,7 @@ import unittest
 import time
 from grpc.beta._metadata import beta
 
-from fkie_multimaster_msgs.launch import xml
+from fkie_multimaster_pylib.launch import xml
 import fkie_multimaster_msgs.grpc.file_pb2 as fmsg
 from fkie_node_manager_daemon.file_servicer import FileServicer
 

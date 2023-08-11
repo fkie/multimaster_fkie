@@ -33,12 +33,11 @@
 
 import getpass
 import os
-import rospy
 import signal
 from fkie_node_manager_daemon.monitor import Service, grpc_msg
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.monitor_pb2 as mmsg
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class MonitorServicer(mgrpc.MonitorServiceServicer):

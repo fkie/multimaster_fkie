@@ -39,7 +39,7 @@ from grpc.beta._metadata import beta
 import fkie_multimaster_msgs.grpc.launch_pb2 as lmsg
 from fkie_node_manager_daemon.launch_servicer import LaunchServicer
 from fkie_node_manager_daemon.launch_description import RobotDescription, Capability
-from fkie_multimaster_msgs.launch import xml
+from fkie_multimaster_pylib.launch import xml
 
 PKG = 'fkie_node_manager_daemon'
 

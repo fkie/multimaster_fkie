@@ -42,7 +42,7 @@ from socket import getaddrinfo, AF_INET6
 import threading
 
 from fkie_master_discovery.master_discovery import DiscoveredMaster
-from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_pylib.system.host import get_hostname
 from fkie_node_manager_daemon.strings import isstring
 import fkie_node_manager as nm
 

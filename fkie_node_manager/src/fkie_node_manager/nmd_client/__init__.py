@@ -33,7 +33,7 @@
 
 from python_qt_binding.QtCore import QObject, Signal
 
-from fkie_multimaster_msgs.grpc_helper import remote
+from fkie_multimaster_pylib.grpc_helper import remote
 from .file_channel import FileChannel
 from .launch_channel import LaunchChannel
 from .monitor_channel import MonitorChannel

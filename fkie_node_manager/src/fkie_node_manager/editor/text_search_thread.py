@@ -41,9 +41,9 @@ from xml.dom import minidom
 import fkie_node_manager as nm
 
 from fkie_node_manager_daemon.strings import utf8
-from fkie_multimaster_msgs.launch import xml
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import exceptions
+from fkie_multimaster_pylib.launch import xml
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import exceptions
 
 
 class TextSearchThread(QObject, threading.Thread):

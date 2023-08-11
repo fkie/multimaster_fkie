@@ -40,10 +40,10 @@ import roslib
 import rospy
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-from fkie_multimaster_msgs import names
-from fkie_multimaster_msgs import ros_pkg
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib import names
+from fkie_multimaster_pylib import ros_pkg
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_masteruri
 from fkie_node_manager_daemon.strings import utf8
 from .launch_xml_loader import XmlLoader
 

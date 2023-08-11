@@ -41,7 +41,7 @@ except Exception:
     from python_qt_binding.QtWidgets import QFormLayout, QHBoxLayout, QVBoxLayout, QSizePolicy
 import os
 
-from fkie_multimaster_msgs.system import ros1_grpcuri
+from fkie_multimaster_pylib.system import ros1_grpcuri
 import fkie_node_manager as nm
 
 

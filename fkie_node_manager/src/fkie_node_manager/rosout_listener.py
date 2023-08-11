@@ -33,7 +33,7 @@
 
 from python_qt_binding.QtCore import QObject, Signal
 from rosgraph_msgs.msg import Log
-from fkie_multimaster_msgs.logging.logging import Log as Logger
+from fkie_multimaster_pylib.logging.logging import Log as Logger
 
 
 import rospy

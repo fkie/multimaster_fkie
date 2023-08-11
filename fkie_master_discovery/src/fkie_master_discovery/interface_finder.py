@@ -38,7 +38,7 @@ except ImportError:
 
 import rospy
 from .common import get_hostname
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 def get_changes_topic(masteruri, wait=True, check_host=True):

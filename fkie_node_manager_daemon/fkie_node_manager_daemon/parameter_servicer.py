@@ -4,11 +4,11 @@ import asyncio
 from autobahn import wamp
 from types import SimpleNamespace
 
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosParameter
-from fkie_multimaster_msgs.crossbar.base_session import CrossbarBaseSession
-from fkie_multimaster_msgs.crossbar.base_session import SelfEncoder
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.parameters.ros2_parameters import ROS2Parameters
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosParameter
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.parameters.ros2_parameters import ROS2Parameters
 import fkie_node_manager_daemon as nmd
 
 

@@ -47,9 +47,9 @@ from fkie_node_manager_daemon.strings import utf8
 import fkie_node_manager as nm
 from .common import get_rosparam, delete_rosparam, package_name, to_pkg, resolve_pkg
 from .detailed_msg_box import MessageBox
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_grpcuri
-from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_grpcuri
+from fkie_multimaster_pylib.system.host import get_hostname
 
 
 class ProfileWidget(QDockWidget):

@@ -39,7 +39,7 @@ from fkie_node_manager.common import package_name
 
 from .line_edit import EnhancedLineEdit
 from .text_search_thread import TextSearchThread
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 try:

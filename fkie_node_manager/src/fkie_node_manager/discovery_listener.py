@@ -42,7 +42,7 @@ from fkie_master_discovery.master_monitor import MasterMonitor, MasterConnection
 import fkie_master_discovery.interface_finder as interface_finder
 
 from fkie_node_manager_daemon.strings import utf8
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 try:

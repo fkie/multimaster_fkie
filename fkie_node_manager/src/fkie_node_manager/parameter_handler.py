@@ -38,7 +38,7 @@ try:
 except ImportError:
     import xmlrpc.client as xmlrpcclient
 
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 import rospy
 

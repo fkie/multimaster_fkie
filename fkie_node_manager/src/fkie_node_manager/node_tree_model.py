@@ -51,11 +51,11 @@ from fkie_node_manager.common import lnamespace, namespace, normns
 from fkie_node_manager.name_resolution import NameResolution, MasterEntry
 from fkie_node_manager.parameter_handler import ParameterHandler
 import fkie_node_manager as nm
-from fkie_multimaster_msgs import formats
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system.host import get_hostname
-from fkie_multimaster_msgs.system.host import subdomain
-from fkie_multimaster_msgs.system.url import equal_uri
+from fkie_multimaster_pylib import formats
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system.host import get_hostname
+from fkie_multimaster_pylib.system.host import subdomain
+from fkie_multimaster_pylib.system.url import equal_uri
 
 
 class CellItem(QStandardItem):

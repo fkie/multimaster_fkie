@@ -50,9 +50,9 @@ from .graph_view import GraphViewWidget
 from .text_edit import TextEdit
 from .text_search_frame import TextSearchFrame
 from .text_search_thread import TextSearchThread
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.system import ros1_grpcuri
-from fkie_multimaster_msgs.system import ros1_masteruri
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_grpcuri
+from fkie_multimaster_pylib.system import ros1_masteruri
 
 
 try:

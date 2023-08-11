@@ -45,7 +45,7 @@ import rospy
 
 from fkie_master_discovery.master_info import MasterInfo
 from fkie_node_manager_daemon.strings import utf8
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 class UpdateThread(QObject, threading.Thread):

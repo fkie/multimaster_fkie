@@ -33,7 +33,7 @@
 
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 import fkie_multimaster_msgs.grpc.version_pb2 as vmsg
-from fkie_multimaster_msgs import settings
+from fkie_multimaster_pylib import settings
 
 
 class VersionStub(object):

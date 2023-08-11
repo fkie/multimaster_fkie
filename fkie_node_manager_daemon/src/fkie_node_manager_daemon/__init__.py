@@ -41,9 +41,9 @@ import traceback
 import rospy
 
 from .server import GrpcServer
-from fkie_multimaster_msgs.system import ros1_grpcuri
-from fkie_multimaster_msgs.system.screen import test_screen
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.system import ros1_grpcuri
+from fkie_multimaster_pylib.system.screen import test_screen
+from fkie_multimaster_pylib.logging.logging import Log
 from .subscriber_node import SubscriberNode
 
 

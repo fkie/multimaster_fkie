@@ -35,8 +35,8 @@ import psutil
 import time
 
 from diagnostic_msgs.msg import DiagnosticStatus, KeyValue
-from fkie_multimaster_msgs import formats
-from fkie_multimaster_msgs.defines import LOG_PATH
+from fkie_multimaster_pylib import formats
+from fkie_multimaster_pylib.defines import LOG_PATH
 from .sensor_interface import SensorInterface
 
 

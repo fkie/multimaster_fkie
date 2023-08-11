@@ -11,7 +11,7 @@ import time
 import rospy
 
 from fkie_master_discovery.common import resolve_url
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 ROS_NODE = 'script_runner'

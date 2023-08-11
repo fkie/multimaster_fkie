@@ -53,10 +53,10 @@ from rosgraph.network import get_local_addresses, get_local_address
 from .common import get_hostname
 from .master_monitor import MasterMonitor, MasterConnectionException
 from .udp import DiscoverSocket, QueueReceiveItem, SEND_ERRORS
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosProvider
-from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarning
-from fkie_multimaster_msgs.crossbar.runtime_interface import SystemWarningGroup
-from fkie_multimaster_msgs.logging.logging import Log
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosProvider
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemWarning
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemWarningGroup
+from fkie_multimaster_pylib.logging.logging import Log
 
 
 try:  # to avoid the problems with autodoc on ros.org/wiki site

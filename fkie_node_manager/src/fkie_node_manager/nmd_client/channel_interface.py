@@ -35,8 +35,8 @@ from python_qt_binding.QtCore import QObject, Signal
 import rospy
 
 from .thread_manager import ThreadManager
-from fkie_multimaster_msgs.logging.logging import Log
-from fkie_multimaster_msgs.grpc_helper import remote
+from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.grpc_helper import remote
 
 
 class ChannelInterface(QObject):

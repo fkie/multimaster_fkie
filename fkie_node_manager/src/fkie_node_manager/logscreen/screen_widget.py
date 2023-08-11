@@ -51,9 +51,9 @@ from .screen_highlighter import ScreenHighlighter
 from .terminal_formats import TerminalFormats
 from .logger_handler import LoggerHandler
 import fkie_node_manager as nm
-from fkie_multimaster_msgs import formats
-from fkie_multimaster_msgs.system import screen
-from fkie_multimaster_msgs.system.host import get_hostname
+from fkie_multimaster_pylib import formats
+from fkie_multimaster_pylib.system import screen
+from fkie_multimaster_pylib.system.host import get_hostname
 
 
 class ScreenTextBrowser(QTextEdit):

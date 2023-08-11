@@ -16,9 +16,6 @@ if ( ament_cmake_FOUND )
     message(STATUS "FKIE multimaster msgs is being built using AMENT.")
     message(STATUS "------------------------------------------")
 
-    find_package(ament_cmake REQUIRED)
-    find_package(ament_cmake_python REQUIRED)
-    find_package(rclpy REQUIRED)
     find_package(builtin_interfaces REQUIRED)
     find_package(rosidl_default_generators REQUIRED)
 
@@ -35,9 +32,6 @@ if ( ament_cmake_FOUND )
       "srv/Task.srv"
       DEPENDENCIES builtin_interfaces
     )
-
-    # Install Python modules
-    ament_python_install_package(${PROJECT_NAME})
 
     ament_package()
 elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
@@ -79,12 +73,12 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
       Task.srv
     )
 
-    catkin_python_setup()
+    #catkin_python_setup()
     generate_messages(DEPENDENCIES std_msgs)
 
     catkin_package(
         CFG_EXTRAS version.cmake.in
-        CATKIN_DEPENDS message_runtime std_msgs rospy
+        CATKIN_DEPENDS message_runtime std_msgs
     )
 
     # generate code for gRPC protocols
@@ -101,10 +95,5 @@ elseif( CATKIN_DEVEL_PREFIX OR CATKIN_BUILD_BINARY_PACKAGE)
         grpc
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
     )
-
-    # # Add folders to be run by python nosetests
-    if(CATKIN_ENABLE_TESTING)
-        add_subdirectory(${PROJECT_NAME}/tests)
-    endif()
 
 endif()

@@ -33,7 +33,7 @@
 
 import fkie_multimaster_msgs.grpc.settings_pb2_grpc as sgrpc
 import fkie_multimaster_msgs.grpc.settings_pb2 as smsg
-from fkie_multimaster_msgs import settings
+from fkie_multimaster_pylib import settings
 
 
 class SettingsStub(object):

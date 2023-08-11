@@ -40,11 +40,11 @@ import rospy
 
 from .common import get_hostname
 from .filter_interface import FilterInterface
-from fkie_multimaster_msgs import names
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosNode
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosService
-from fkie_multimaster_msgs.crossbar.runtime_interface import RosTopic
-from fkie_multimaster_msgs.system import screen
+from fkie_multimaster_pylib import names
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosNode
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosService
+from fkie_multimaster_pylib.crossbar.runtime_interface import RosTopic
+from fkie_multimaster_pylib.system import screen
 
 from typing import List, Dict
 

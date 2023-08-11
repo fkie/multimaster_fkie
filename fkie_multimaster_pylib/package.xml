@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>fkie_multimaster_pylib</name>
+  <description>
+     The messages required by multimaster packages.
+  </description>
+  <version>1.3.2</version>
+  <license>BSD</license>
+  <author>Alexander Tiderko</author>
+  <maintainer email="alexander.tiderko@gmail.com">Alexander Tiderko</maintainer>
+  <url>http://github.com/fkie/multimaster_fkie/fkie_multimaster_pylib</url>
+
+  <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
+
+  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-catkin-pkg</depend>
+  <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 3">python3-catkin-pkg</depend>
+  <depend condition="$ROS_VERSION == 2 or $ROS_PYTHON_VERSION == 3">python3-autobahn</depend>
+  <depend condition="$ROS_VERSION == 1">rospy</depend>
+  <depend condition="$ROS_VERSION == 2">rclpy</depend>
+  <depend>fkie_multimaster_msgs</depend>
+
+  <test_depend condition="$ROS_VERSION == 1">rostest</test_depend>
+  <test_depend condition="$ROS_VERSION == 2">python3-pytest</test_depend>
+
+  <export>
+    <build_type condition="$ROS_VERSION == 2">ament_python</build_type>
+  </export>
+
+
+</package>
