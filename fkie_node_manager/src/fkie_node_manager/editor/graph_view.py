@@ -228,7 +228,14 @@ class GraphViewWidget(QDockWidget):
             item = self.graphTreeView.model().itemFromIndex(index)
             for row_idx in range(item.rowCount()):
                 inc_item = item.child(row_idx)
-                if not inc_string or inc_item.data(self.DATA_RAW) in inc_string:
+                append = not inc_string
+                if not append:
+                    raw_data = inc_item.data(self.DATA_RAW)
+                    if raw_data:
+                        append = raw_data in inc_string
+                    else:
+                        rospy.logwarn(f"no RAW data found in {inc_item}")
+                if append:
                     result.append((inc_item.data(self.DATA_INC_FILE), inc_item.data(self.DATA_RAW), inc_item.data(self.DATA_LINE), inc_item.data(self.DATA_FILE_EXISTS)))
         return result
 
