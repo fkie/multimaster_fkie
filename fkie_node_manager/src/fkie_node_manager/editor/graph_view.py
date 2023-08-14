@@ -228,15 +228,16 @@ class GraphViewWidget(QDockWidget):
             item = self.graphTreeView.model().itemFromIndex(index)
             for row_idx in range(item.rowCount()):
                 inc_item = item.child(row_idx)
-                append = not inc_string
-                if not append:
-                    raw_data = inc_item.data(self.DATA_RAW)
-                    if raw_data:
-                        append = raw_data in inc_string
-                    else:
-                        rospy.logwarn(f"no RAW data found in {inc_item}")
-                if append:
-                    result.append((inc_item.data(self.DATA_INC_FILE), inc_item.data(self.DATA_RAW), inc_item.data(self.DATA_LINE), inc_item.data(self.DATA_FILE_EXISTS)))
+                if inc_item.data(self.ITEM_TYPE) == self.ITEM_TYPE_INC_FILE:
+                    append = not inc_string
+                    if not append:
+                        raw_data = inc_item.data(self.DATA_RAW)
+                        if raw_data:
+                            append = raw_data in inc_string
+                        else:
+                            rospy.logwarn(f"no RAW data found in {inc_item}, {inc_item.data(self.ITEM_TYPE)}")
+                    if append:
+                        result.append((inc_item.data(self.DATA_INC_FILE), inc_item.data(self.DATA_RAW), inc_item.data(self.DATA_LINE), inc_item.data(self.DATA_FILE_EXISTS)))
         return result
 
     def _refill_tree(self, tree, create_tree=True):

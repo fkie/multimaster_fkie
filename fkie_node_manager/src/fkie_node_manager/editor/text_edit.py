@@ -39,7 +39,7 @@ import rospy
 import traceback
 
 from fkie_node_manager_daemon import exceptions, file_item
-from fkie_node_manager_daemon.common import find_included_files, get_arg_names, get_internal_args, replace_arg, utf8
+from fkie_node_manager_daemon.common import get_arg_names, get_internal_args, replace_arg, utf8
 from fkie_node_manager.common import package_name
 from fkie_node_manager.detailed_msg_box import MessageBox
 from fkie_node_manager.parameter_dialog import ParameterDialog
