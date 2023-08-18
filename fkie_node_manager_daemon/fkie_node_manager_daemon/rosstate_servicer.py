@@ -66,18 +66,19 @@ class RosStateServicer(CrossbarBaseSession):
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._ros_state: Dict[str, ParticipantEntitiesInfo] = {}
         self._ros_node_list: List[RosNode] = None
-        self.topic_name_state = '%s/%s/rosstate' % (
-            NM_NAMESPACE, NM_DISCOVERY_NAME)
-        self.topic_name_endpoint = '%s/daemons' % (
-            NM_NAMESPACE)
+        self.topic_name_state = f"{NM_NAMESPACE}/{NM_DISCOVERY_NAME}/rosstate"
+        self.topic_name_endpoint = f"{NM_NAMESPACE}/daemons"
+        self.topic_state_publisher_count = 0
+        self._ts_state_updated = 0
+        self._ts_state_notified = 0
         self._rate_check_discovery_node = 1.0
         self._thread_check_discovery_node = None
 
     def start(self):
-        qos_state_profile = QoSProfile(depth=100,
+        qos_state_profile = QoSProfile(depth=100
                                        # durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                        # history=QoSHistoryPolicy.KEEP_LAST,
-                                       # reliability=QoSReliabilityPolicy.RELIABLE)
+                                       # reliability=QoSReliabilityPolicy.RELIABLE
                                        )
         qos_endpoint_profile = QoSProfile(depth=100,
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
@@ -115,13 +116,16 @@ class RosStateServicer(CrossbarBaseSession):
 
     def _check_discovery_node(self):
         while not self._on_shutdown:
-            if self._ros_state:
+            if self.topic_state_publisher_count:
                 if nmd.ros_node.count_publishers(self.topic_name_state) == 0:
-                    self._ros_state = {}
                     self.publish_to('ros.discovery.ready', {'status': False})
-            elif nmd.ros_node.count_publishers(self.topic_name_state) > 0:
-                nmd.launcher.server.pub_endpoint.publish(
-                    nmd.launcher.server._endpoint_msg)
+                    self.topic_state_publisher_count = 0
+                    self._ts_state_updated = time.time()
+                if self._ts_state_updated > self._ts_state_notified:
+                    if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
+                        self.publish_to('ros.nodes.changed', {"timestamp": self._ts_state_updated})
+                        nmd.launcher.server.screen_servicer.system_change()
+                        self._ts_state_notified = self._ts_state_updated
             time.sleep(1.0 / self._rate_check_discovery_node)
 
     def stop(self):
@@ -144,39 +148,20 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_multimaster_msgs.DiscoveredState<XXX>
         '''
-        Log.info('new message on %s' % self.topic_name_state)
         self._ros_node_list = None
-        if not self._ros_state:
-            if msg.full_state:
-                Log.info('  full update')
-                self._ros_state = {}
-                self.publish_to('ros.discovery.ready', {'status': True})
-                for participant in msg.participants:
-                    guid = self._guid_to_str(participant.guid)
-                    self._ros_state[guid] = participant
-                self.publish_to('ros.nodes.changed', {
-                                "timestamp": time.time()})
-                nmd.launcher.server.screen_servicer.system_change()
-        else:
-            if msg.full_state:
-                # update all nodes on full state
-                Log.info('  full update')
-                self._ros_state = {}
-            else:
-                Log.info('  partially update')
-            for participant in msg.participants:
-                guid = self._guid_to_str(participant.guid)
-                Log.info(f"    add participant {guid}")
-                self._ros_state[guid] = participant
-            for gid in msg.removed_participants:
-                try:
-                    r_gid = self._guid_to_str(gid)
-                    Log.info(f"    removed participant {r_gid}")
-                    del self._ros_state[r_gid]
-                except Exception as err:
-                    Log.warn(f"error while remove participant: {err}")
-            self.publish_to('ros.nodes.changed', {"timestamp": time.time()})
+        if not self.topic_state_publisher_count:
+            self.publish_to('ros.discovery.ready', {'status': True})
+            self.topic_state_publisher_count = nmd.ros_node.count_publishers(self.topic_name_state)
+        self._ros_state = {}
+        for participant in msg.participants:
+            guid = self._guid_to_str(participant.guid)
+            self._ros_state[guid] = participant
+        # notify crossbar clients, but not to often
+        self._ts_state_updated = time.time()
+        if self._ts_state_updated - self._ts_state_notified > self._rate_check_discovery_node:
+            self.publish_to('ros.nodes.changed', {"timestamp": self._ts_state_updated})
             nmd.launcher.server.screen_servicer.system_change()
+            self._ts_state_notified = self._ts_state_updated
 
     def _on_msg_endpoint(self, msg: Endpoint):
         '''
@@ -296,7 +281,10 @@ class RosStateServicer(CrossbarBaseSession):
         return None
 
     def _guid_to_str(self, guid):
-        return '.'.join('{:02X}'.format(c) for c in guid.data.tolist())
+        return '.'.join('{:02X}'.format(c) for c in guid.data.tolist()[0:12])
+
+    def _guid_arr_to_str(self, guid):
+        return '.'.join('{:02X}'.format(c) for c in guid)
 
     def get_type(self, dds_type: str) -> str:
         result = dds_type
@@ -325,95 +313,111 @@ class RosStateServicer(CrossbarBaseSession):
         return self.get_type(result)
 
     def to_crossbar(self) -> List[RosNode]:
-        result = []
-        if self._ros_state:
-            topic_by_id = {}
-            topic_objs = {}
-            service_by_id = {}
-            service_objs = {}
-            for p_guid, participant in self._ros_state.items():
-                # location = ''
-                # for loc in rp.unicast_locators:
-                #     if '127.0.0.' in loc or 'SHM' in loc:
-                #         location = 'local'
-                # if not location:
-                #     location = rp.unicast_locators
-                for te in participant.topic_entities:
-                    t_guid = self._guid_to_str(te.guid)
-                    if te.name.startswith('rt/'):
-                        if (te.name[2:], te.ttype) not in topic_objs:
-                            tp = RosTopic(
-                                te.name[2:], self.get_message_type(te.ttype))
-                            topic_objs[(te.name[2:], te.ttype)] = tp
-                            topic_by_id[t_guid] = tp
-                        else:
-                            topic_by_id[t_guid] = topic_objs[(
-                                te.name[2:], te.ttype)]
-                    elif te.name[:2] in ['rr', 'rq', 'rs']:
-                        srv_type = self.get_service_type(te.ttype)
-                        # TODO: distinction between Reply/Request? Currently it is removed.
-                        srv_name = self.get_service_name(te.name[2:])
-                        if (srv_name, srv_type) not in service_objs:
-                            srv = RosService(
-                                srv_name, self.get_service_type(srv_type))
-                            service_objs[(srv_name, srv_type)] = srv
-                            service_by_id[t_guid] = srv
-                        else:
-                            service_by_id[t_guid] = service_objs[(
-                                srv_name, srv_type)]
-                parent_node = None
-                for rn in participant.node_entities:
-                    full_name = os.path.join(rn.ns, rn.name)
-                    node_guid = f"{p_guid}|{full_name}"
-                    Log.info(
-                        f"add node: {node_guid}, {participant.enclave}, {participant.unicast_locators}")
-                    ros_node = RosNode(node_guid, rn.name)
-                    discover_state_publisher = False
-                    endpoint_publisher = False
+        node_dict = {}
+        topic_by_id = {}
+        topic_objs = {}
+        service_by_id = {}
+        service_objs = {}
+        def _get_node_from(node_ns, node_name, node_guid):
+            key = (node_ns, node_name, node_guid)
+            if key not in node_dict:
+                full_name = os.path.join(node_ns, node_name)
+                ros_node = RosNode(node_guid, full_name)
+                # search node with same guid, we asume it is the manager
+                for (_ns, _name, _guid), _node in node_dict.items():
+                    if node_guid == _guid and _node.parent_id is None:
+                        ros_node.parent_id = _node.id
+
+                node_dict[key] = ros_node
+                if node_guid in self._ros_state:
+                    participant = self._ros_state[node_guid]
                     ros_node.location = participant.unicast_locators
-                    ros_node.name = full_name
-                    ros_node.namespace = rn.ns
-                    for ntp in rn.publisher:
-                        gid = self._guid_to_str(ntp)
-                        try:
-                            tp = topic_by_id[gid]
-                            tp.publisher.append(node_guid)
+                    ros_node.namespace = node_ns
+                    ros_node.enclave = participant.enclave
+                # Add active screens for a given node
+                screens = screen.get_active_screens(full_name)
+                for session_name, _ in screens.items():
+                    print("APPEND SCREEN:", session_name)
+                    ros_node.screens.append(session_name)
+                ros_node.system_node = os.path.basename(full_name).startswith('_') or full_name in ['/rosout']
+
+                return node_dict[key], True
+            return node_dict[key], False
+
+        def _get_topic_from(topic_name, topic_type):
+            t_guid = self._guid_arr_to_str(pub_info.endpoint_gid)
+            if topic_name.startswith('rt/'):
+                if (topic_name[2:], topic_type) not in topic_objs:
+                    tp = RosTopic(topic_name[2:], topic_type)
+                    topic_objs[(topic_name[2:], topic_type)] = tp
+                    topic_by_id[t_guid] = tp
+                else:
+                    topic_by_id[t_guid] = topic_objs[(
+                        topic_name[2:], topic_type)]
+                return topic_by_id[t_guid], True
+            elif topic_name[:2] in ['rr', 'rq', 'rs']:
+                srv_type = self.get_service_type(topic_type)
+                # TODO: distinction between Reply/Request? Currently it is removed.
+                srv_name = self.get_service_name(topic_name[2:])
+                if (srv_name, srv_type) not in service_objs:
+                    srv = RosService(
+                        srv_name, self.get_service_type(srv_type))
+                    service_objs[(srv_name, srv_type)] = srv
+                    service_by_id[t_guid] = srv
+                else:
+                    service_by_id[t_guid] = service_objs[(
+                        srv_name, srv_type)]
+                return service_by_id[t_guid], False
+        result = []
+
+
+        topic_list = nmd.ros_node.get_topic_names_and_types(True)
+        for topic_name, topic_types in topic_list:
+            pub_infos = nmd.ros_node.get_publishers_info_by_topic(topic_name, True)
+            if pub_infos:
+                for pub_info in pub_infos:
+                    if '_NODE_NAME_UNKNOWN_' in pub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in pub_info.node_namespace:
+                        continue
+                    n_guid = self._guid_arr_to_str(pub_info.endpoint_gid[0:12])
+                    ros_node, isnew = _get_node_from(pub_info.node_namespace, pub_info.node_name, n_guid)
+                    for topic_type in topic_types:
+                        tp, istopic = _get_topic_from(topic_name, topic_type)
+                        # add tp.qos_profil
+                        if istopic:
+                            discover_state_publisher = False
+                            endpoint_publisher = False
+                            tp.publisher.append(n_guid)
                             ros_node.publishers.append(tp)
-                            discover_state_publisher = tp.msgtype == 'fkie_multimaster_msgs/msg/DiscoveredState'
-                            endpoint_publisher = tp.msgtype == 'fkie_multimaster_msgs/msg/Endpoint'
-                        except KeyError:
-                            try:
-                                srv = service_by_id[gid]
-                                srv.provider.append(node_guid)
-                                ros_node.services.append(srv)
-                            except KeyError:
-                                pass
-                    for nts in rn.subscriber:
-                        gid = self._guid_to_str(nts)
-                        try:
-                            ts = topic_by_id[gid]
-                            ts.subscriber.append(node_guid)
-                            ros_node.subscribers.append(ts)
-                        except KeyError:
-                            try:
-                                srv = service_by_id[gid]
-                                srv.provider.append(node_guid)
-                                ros_node.services.append(srv)
-                            except KeyError:
-                                pass
-                    if parent_node is not None:
-                        ros_node.parent_id = parent_node.id
-                    else:
-                        parent_node = ros_node
-                    # Add active screens for a given node
-                    screens = screen.get_active_screens(full_name)
-                    for session_name, _ in screens.items():
-                        print("APPEND SCREEN:", session_name)
-                        ros_node.screens.append(session_name)
-                    ros_node.system_node = discover_state_publisher or endpoint_publisher or os.path.basename(
-                        full_name).startswith('_') or full_name in ['/rosout']
-                    result.append(ros_node)
+                            discover_state_publisher = 'fkie_multimaster_msgs/msg/DiscoveredState' in topic_type
+                            endpoint_publisher = 'fkie_multimaster_msgs/msg/Endpoint' in topic_type
+                            ros_node.system_node = ros_node.system_node or discover_state_publisher or endpoint_publisher
+                        else:
+                            tp.provider.append(n_guid)
+                            ros_node.services.append(tp)
+
+                    if isnew:
+                        result.append(ros_node)
+            sub_infos = nmd.ros_node.get_subscriptions_info_by_topic(topic_name, True)
+
+            if sub_infos:
+                for sub_info in sub_infos:
+                    if '_NODE_NAME_UNKNOWN_' in sub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in sub_info.node_namespace:
+                        continue
+                    n_guid = self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
+                    ros_node, isnew = _get_node_from(sub_info.node_namespace, sub_info.node_name, n_guid)
+                    for topic_type in topic_types:
+                        tp, istopic = _get_topic_from(topic_name, topic_type)
+                        # add tp.qos_profil
+                        if istopic:
+                            tp.subscriber.append(n_guid)
+                            ros_node.subscribers.append(tp)
+                        else:
+                            tp.provider.append(n_guid)
+                            ros_node.services.append(tp)
+                    if isnew:
+                        result.append(ros_node)
         return result
+
 
     @classmethod
     def get_message_type(cls, dds_type: Text) -> Text:

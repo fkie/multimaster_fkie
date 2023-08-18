@@ -23,6 +23,7 @@ import os
 import signal
 import sys
 import threading
+import time
 import traceback
 
 import rclpy
@@ -48,7 +49,6 @@ class RosNodeLauncher(object):
     '''
 
     def __init__(self):
-        self._run_tests()
         self.ros_domain_id = 0
         self.parser = self._init_arg_parser()
         self.name = NM_DAEMON_NAME
@@ -66,7 +66,7 @@ class RosNodeLauncher(object):
         rclpy.init(args=remaining_args)
         self.rosnode = rclpy.create_node(self.name, namespace=NM_NAMESPACE)
 
-        self.executor = MultiThreadedExecutor(num_threads=3)
+        self.executor = MultiThreadedExecutor(num_threads=5)
         self.executor.add_node(self.rosnode)
 
         nmd.ros_node = self.rosnode
@@ -76,6 +76,8 @@ class RosNodeLauncher(object):
         # get a reference to the global node for logging
         Log.set_ros2_logging_node(self.rosnode)
 
+        # test for screen after rosnode log modul is available.
+        self._run_tests()
         # nmd.ros_node.declare_parameter('force_insecure', value=False, descriptor=ParameterDescriptor(description='Ignore security options and use insecure channel'), ignore_override = False)
         # start server and load launch files provided by arguments
         self.server = Server(
@@ -93,6 +95,7 @@ class RosNodeLauncher(object):
         except KeyboardInterrupt:
             pass
         except Exception:
+            import traceback
             # on load error the process will be killed to notify user
             # in node_manager about error
             self.rosnode.get_logger().warning('Start server failed: %s' %
@@ -101,17 +104,24 @@ class RosNodeLauncher(object):
             sys.stdout.flush()
             # TODO: how to notify user in node manager about start errors
             # os.kill(os.getpid(), signal.SIGKILL)
-        print('shutdown gRPC server')
+        print('shutdown crossbar server')
         self.server.shutdown()
         print('shutdown rclpy')
         self.executor.shutdown()
-        rclpy.shutdown()
+        self.rosnode.destroy_node()
+        try:
+            rclpy.shutdown()
+        except Exception:
+            import traceback
+            print(traceback.format_exc())
         print('bye!')
 
     def _run_tests(self):
         try:
             test_screen()
         except Exception:
+            import traceback
+            print(traceback.format_exc())
             self.rosnode.get_logger().error('No SCREEN available! You cannot launch nodes.')
 
     def _init_arg_parser(self):

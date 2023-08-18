@@ -19,6 +19,7 @@
 
 from typing import Text
 import os
+import sys
 import threading
 import time
 
@@ -101,12 +102,12 @@ class Server:
     def start(self, uri: Text, displayed_name: Text = '') -> bool:
         if displayed_name:
             self.name = displayed_name
-        nmd.ros_node.get_logger().info("Connect to crossbar server on %s" % uri)
+        nmd.ros_node.get_logger().info(f"Connect to crossbar server on {uri}")
         port = self.crossbar_port
         # update name if port is not a default one
         self.insecure_port = port
         if server.port() != port:
-            self.name = "%s_%d" % (self.name, port)
+            self.name = f"{self.name}_{port}"
         self._endpoint_msg.name = self.name
         self._crossbarThread = threading.Thread(
             target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
@@ -114,7 +115,6 @@ class Server:
         self._crossbarNotificationThread = threading.Thread(
             target=self._crossbar_notify_if_regsitered, daemon=True)
         self._crossbarNotificationThread.start()
-        self.pub_endpoint.publish(self._endpoint_msg)
         self.rosstate_servicer.start()
         self.screen_servicer.start()
         return True
@@ -132,6 +132,7 @@ class Server:
             registration_finished &= self.rosstate_servicer.crossbar_registered
             registration_finished &= self.parameter_servicer.crossbar_registered
             time.sleep(0.5)
+        self.publish_daemon_state(True)
         self._crossbar_send_status(True)
 
     def _crossbar_send_status(self, status: bool):
@@ -139,11 +140,20 @@ class Server:
         self.rosstate_servicer.publish_to(
             'ros.daemon.ready', {'status': status})
 
+    def publish_daemon_state(self, is_running: bool = True):
+        self._endpoint_msg.on_shutdown = not is_running
+        try:
+            self.pub_endpoint.publish(self._endpoint_msg)
+        except Exception as a:
+            pass
+            return
+            import traceback
+            print(traceback.format_exc())
+
     def shutdown(self):
         WAIT_TIMEOUT = 3
+        self.publish_daemon_state(False)
         self._crossbar_send_status(False)
-        self._endpoint_msg.on_shutdown = True
-        self.pub_endpoint.publish(self._endpoint_msg)
         self.screen_servicer.stop()
         self.launch_servicer.stop()
         self.file_servicer.stop()

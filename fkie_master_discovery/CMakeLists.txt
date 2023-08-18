@@ -68,13 +68,10 @@ if ( ament_cmake_FOUND )
         rmw_fastrtps_shared_cpp
         lifecycle_msgs
     )
-    list(APPEND DEPS rmw_dds_common)
     list(APPEND DEPS rmw_fastrtps_cpp)
-    list(APPEND DEPS rosidl_typesupport_fastrtps_cpp)
     include_directories(${catkin_INCLUDE_DIRS})
     add_executable(master_discovery
         src/eprosima_pariticipant_listener.cpp
-        src/message_type_support.cpp
     )
     ament_target_dependencies(master_discovery ${DEPS})
 

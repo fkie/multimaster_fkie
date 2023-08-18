@@ -931,7 +931,7 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
                 cli.wait_for_service()
             Log.debug('requester: making request: %r' % service_request)
             future = cli.call_async(service_request)
-            rclpy.spin_until_future_complete(nmd.ros_node, future)
+            rclpy.spin_until_future_complete(nmd.ros_node, future, nmd.launcher.executor, 30.0)
             if future.result() is not None:
                 result.data = message_to_ordereddict(future.result())
                 result.valid = True

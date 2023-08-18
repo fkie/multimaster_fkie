@@ -44,7 +44,6 @@ from ros2run.api import MultipleExecutables
 from ros2run.api import run_executable
 import composition_interfaces.srv
 
-from fkie_multimaster_pylib.grpc_helper import remote
 from .launch_config import LaunchConfig
 from .launch_config import LaunchNodeWrapper
 from launch.launch_context import LaunchContext

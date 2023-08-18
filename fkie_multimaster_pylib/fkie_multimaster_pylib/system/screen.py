@@ -174,7 +174,9 @@ def test_screen() -> None:
     # try to fix empty LD_LIBRARY_PATH path issues in screen
     if os.environ['LD_LIBRARY_PATH']:
         os.environ['LD_LIBRARY_PATH_SCRREN'] = os.environ['LD_LIBRARY_PATH']
-    with open('%s/screen.cfg' % SETTINGS_PATH, 'w') as sf:
+    if not os.path.exists(SETTINGS_PATH):
+        os.makedirs(SETTINGS_PATH)
+    with open(os.path.join(SETTINGS_PATH, 'screen.cfg'), 'w') as sf:
         sf.write('logfile flush 0\n')
         sf.write('setenv LD_LIBRARY_PATH $LD_LIBRARY_PATH_SCRREN\n')
 

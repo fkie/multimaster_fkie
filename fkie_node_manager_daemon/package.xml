@@ -21,6 +21,7 @@
   <depend condition="$ROS_VERSION == 1">roslaunch</depend>
   <depend condition="$ROS_VERSION == 1">rospy</depend>
 
+  <depend condition="$ROS_PYTHON_VERSION == 3">python3-autobahn</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-grpcio</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-psutil</depend>
   <depend condition="$ROS_VERSION == 1 and $ROS_PYTHON_VERSION == 2">python-rospkg</depend>

@@ -175,6 +175,7 @@ class RosNode:
         self.screens: List[str] = []
         self.parameters: List[RosParameter] = []
         self.system_node = False
+        self.enclave = ''
 
     def __str__(self):
         return json.dumps(dict(self), ensure_ascii=False)
