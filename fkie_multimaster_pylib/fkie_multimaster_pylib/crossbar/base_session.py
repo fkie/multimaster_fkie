@@ -62,7 +62,9 @@ class SelfEncoder(json.JSONEncoder):
 
 class CrossbarBaseSession(ApplicationSession):
 
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False) -> None:
+    CROSSBAR_SERVER_STARTED = False
+
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, *, test_env=False) -> None:
         self.port = port
         self.crossbar_loop = loop
         self._on_shutdown = False
@@ -95,10 +97,10 @@ class CrossbarBaseSession(ApplicationSession):
         try:
             await self.subscribe(handler, topic)
             Log.info(
-                f"{self.__class__.__name__}: subscribed to crossbar topic 'ros.nodes.abort'")
+                f"{self.__class__.__name__}: subscribed to crossbar topic '{topic}'")
         except Exception as e:
             Log.warn(
-                f"{self.__class__.__name__}: could not subscribe to 'ros.nodes.abort': {0}".format(e))
+                f"{self.__class__.__name__}: could not subscribe to '{topic}': {0}".format(e))
 
     '''
     Publishes message to given topic without throw an exception on connection problems.
@@ -150,11 +152,12 @@ class CrossbarBaseSession(ApplicationSession):
     @coroutine
     def onJoin(self, details):
         res = yield from self.register(self)
-        Log.info(
-            f"{self.__class__.__name__}: {len(self._registrations)} crossbar procedures registered!")
-        Log.info(f"{self.__class__.__name__}: list of registered uri's:")
-        for _session_id, reg in self._registrations.items():
-            Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
+        if self._registrations:
+            Log.info(
+                f"{self.__class__.__name__}: {len(self._registrations)} crossbar procedures registered!")
+            Log.info(f"{self.__class__.__name__}: list of registered uri's:")
+            for _session_id, reg in self._registrations.items():
+                Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
         self.crossbar_registered = True
 
     async def crossbar_connect_async(self):
@@ -168,16 +171,18 @@ class CrossbarBaseSession(ApplicationSession):
                 self.crossbar_connected = True
                 self.crossbar_connecting = False
             except Exception as err:
-                Log.debug(f"{err}")
+                Log.debug(f"{self.__class__.__name__}: {err}")
 
                 # try to start the crossbar server
-                try:
-                    config_path = crossbar_start_server(self.port)
-                    Log.info(
-                        f"start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
-                except:
-                    import traceback
-                    Log.debug(traceback.format_exc())
+                if not CrossbarBaseSession.CROSSBAR_SERVER_STARTED:
+                    CrossbarBaseSession.CROSSBAR_SERVER_STARTED = True
+                    try:
+                        config_path = crossbar_start_server(self.port)
+                        Log.info(
+                            f"{self.__class__.__name__}: start crossbar server @ {self.uri} realm: {self.config.realm}, config: {config_path}")
+                    except:
+                        import traceback
+                        Log.debug(f"{self.__class__.__name__}: {traceback.format_exc()}")
 
                 self.crossbar_connecting = False
                 self.crossbar_connected = False

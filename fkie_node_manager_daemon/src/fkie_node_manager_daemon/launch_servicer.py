@@ -167,7 +167,7 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
     def __init__(self, monitor_servicer, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
         Log.info("Create launch manger servicer")
         lgrpc.LaunchServiceServicer.__init__(self)
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
+        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         LoggingEventHandler.__init__(self)
         self._watchdog_observer = Observer()
         self._observed_dirs = {}  # path: watchdog.observers.api.ObservedWatch

@@ -55,7 +55,8 @@ class FileServicer(CrossbarBaseSession):
 
     @wamp.register('ros.packages.get_list')
     def getPackageList(self, clear_cache: bool = False) -> List[RosPackage]:
-        Log.info('Request to [ros.packages.get_list]')
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.packages.get_list]")
         clear_cache = False
         if clear_cache:
             try:
@@ -63,7 +64,8 @@ class FileServicer(CrossbarBaseSession):
                 import rospkg
                 substitution_args._rospack = rospkg.RosPack()
             except Exception as err:
-                Log.warn(f"Cannot reset package cache: {err}")
+                Log.warn(
+                    f"{self.__class__.__name__}: Cannot reset package cache: {err}")
         package_list: List[RosPackage] = []
         # fill the input fields
         ret = ros_pkg.get_packages(None)
@@ -75,7 +77,8 @@ class FileServicer(CrossbarBaseSession):
 
     @wamp.register('ros.path.get_log_paths')
     def getLogPaths(self, nodes: List[str]) -> List[LogPathItem]:
-        Log.info('Request to [ros.path.get_log_paths] for %s' % nodes)
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.path.get_log_paths] for {nodes}")
         result = []
         for node in nodes:
             namespace = None
@@ -100,7 +103,8 @@ class FileServicer(CrossbarBaseSession):
 
     @wamp.register('ros.path.get_list')
     def getPathList(self, inputPath: str) -> List[PathItem]:
-        Log.info('Request to [ros.path.get_list] for %s' % inputPath)
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.path.get_list] for {inputPath}")
         path_list: List[PathItem] = []
         # list the path
         dirlist = os.listdir(inputPath)
@@ -142,13 +146,15 @@ class FileServicer(CrossbarBaseSession):
                     dir_list.append(filename)
         # glob the directories at the end
         for filename in dir_list:
-            path_list.extend(self._glob(inputPath=filename, recursive=recursive, withHidden=withHidden, filter=filter))
+            path_list.extend(self._glob(
+                inputPath=filename, recursive=recursive, withHidden=withHidden, filter=filter))
         return path_list
 
     @wamp.register('ros.path.get_list_recursive')
     def getPathListRecursive(self, inputPath: str) -> List[PathItem]:
         Log.info(
-            'Request to [ros.path.get_list_recursive] for %s' % inputPath)
-        path_list: List[PathItem] = self._glob(inputPath, recursive=True, withHidden=False, filter=['node_modules'])
+            f"{self.__class__.__name__}: Request to [ros.path.get_list_recursive] for {inputPath}")
+        path_list: List[PathItem] = self._glob(
+            inputPath, recursive=True, withHidden=False, filter=['node_modules'])
 
         return json.dumps(path_list, cls=SelfEncoder)

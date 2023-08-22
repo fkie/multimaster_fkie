@@ -62,7 +62,8 @@ class RosStateServicer(CrossbarBaseSession):
 
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = NMD_DEFAULT_PORT, test_env=False):
         Log.info("Create ros_state servicer")
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
+        CrossbarBaseSession.__init__(
+            self, loop, realm, port, test_env=test_env)
         self._endpoints: Dict[str, Endpoint] = {}  # uri : Endpoint
         self._ros_state: Dict[str, ParticipantEntitiesInfo] = {}
         self._ros_node_list: List[RosNode] = None
@@ -84,12 +85,10 @@ class RosStateServicer(CrossbarBaseSession):
                                           durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
                                           # history=QoSHistoryPolicy.KEEP_LAST,
                                           reliability=QoSReliabilityPolicy.RELIABLE)
-        Log.info('listen for discovered items on %s' %
-                 self.topic_name_state)
+        Log.info(f"{self.__class__.__name__}: listen for discovered items on {self.topic_name_state}")
         self.sub_discovered_state = nmd.ros_node.create_subscription(
             DiscoveredState, self.topic_name_state, self._on_msg_state, qos_profile=qos_state_profile)
-        Log.info('listen for endpoint items on %s' %
-                 self.topic_name_endpoint)
+        Log.info(f"{self.__class__.__name__}: listen for endpoint items on {self.topic_name_endpoint}")
         self.sub_endpoints = nmd.ros_node.create_subscription(
             Endpoint, self.topic_name_endpoint, self._on_msg_endpoint, qos_profile=qos_endpoint_profile)
         self._thread_check_discovery_node = threading.Thread(
@@ -123,7 +122,8 @@ class RosStateServicer(CrossbarBaseSession):
                     self._ts_state_updated = time.time()
                 if self._ts_state_updated > self._ts_state_notified:
                     if time.time() - self._ts_state_notified > self._rate_check_discovery_node:
-                        self.publish_to('ros.nodes.changed', {"timestamp": self._ts_state_updated})
+                        self.publish_to('ros.nodes.changed', {
+                                        "timestamp": self._ts_state_updated})
                         nmd.launcher.server.screen_servicer.system_change()
                         self._ts_state_notified = self._ts_state_updated
             time.sleep(1.0 / self._rate_check_discovery_node)
@@ -151,7 +151,8 @@ class RosStateServicer(CrossbarBaseSession):
         self._ros_node_list = None
         if not self.topic_state_publisher_count:
             self.publish_to('ros.discovery.ready', {'status': True})
-            self.topic_state_publisher_count = nmd.ros_node.count_publishers(self.topic_name_state)
+            self.topic_state_publisher_count = nmd.ros_node.count_publishers(
+                self.topic_name_state)
         self._ros_state = {}
         for participant in msg.participants:
             guid = self._guid_to_str(participant.guid)
@@ -159,7 +160,8 @@ class RosStateServicer(CrossbarBaseSession):
         # notify crossbar clients, but not to often
         self._ts_state_updated = time.time()
         if self._ts_state_updated - self._ts_state_notified > self._rate_check_discovery_node:
-            self.publish_to('ros.nodes.changed', {"timestamp": self._ts_state_updated})
+            self.publish_to('ros.nodes.changed', {
+                            "timestamp": self._ts_state_updated})
             nmd.launcher.server.screen_servicer.system_change()
             self._ts_state_notified = self._ts_state_updated
 
@@ -169,7 +171,7 @@ class RosStateServicer(CrossbarBaseSession):
         :param msg: the received message
         :type msg: fkie_multimaster_msgs.Endpoint<XXX>
         '''
-        Log.info('new message on %s' % self.topic_name_endpoint)
+        Log.info(f"{self.__class__.__name__}: new message on {self.topic_name_endpoint}")
         is_new = False
         if msg.on_shutdown:
             if msg.uri in self._endpoints:
@@ -189,35 +191,38 @@ class RosStateServicer(CrossbarBaseSession):
 
     @wamp.register('ros.provider.get_list')
     def crossbar_get_provider_list(self) -> str:
-        Log.info('Request to [ros.provider.get_list]')
+        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_list]")
         return json.dumps(self._endpoints_to_provider(self._endpoints), cls=SelfEncoder)
 
     @wamp.register('ros.nodes.get_list')
     def crossbar_get_node_list(self) -> str:
-        Log.info('Request to [ros.nodes.get_list]')
+        Log.info(f"{self.__class__.__name__}: Request to [ros.nodes.get_list]")
         node_list: List[RosNode] = self._get_ros_node_list()
 
         return json.dumps(node_list, cls=SelfEncoder)
 
     @wamp.register('ros.nodes.stop_node')
     def stop_node(self, name: str) -> bool:
-        Log.info(f"Request to stop node '{name}'")
+        Log.info(f"{self.__class__.__name__}: Request to stop node '{name}'")
         node: RosNode = self.get_ros_node(name)
         if node is None:
             node = self.get_ros_node_by_id(name)
         unloaded = False
+        result = json.dumps({'result': False, 'message': f'{name} not found'}, cls=SelfEncoder)
         if node is not None:
             if node.parent_id:
                 self.stop_composed_node(node)
                 unloaded = True
+            else:
+                result = nmd.launcher.server.screen_servicer.kill_node(os.path.join(node.namespace, node.name))
         if unloaded:
-            return json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
+            result = json.dumps({'result': True, 'message': ''}, cls=SelfEncoder)
         nmd.launcher.server.screen_servicer.system_change()
-        return nmd.launcher.server.screen_servicer.kill_node(name.split('|')[-1])
+        return result
 
     @wamp.register('ros.subscriber.stop')
     def stop_subscriber(self, topic_name: str) -> bool:
-        Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))
+        Log.debug(f"{self.__class__.__name__}: Request to [ros.subscriber.stop]: {str(topic_name)}")
         ns, name = ros2_subscriber_nodename_tuple(topic_name)
         return self.stop_node(os.path.join(ns, name))
 
@@ -225,7 +230,7 @@ class RosStateServicer(CrossbarBaseSession):
         # try to unload node from container
         node_name = ns_join(node.namespace, node.name)
         Log.info(
-            f"-> unload '{node_name}' from '{node.parent_id}'")
+            f"{self.__class__.__name__}: -> unload '{node_name}' from '{node.parent_id}'")
         container_node: RosNode = self.get_ros_node_by_id(node.parent_id)
         if container_node is not None:
             container_name = ns_join(
@@ -234,12 +239,12 @@ class RosStateServicer(CrossbarBaseSession):
                 node_unique_id = self.get_composed_node_id(
                     container_name, node_name)
             except Exception as err:
-                print("unload ERR", err)
+                print(f"{self.__class__.__name__}: unload ERR {err}")
                 return json.dumps({'result': False, 'message': str(err)}, cls=SelfEncoder)
 
             service_unload_node = f'{container_name}/_container/unload_node'
             Log.info(
-                f"-> unload '{node_name}' with id '{node_unique_id}' from '{service_unload_node}'")
+                f"{self.__class__.__name__}:-> unload '{node_name}' with id '{node_unique_id}' from '{service_unload_node}'")
 
             request = UnloadNode.Request()
             request.unique_id = node_unique_id
@@ -252,7 +257,7 @@ class RosStateServicer(CrossbarBaseSession):
 
     def get_composed_node_id(self, container_name: str, node_name: str) -> Number:
         service_list_nodes = f'{container_name}/_container/list_nodes'
-        Log.debug(f"-> list nodes from '{service_list_nodes}'")
+        Log.debug(f"{self.__class__.__name__}: list nodes from '{service_list_nodes}'")
         request_list = ListNodes.Request()
         response_list = nmd.launcher.call_service(
             service_list_nodes, ListNodes, request_list)
@@ -286,7 +291,8 @@ class RosStateServicer(CrossbarBaseSession):
     def _guid_arr_to_str(self, guid):
         return '.'.join('{:02X}'.format(c) for c in guid)
 
-    def get_type(self, dds_type: str) -> str:
+    @classmethod
+    def get_message_type(cls, dds_type: Text) -> Text:
         result = dds_type
         if result:
             result = result.replace('::', '/')
@@ -296,21 +302,23 @@ class RosStateServicer(CrossbarBaseSession):
             result = result.rstrip('_')
         return result
 
-    def get_service_type(self, dds_service_type: str) -> str:
+    @classmethod
+    def get_service_type(cls, dds_service_type: Text) -> Text:
         result = dds_service_type
         for suffix in ['_Response_', '_Request_']:
             if result[-len(suffix):] == suffix:
                 result = result[:-len(suffix)+1]
                 break
-        return self.get_type(result)
+        return cls.get_message_type(result)
 
-    def get_service_name(self, dds_service_name: str) -> str:
+    @classmethod
+    def get_service_name(cls, dds_service_name: Text) -> Text:
         result = dds_service_name
         for suffix in ['Reply', 'Request']:
             if result[-len(suffix):] == suffix:
                 result = result[:-len(suffix)]
                 break
-        return self.get_type(result)
+        return cls.get_message_type(result)
 
     def to_crossbar(self) -> List[RosNode]:
         node_dict = {}
@@ -318,10 +326,14 @@ class RosStateServicer(CrossbarBaseSession):
         topic_objs = {}
         service_by_id = {}
         service_objs = {}
+        Log.debug(f"{self.__class__.__name__}: create graph for crossbar")
+
         def _get_node_from(node_ns, node_name, node_guid):
             key = (node_ns, node_name, node_guid)
             if key not in node_dict:
                 full_name = os.path.join(node_ns, node_name)
+                Log.debug(
+                    f"{self.__class__.__name__}:   create node: {full_name}")
                 ros_node = RosNode(node_guid, full_name)
                 # search node with same guid, we asume it is the manager
                 for (_ns, _name, _guid), _node in node_dict.items():
@@ -332,14 +344,18 @@ class RosStateServicer(CrossbarBaseSession):
                 if node_guid in self._ros_state:
                     participant = self._ros_state[node_guid]
                     ros_node.location = participant.unicast_locators
+                    Log.debug(
+                        f"{self.__class__.__name__}:     set unicast locators: {participant.unicast_locators}")
                     ros_node.namespace = node_ns
                     ros_node.enclave = participant.enclave
                 # Add active screens for a given node
                 screens = screen.get_active_screens(full_name)
                 for session_name, _ in screens.items():
-                    print("APPEND SCREEN:", session_name)
+                    Log.debug(
+                        f"{self.__class__.__name__}:     append screen: {session_name}")
                     ros_node.screens.append(session_name)
-                ros_node.system_node = os.path.basename(full_name).startswith('_') or full_name in ['/rosout']
+                ros_node.system_node = os.path.basename(
+                    full_name).startswith('_') or full_name in ['/rosout']
 
                 return node_dict[key], True
             return node_dict[key], False
@@ -348,7 +364,10 @@ class RosStateServicer(CrossbarBaseSession):
             t_guid = self._guid_arr_to_str(pub_info.endpoint_gid)
             if topic_name.startswith('rt/'):
                 if (topic_name[2:], topic_type) not in topic_objs:
-                    tp = RosTopic(topic_name[2:], topic_type)
+                    topic_type_res = self.get_message_type(topic_type)
+                    Log.debug(
+                        f"{self.__class__.__name__}:   create topic {topic_name[2:]} ({topic_type_res})")
+                    tp = RosTopic(topic_name[2:], topic_type_res)
                     topic_objs[(topic_name[2:], topic_type)] = tp
                     topic_by_id[t_guid] = tp
                 else:
@@ -360,8 +379,10 @@ class RosStateServicer(CrossbarBaseSession):
                 # TODO: distinction between Reply/Request? Currently it is removed.
                 srv_name = self.get_service_name(topic_name[2:])
                 if (srv_name, srv_type) not in service_objs:
-                    srv = RosService(
-                        srv_name, self.get_service_type(srv_type))
+                    srv_type_res = self.get_service_type(srv_type)
+                    Log.debug(
+                        f"{self.__class__.__name__}:   create service {srv_name} ({srv_type_res})")
+                    srv = RosService(srv_name, srv_type_res)
                     service_objs[(srv_name, srv_type)] = srv
                     service_by_id[t_guid] = srv
                 else:
@@ -370,54 +391,66 @@ class RosStateServicer(CrossbarBaseSession):
                 return service_by_id[t_guid], False
         result = []
 
-
         topic_list = nmd.ros_node.get_topic_names_and_types(True)
         for topic_name, topic_types in topic_list:
-            pub_infos = nmd.ros_node.get_publishers_info_by_topic(topic_name, True)
+            pub_infos = nmd.ros_node.get_publishers_info_by_topic(
+                topic_name, True)
             if pub_infos:
                 for pub_info in pub_infos:
                     if '_NODE_NAME_UNKNOWN_' in pub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in pub_info.node_namespace:
                         continue
                     n_guid = self._guid_arr_to_str(pub_info.endpoint_gid[0:12])
-                    ros_node, isnew = _get_node_from(pub_info.node_namespace, pub_info.node_name, n_guid)
+                    ros_node, isnew = _get_node_from(
+                        pub_info.node_namespace, pub_info.node_name, n_guid)
                     for topic_type in topic_types:
                         tp, istopic = _get_topic_from(topic_name, topic_type)
                         # add tp.qos_profil
                         if istopic:
                             discover_state_publisher = False
                             endpoint_publisher = False
+                            Log.debug(
+                                f"{self.__class__.__name__}:      add publisher {n_guid} {pub_info.node_namespace}/{pub_info.node_name}")
                             tp.publisher.append(n_guid)
                             ros_node.publishers.append(tp)
                             discover_state_publisher = 'fkie_multimaster_msgs/msg/DiscoveredState' in topic_type
                             endpoint_publisher = 'fkie_multimaster_msgs/msg/Endpoint' in topic_type
                             ros_node.system_node = ros_node.system_node or discover_state_publisher or endpoint_publisher
                         else:
-                            tp.provider.append(n_guid)
+                            if n_guid not in tp.provider:
+                                Log.debug(
+                                    f"{self.__class__.__name__}:      add provider {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
+                                tp.provider.append(n_guid)
                             ros_node.services.append(tp)
 
                     if isnew:
                         result.append(ros_node)
-            sub_infos = nmd.ros_node.get_subscriptions_info_by_topic(topic_name, True)
+            sub_infos = nmd.ros_node.get_subscriptions_info_by_topic(
+                topic_name, True)
 
             if sub_infos:
                 for sub_info in sub_infos:
                     if '_NODE_NAME_UNKNOWN_' in sub_info.node_name or '_NODE_NAMESPACE_UNKNOWN_' in sub_info.node_namespace:
                         continue
                     n_guid = self._guid_arr_to_str(sub_info.endpoint_gid[0:12])
-                    ros_node, isnew = _get_node_from(sub_info.node_namespace, sub_info.node_name, n_guid)
+                    ros_node, isnew = _get_node_from(
+                        sub_info.node_namespace, sub_info.node_name, n_guid)
                     for topic_type in topic_types:
                         tp, istopic = _get_topic_from(topic_name, topic_type)
                         # add tp.qos_profil
                         if istopic:
+                            Log.debug(
+                                f"{self.__class__.__name__}:      add subscriber {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
                             tp.subscriber.append(n_guid)
                             ros_node.subscribers.append(tp)
                         else:
-                            tp.provider.append(n_guid)
+                            if n_guid not in tp.provider:
+                                Log.debug(
+                                    f"{self.__class__.__name__}:      add provider {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
+                                tp.provider.append(n_guid)
                             ros_node.services.append(tp)
                     if isnew:
                         result.append(ros_node)
         return result
-
 
     @classmethod
     def get_message_type(cls, dds_type: Text) -> Text:

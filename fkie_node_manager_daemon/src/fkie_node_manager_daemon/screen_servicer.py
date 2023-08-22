@@ -51,7 +51,7 @@ class ScreenServicer(sgrpc.ScreenServiceServicer, CrossbarBaseSession):
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
         Log.info("Create screen servicer")
         sgrpc.ScreenServiceServicer.__init__(self)
-        CrossbarBaseSession.__init__(self, loop, realm, port, test_env)
+        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
 
     def stop(self):

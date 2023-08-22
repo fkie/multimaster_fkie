@@ -94,7 +94,7 @@ class ScreenServicer(CrossbarBaseSession):
                 div_screens = self._screens_set ^ new_screens_set
                 if div_screen_nodes or div_screens:
                     Log.debug(
-                        f"publish ros.screen.list with {len(crossbar_msg)} nodes.")
+                        f"{self.__class__.__name__}: publish ros.screen.list with {len(crossbar_msg)} nodes.")
                     self.publish_to('ros.screen.list', crossbar_msg)
                     self._screen_crossbar_msg = crossbar_msg
                     self._screen_nodes_set = new_screen_nodes_set
@@ -109,7 +109,7 @@ class ScreenServicer(CrossbarBaseSession):
 
     @wamp.register('ros.screen.kill_node')
     def kill_node(self, name: str) -> bool:
-        Log.info(f"Kill node '{name}'")
+        Log.info(f"{self.__class__.__name__}: Kill node '{name}'")
         self._screen_do_check = True
         success = False
         screens = screen.get_active_screens(name)
@@ -124,5 +124,5 @@ class ScreenServicer(CrossbarBaseSession):
 
     @wamp.register('ros.screen.get_list')
     def get_screen_list(self) -> str:
-        Log.info('Request to [ros.screen.get_list]')
+        Log.info(f"{self.__class__.__name__}: Request to [ros.screen.get_list]")
         return json.dumps(self._screen_crossbar_msg, cls=SelfEncoder)

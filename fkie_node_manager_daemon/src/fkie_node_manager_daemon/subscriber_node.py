@@ -122,7 +122,7 @@ class SubscriberNode(CrossbarBaseSession):
         if self.__msg_class:
             self.crossbar_loop = asyncio.get_event_loop()
             CrossbarBaseSession.__init__(
-                self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env)
+                self, self.crossbar_loop, self._crossbar_realm, self._crossbar_port, test_env=test_env)
             self._crossbarThread = threading.Thread(
                 target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
             self._crossbarThread.start()

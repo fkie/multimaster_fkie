@@ -245,7 +245,7 @@ public:
             // only consider known GUIDs
             if (itp != discoveredParticipants_.end())
             {
-                RCLCPP_INFO(get_logger(), "onParticipantDiscovery:   remove participant %s:", to_string(info.info.m_guid).c_str());
+                RCLCPP_INFO(get_logger(), "onParticipantDiscovery: remove participant %s:", to_string(info.info.m_guid).c_str());
                 discoveredParticipants_.erase(itp);
             }
             break;
