@@ -77,6 +77,8 @@ class CrossbarBaseSession(ApplicationSession):
         if test_env:
             return
         ApplicationSession.__init__(self, ComponentConfig(realm, {}))
+        if not hasattr(self, 'realm'):
+            self.realm = realm
         self.crossbar_runner = ApplicationRunner(self.uri, self.config.realm)
         self.uri = self.uri.replace('localhost', get_host_name())
         task = asyncio.run_coroutine_threadsafe(
