@@ -105,7 +105,7 @@ class TestLaunchXmlLib(unittest.TestCase):
         text_path = f"$(find {PKG})/{PKG}/tests/test_launch/include_dummy.launch, $(find fkie_node_manager_daemon)/launch/demo_bar.launch"
         path = xml.replace_paths(text_path)
         nm_path = os.path.dirname(self.pkg_path.rstrip(os.path.sep))
-        path_exp = f"{nm_path}]/{PKG}/{PKG}/tests/test_launch/include_dummy.launch, {self.nmgr_path.rstrip(os.path.sep)}/launch/demo_bar.launch"
+        path_exp = f"{nm_path}/{PKG}/{PKG}/tests/test_launch/include_dummy.launch, {self.nmgr_path.rstrip(os.path.sep)}/launch/demo_bar.launch"
         self.assertEqual(
             path_exp, path, "wrong replace_paths, expected: %s, got: %s" % (path_exp, path))
 

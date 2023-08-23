@@ -53,7 +53,7 @@ class TestRosPkgLib(unittest.TestCase):
     def test_get_packages(self):
         path = os.path.dirname(self.pkg_path.rstrip(os.path.sep))
         pkg_res = ros_pkg.get_packages(path)
-        count_exp = 6
+        count_exp = 7
         if 'industrial_ci' in pkg_res:
             count_exp += 1
         self.assertEqual(count_exp, len(

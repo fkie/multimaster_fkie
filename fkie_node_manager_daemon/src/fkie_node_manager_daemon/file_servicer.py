@@ -83,7 +83,7 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
     def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
         Log.info("Create file manger servicer")
         fms_grpc.FileServiceServicer.__init__(self)
-        CrossbarBaseSession.__init__(self, loop, realm, port, tes_env=test_env)
+        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self.DIR_CACHE = {}
         self.CB_DIR_CACHE = {}
         self._peers = {}

@@ -112,8 +112,12 @@ class CrossbarBaseSession(ApplicationSession):
         if not isinstance(msg, str):
             encoded_msg = json.dumps(msg, cls=SelfEncoder)
         try:
-            Log.debug(f"Publish '{topic}': {encoded_msg}")
-            self.publish(topic, encoded_msg)
+            if self.crossbar_connected:
+                Log.debug(f"Publish '{topic}': {encoded_msg}")
+                self.publish(topic, encoded_msg)
+            elif (resend_after_connect):
+                Log.info(f"publish after connect {topic}: {encoded_msg}")
+                self._crossbar_failed_publications[topic] = encoded_msg  
         except TransportLost as e:
             if (resend_after_connect):
                 Log.info(f"add {topic}: {encoded_msg}")
