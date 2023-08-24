@@ -179,7 +179,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
         self._monitor_servicer = monitor_servicer
         self._watchdog_observer.start()
-        self.subscribe_to('ros.nodes.abort', self.crossbar_abort)
         print(self.get_msg_struct("fkie_multimaster_msgs/LinkStatesStamped"))
 
     def _terminated(self):
@@ -1180,10 +1179,6 @@ class LaunchServicer(lgrpc.LaunchServiceServicer, CrossbarBaseSession, LoggingEv
                     break
 
         return json.dumps(result, cls=SelfEncoder)
-
-    def crossbar_abort(self, code: str = '') -> None:
-        print(
-            f"Abort from GUI received (ros.nodes.abort with code '{code}'). Not Implemented!")
 
     def StartStandaloneNode(self, request, context):
         Log.debug('StartStandaloneNode request:\n%s' % str(request))
