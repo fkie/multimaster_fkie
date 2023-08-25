@@ -1162,3 +1162,10 @@ class MasterMonitor(CrossbarBaseSession):
     def stop_subscriber(self, topic_name: str) -> bool:
         Log.debug('Request to [ros.subscriber.stop]: %s' % str(topic_name))
         return self.stop_node(f"/_node_manager_subscriber/{topic_name.strip('/')}")
+
+    @wamp.register('ros.provider.get_timestamp')
+    def getProviderTimestamp(self, timestamp) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
+        # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
+        return json.dumps({'timestamp': time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder)
+    

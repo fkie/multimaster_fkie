@@ -226,6 +226,12 @@ class RosStateServicer(CrossbarBaseSession):
         ns, name = ros2_subscriber_nodename_tuple(topic_name)
         return self.stop_node(os.path.join(ns, name))
 
+    @wamp.register('ros.provider.get_timestamp')
+    def getProviderTimestamp(self, timestamp) -> str:
+        Log.info(f"{self.__class__.__name__}: Request to [ros.provider.get_timestamp], timestamp: {timestamp}")
+        # Log.info("getProviderList: {0}".format(json.dumps(self.provider_list, cls=SelfEncoder)))
+        return json.dumps({'timestamp': time.time() * 1000, "diff": time.time() * 1000 - float(timestamp)}, cls=SelfEncoder)
+
     def stop_composed_node(self, node: RosNode) -> None:
         # try to unload node from container
         node_name = ns_join(node.namespace, node.name)
