@@ -141,8 +141,6 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
         Log.info("Create ROS2 launch servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
         LoggingEventHandler.__init__(self)
-        if not hasattr(self, realm):
-            self.realm = realm
         self._watchdog_observer = Observer()
         self.__launch_context = LaunchContext(argv=sys.argv[1:])
         self.__launch_context._set_asyncio_loop(asyncio.get_event_loop())

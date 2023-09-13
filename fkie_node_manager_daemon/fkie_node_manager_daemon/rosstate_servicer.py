@@ -441,19 +441,22 @@ class RosStateServicer(CrossbarBaseSession):
                     ros_node, isnew = _get_node_from(
                         sub_info.node_namespace, sub_info.node_name, n_guid)
                     for topic_type in topic_types:
-                        tp, istopic = _get_topic_from(topic_name, topic_type)
-                        # add tp.qos_profil
-                        if istopic:
-                            Log.debug(
-                                f"{self.__class__.__name__}:      add subscriber {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
-                            tp.subscriber.append(n_guid)
-                            ros_node.subscribers.append(tp)
-                        else:
-                            if n_guid not in tp.provider:
+                        try:
+                            tp, istopic = _get_topic_from(topic_name, topic_type)
+                            # add tp.qos_profil
+                            if istopic:
                                 Log.debug(
-                                    f"{self.__class__.__name__}:      add provider {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
-                                tp.provider.append(n_guid)
-                            ros_node.services.append(tp)
+                                    f"{self.__class__.__name__}:      add subscriber {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
+                                tp.subscriber.append(n_guid)
+                                ros_node.subscribers.append(tp)
+                            else:
+                                if n_guid not in tp.provider:
+                                    Log.debug(
+                                        f"{self.__class__.__name__}:      add provider {n_guid} {sub_info.node_namespace}/{sub_info.node_name}")
+                                    tp.provider.append(n_guid)
+                                ros_node.services.append(tp)
+                        except Exception as err:
+                            print(err)
                     if isnew:
                         result.append(ros_node)
         return result

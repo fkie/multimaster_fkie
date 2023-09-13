@@ -39,9 +39,7 @@ if ( ament_cmake_FOUND )
     # find dependencies
     find_package(rclcpp REQUIRED)
     find_package(rclcpp_lifecycle REQUIRED)
-    find_package(rmw_dds_common REQUIRED)
     find_package(rmw_fastrtps_cpp REQUIRED)
-    find_package(rosidl_typesupport_fastrtps_cpp REQUIRED)
     find_package(rmw_fastrtps_shared_cpp REQUIRED)
     find_package(lifecycle_msgs REQUIRED)
 

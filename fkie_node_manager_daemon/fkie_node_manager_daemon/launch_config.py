@@ -184,6 +184,8 @@ class LaunchNodeWrapper(LaunchNodeInfo):
 
     def _get_launch_prefix(self) -> Union[str, None]:
         prefix = getattr(self._entity, 'prefix', None)
+        if not prefix:
+            prefix = getattr(self._entity, 'launch-prefix', None)
         if prefix:
             prefix = launch.utilities.perform_substitutions(
                 self._launch_context, self._entity.prefix)
