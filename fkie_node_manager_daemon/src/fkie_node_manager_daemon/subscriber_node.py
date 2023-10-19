@@ -108,6 +108,7 @@ class SubscriberNode(CrossbarBaseSession):
         self._crossbar_port = parsed_args.crossbar_port
         self._crossbar_realm = parsed_args.crossbar_realm
 
+        self._send_ts = 0
         self._latched_messages = []
         # stats parameter
         self._last_received_ts = 0
@@ -189,8 +190,15 @@ class SubscriberNode(CrossbarBaseSession):
                 data, cls=MsgEncoder, **{"no_arr": self._no_arr, "no_str": self._no_str}))
         event.count = self._count_received
         self._calc_stats(data, event)
-        self.publish_to(
-            f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
+        timeouted = self._hz == 0
+        if self._hz != 0:
+            now = time.time()
+            if now - self._send_ts > 1.0 / self._hz:
+                self._send_ts = now
+                timeouted = True
+        if event.latched or timeouted:
+            self.publish_to(
+                f"ros.subscriber.event.{self._topic.replace('/', '_')}", event, resend_after_connect=self._latched)
 
     def _get_message_size(self, msg):
         buff = None
