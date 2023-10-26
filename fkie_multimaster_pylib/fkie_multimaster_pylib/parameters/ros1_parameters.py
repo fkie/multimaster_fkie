@@ -44,7 +44,7 @@ class ROS1Parameters:
         for node_name in nodes:
             for param_name in param_name_list:
                 # discard parameters that does not belong to the node
-                if node_name not in param_name:
+                if f'{node_name}/' not in param_name:
                     continue
                 param_value = rospy.get_param(param_name)
                 param_list.append(RosParameter(param_name, param_value))
