@@ -105,7 +105,7 @@ def interpret_path(path: str, pwd: str = '.') -> str:
              Otherwise the parameter itself normalized by :py:func:`os.path.normpath` will be returned.
     :rtype: str
     '''
-    result = path.strip()
+    result = path.strip().replace("$(dirname)", pwd)
     groups = _find_include_tuple(path)
     full_path_not_exists = ''
     for pkg_name, path_suffix in groups.items():
@@ -149,7 +149,7 @@ def replace_paths(text: str, pwd: str = '.') -> str:
     '''
     result = text
     path_pattern = re.compile(
-        r"(\$\(find-pkg-share .*?\)/)|(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
+        r"(\$\(dirname\)/)|(\$\(find-pkg-share .*?\)/)|(\$\(find .*?\)/)|(pkg:\/\/.*?/)|(package:\/\/.*?/)")
     for groups in path_pattern.finditer(text):
         for index in range(groups.lastindex):
             path = groups.groups()[index]
@@ -191,7 +191,8 @@ def get_internal_args(content: str, path: str = '', only_default: bool = False) 
                         resolve_args_intern[aname] = aval
     except Exception as err:
         import traceback
-        Log.debug(f"error while get_internal_args for {path}: {traceback.format_exc()}")
+        Log.debug(
+            f"error while get_internal_args for {path}: {traceback.format_exc()}")
 
     return resolve_args_intern
 
@@ -247,17 +248,21 @@ def replace_arg(content: str, resolve_args: Dict[str, str]) -> str:
         re_if = re.compile(r"arg\(\'(?P<name>.*?)\'\)")
         for arg in re_if.findall(content):
             if arg in resolve_args:
-                result = result.replace("arg('%s')" % arg, f"'{resolve_args[arg]}'")
-        re_items = '|'.join([f"({item})" for item in list(resolve_args.keys())])
+                result = result.replace("arg('%s')" %
+                                        arg, f"'{resolve_args[arg]}'")
+        re_items = '|'.join(
+            [f"({item})" for item in list(resolve_args.keys())])
         re_if = re.compile(re_items)
         for matches in re_if.findall(content):
             for arg in matches:
                 if arg:
                     if arg in resolve_args:
-                        result = result.replace("%s" % arg, f"\'{resolve_args[arg]}\'")
+                        result = result.replace(
+                            "%s" % arg, f"\'{resolve_args[arg]}\'")
         result = result.replace('$(eval', '').rstrip(')')
         result = 'true' if eval(result) else 'false'
     return result
+
 
 def __get_include_args(content: str, resolve_args: Dict[str, str]) -> List[str]:
     included_files = []
@@ -306,7 +311,8 @@ def find_included_files(string: str,
                         search_in_ext: List[str] = SEARCH_IN_EXT,
                         resolve_args: Dict[str, str] = {},
                         unique_files: List[str] = [],
-                        rec_depth: int = 0) -> List[IncludedFile]:
+                        rec_depth: int = 0,
+                        filename: str = None) -> List[IncludedFile]:
     '''
     If the `string` parameter is a valid file the content of this file will be parsed.
     In other case the `string` is parsed to find included files.
@@ -324,6 +330,7 @@ def find_included_files(string: str,
     re_filelist = EMPTY_PATTERN
     pattern = ["\s*(\$\(find-pkg-share .*?\)[^\n\t\"]*)",
                "\s*(\$\(find .*?\)[^\n\t\"]*)",
+               "\s*(\$\(dirname\)[^\n\t\"]*)",
                "\s*(pkg:\/\/.*?/[^\n\t\"]*)",
                "\s*(package:\/\/.*?/[^\n\t\"]*)",
                "textfile=\"(.*?)\n\t\"",
@@ -347,6 +354,11 @@ def find_included_files(string: str,
                 content = content[:match.start()] + '\n' * \
                     count_nl + content[match.end():]
                 match = comment_pattern.search(content, match.start())
+    # use dirname if given filename if valid
+    if filename is not None:
+       pwd = os.path.dirname(filename)
+       if '://' in pwd:
+           pwd = re.sub(r"^.*://[^/]*", "", pwd)
     inc_files_forward_args = []
     # replace the arguments and detect arguments for include-statements
     resolve_args_intern = {}
@@ -364,45 +376,45 @@ def find_included_files(string: str,
         if groups.lastindex is None:
             continue
         for index in range(groups.lastindex):
-            filename = remove_after_space(groups.groups()[index])
-            rawname = filename
-            if filename:
+            fname = remove_after_space(groups.groups()[index])
+            rawname = fname
+            if fname:
                 try:
                     forward_args = {}
-                    if inc_files_forward_args and inc_files_forward_args[0][0] == filename:
+                    if inc_files_forward_args and inc_files_forward_args[0][0] == fname:
                         forward_args = inc_files_forward_args[0][1]
                         inc_files_forward_args.pop(0)
                     resolve_args_all = dict(resolve_args)
                     resolve_args_all.update(forward_args)
                     try:
                         # try to resolve path
-                        filename = replace_arg(filename, resolve_args_all)
-                        filename = replace_arg(filename, resolve_args_intern)
-                        filename = interpret_path(filename, pwd)
+                        fname = replace_arg(fname, resolve_args_all)
+                        fname = replace_arg(fname, resolve_args_intern)
+                        fname = interpret_path(fname, pwd)
                     except Exception as err:
                         Log.warn(f"Interpret file failed: {err}")
-                    if os.path.isdir(filename):
-                        filename = ''
-                    exists = os.path.isfile(filename)
-                    if filename:
+                    if os.path.isdir(fname):
+                        fname = ''
+                    exists = os.path.isfile(fname)
+                    if fname:
                         publish = not unique or (
-                            unique and filename not in my_unique_files)
+                            unique and fname not in my_unique_files)
                         if publish:
-                            my_unique_files.append(filename)
+                            my_unique_files.append(fname)
                             # transform found position to line number
                             content_tmp = content
                             if sys.version_info < (3, 0):
                                 content_tmp = content.decode('utf-8')
                             position = content_tmp.count(
                                 "\n", 0, groups.start()) + 1
-                            yield IncludedFile(string, position, filename, exists, rawname, rec_depth, forward_args)
+                            yield IncludedFile(string, position, fname, exists, rawname, rec_depth, forward_args)
                     # for recursive search
                     if exists:
                         if recursive:
                             try:
-                                ext = os.path.splitext(filename)
+                                ext = os.path.splitext(fname)
                                 if ext[1] in search_in_ext:
-                                    for res_item in find_included_files(filename, recursive, False, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1):
+                                    for res_item in find_included_files(fname, recursive, False, search_in_ext, resolve_args_all, rec_depth=rec_depth + 1, filename=fname):
                                         publish = not unique or (
                                             unique and res_item.inc_path not in my_unique_files)
                                         if publish:
@@ -411,7 +423,7 @@ def find_included_files(string: str,
                                             yield res_item
                             except Exception as e:
                                 Log.warn(
-                                    f"Error while recursive search for include pattern in {filename}: {e}")
+                                    f"Error while recursive search for include pattern in {fname}: {e}")
                 except Exception as e:
                     Log.warn(
                         f"Error while parse {content_info} for include pattern: {e}")
