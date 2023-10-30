@@ -1435,10 +1435,6 @@ class MasterInfo(object):
                     status = 'not available'
                 ros_node.status = status
 
-                # Include namespace in name
-                ros_node.name = names.ns_join(
-                    ros_node.namespace, ros_node.name)
-
                 # Add active screens for a given node
                 screens = screen.get_active_screens(name)
                 for session_name, _ in screens.items():
