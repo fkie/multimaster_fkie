@@ -211,10 +211,20 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
     node_params = ' '.join(''.join(["'", a, "'"]) if a.find(
         ' ') > -1 else a for a in args)
 
+    # set the masteruri to launch with other one master
+    new_env = dict(os.environ)
+    new_env['ROS_MASTER_URI'] = masteruri
+    ros_hostname = nmdhost.get_ros_hostname(masteruri)
+    if ros_hostname:
+        addr = socket.gethostbyname(ros_hostname)
+        if addr in set(ip for ip in get_local_addresses()):
+            new_env['ROS_HOSTNAME'] = ros_hostname
+
     # get namespace and basename from name
+    namer = name.replace('{HOST}', ros_hostname)
     arg_ns = names.namespace(
-        name, with_sep_suffix=False, raise_err_on_none=False)
-    arg_name = names.basename(name)
+        namer, with_sep_suffix=False, raise_err_on_none=False)
+    arg_name = names.basename(namer)
 
     arg_name_list = []
     if set_name:
@@ -233,14 +243,6 @@ def run_ROS1_node(package: str, executable: str, name: str, args: List[str], pre
         elif arg_cwd == 'node':
             cwd = os.path.dirname(cmd[0])
 
-    # set the masteruri to launch with other one master
-    new_env = dict(os.environ)
-    new_env['ROS_MASTER_URI'] = masteruri
-    ros_hostname = nmdhost.get_ros_hostname(masteruri)
-    if ros_hostname:
-        addr = socket.gethostbyname(ros_hostname)
-        if addr in set(ip for ip in get_local_addresses()):
-            new_env['ROS_HOSTNAME'] = ros_hostname
     if loglevel:
         new_env['ROSCONSOLE_CONFIG_FILE'] = rosconsole_cfg_file(package)
     subprocess.Popen(shlex.split(str(' '.join(cmd_args))),
@@ -256,9 +258,10 @@ def run_ROS2_node(package: str, executable: str, name: str, args: List[str], pre
     '''
 
     # get namespace and basename from name
+    namer = name.replace('{HOST}', socket.gethostname())
     arg_ns = names.namespace(
-        name, with_sep_suffix=False, raise_err_on_none=False)
-    arg_name = names.basename(name)
+        namer, with_sep_suffix=False, raise_err_on_none=False)
+    arg_name = names.basename(namer)
 
     arg_name_list = f'--ros-args -r __name:={arg_name} -r __ns:={arg_ns}' if set_name else ''
     cmd = f'ros2 run {package} {executable} {arg_name_list}'
