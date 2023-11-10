@@ -27,6 +27,7 @@ import sys
 import threading
 import time
 import traceback
+from importlib import import_module
 from types import SimpleNamespace
 from typing import Any
 from typing import Callable
@@ -152,9 +153,9 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         Log.set_ros2_logging_node(self.rosnode)
 
         Log.info(f"start subscriber for {self._topic}[{self._message_type}]")
-        splitted_type = self._message_type.replace('/', '.').split('.')
+        splitted_type = self._message_type.replace('/', '.').rsplit('.', 1)
         splitted_type.reverse()
-        module = __import__(splitted_type.pop())
+        module = import_module(splitted_type.pop())
         sub_class = getattr(module, splitted_type.pop())
         while splitted_type:
             sub_class = getattr(sub_class, splitted_type.pop())
@@ -199,7 +200,7 @@ class RosSubscriberLauncher(CrossbarBaseSession):
         self.sub.destroy()
         print('shutdown rclpy')
         self.executor.shutdown()
-        rclpy.shutdown()
+        # rclpy.shutdown()
         print('bye!')
 
     def _init_arg_parser(self) -> argparse.ArgumentParser:

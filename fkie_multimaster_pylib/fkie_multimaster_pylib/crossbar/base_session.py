@@ -136,12 +136,6 @@ class CrossbarBaseSession(ApplicationSession):
     def onConnect(self):
         Log.info(f"{self.__class__.__name__}: autobahn connected")
         self.join(self.config.realm)
-        for (topic, handler) in self._crossbar_subscriptions:
-            asyncio.run_coroutine_threadsafe(
-                self.subcribe_async(topic, handler), self.crossbar_loop)
-        for topic, msg in self._crossbar_failed_publications.items():
-            self.publish_to(topic, msg)
-        self._crossbar_failed_publications.clear()
 
     def onDisconnect(self):
         Log.info(f"{self.__class__.__name__}: autobahn disconnected")
@@ -165,6 +159,12 @@ class CrossbarBaseSession(ApplicationSession):
             for _session_id, reg in self._registrations.items():
                 Log.info(f"{self.__class__.__name__}:   {reg.procedure}")
         self.crossbar_registered = True
+        for (topic, handler) in self._crossbar_subscriptions:
+            asyncio.run_coroutine_threadsafe(
+                self.subcribe_async(topic, handler), self.crossbar_loop)
+        for topic, msg in self._crossbar_failed_publications.items():
+            self.publish_to(topic, msg)
+        self._crossbar_failed_publications.clear()
 
     async def crossbar_connect_async(self):
         self.crossbar_connected = False
