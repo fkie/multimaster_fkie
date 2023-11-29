@@ -367,3 +367,16 @@ class SubscriberEvent:
         self.size = size
         self.size_min = size_min
         self.size_max = size_max
+
+class DaemonVersion:
+    '''
+    Version of the daemon node.
+    :param str version: version string.
+    :param str date: Date string.
+    '''
+
+    def __init__(self,
+                 version: str,
+                 date: str) -> None:
+        self.version = version
+        self.date = date

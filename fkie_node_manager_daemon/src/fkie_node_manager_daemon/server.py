@@ -94,6 +94,8 @@ class GrpcServer:
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.screen_servicer = ScreenServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
+        self.version_servicer = VersionServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
 
         rospy.Service('~start_launch', LoadLaunch,
                       self._rosservice_start_launch)
@@ -102,6 +104,7 @@ class GrpcServer:
         rospy.Service('~list_nodes', ListNodes, self._rosservice_list_nodes)
 
     def __del__(self):
+        self.version_servicer = None
         self.launch_servicer = None
         self.monitor_servicer = None
         self.settings_servicer = None
@@ -151,6 +154,8 @@ class GrpcServer:
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.screen_servicer = ScreenServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
+        self.version_servicer = VersionServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, test_env=self._test_env)
         self.start(self._launch_url)
 
     def start(self, url='[::]:12311'):
@@ -184,7 +189,7 @@ class GrpcServer:
             stgrpc.add_SettingsServiceServicer_to_server(
                 self.settings_servicer, self.server)
             vgrpc.add_VersionServiceServicer_to_server(
-                VersionServicer(), self.server)
+                self.version_servicer, self.server)
             self.server.start()
             Log.info("Server at '%s' started!" % url)
         #Log.info(f"Connect to crossbar server @ ws://localhost:{self.crossbar_port}/ws, realm: {self.crossbar_realm}")
@@ -207,6 +212,7 @@ class GrpcServer:
             registration_finished &= self.screen_servicer.crossbar_registered
             registration_finished &= self.file_servicer.crossbar_registered
             registration_finished &= self.parameter_servicer.crossbar_registered
+            registration_finished &= self.version_servicer.crossbar_registered
             time.sleep(0.5)
         self._crossbar_send_status(True)
 
@@ -219,6 +225,7 @@ class GrpcServer:
         self._crossbar_send_status(False)
         shutdown_task = self.crossbar_loop.create_task(
             self.crossbar_loop.shutdown_asyncgens())
+        self.version_servicer.stop()
         self.launch_servicer.stop()
         self.monitor_servicer.stop()
         self.parameter_servicer.shutdown()

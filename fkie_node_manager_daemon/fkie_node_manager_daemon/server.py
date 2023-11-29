@@ -47,6 +47,7 @@ from fkie_node_manager_daemon.monitor_servicer import MonitorServicer
 from fkie_node_manager_daemon.parameter_servicer import ParameterServicer
 from fkie_node_manager_daemon.rosstate_servicer import RosStateServicer
 from fkie_node_manager_daemon.screen_servicer import ScreenServicer
+from fkie_node_manager_daemon.version_servicer import VersionServicer
 
 
 class Server:
@@ -74,6 +75,8 @@ class Server:
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
         self.launch_servicer = LaunchServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port, ros_domain_id=self.ros_domain_id)
+        self.version_servicer = VersionServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
 
         rosnode.create_service(LoadLaunch, '~/start_launch',
                                self._rosservice_start_launch)
@@ -93,6 +96,7 @@ class Server:
 
     def __del__(self):
         self.crossbar_loop.stop()
+        self.version_servicer = None
         self.launch_servicer = None
         self.monitor_servicer = None
         self.screen_servicer = None
@@ -131,6 +135,7 @@ class Server:
             registration_finished &= self.screen_servicer.crossbar_registered
             registration_finished &= self.rosstate_servicer.crossbar_registered
             registration_finished &= self.parameter_servicer.crossbar_registered
+            registration_finished &= self.version_servicer.crossbar_registered
             time.sleep(0.5)
         self.publish_daemon_state(True)
         self._crossbar_send_status(True)
@@ -154,6 +159,7 @@ class Server:
         WAIT_TIMEOUT = 3
         self.publish_daemon_state(False)
         self._crossbar_send_status(False)
+        self.version_servicer.stop()
         self.screen_servicer.stop()
         self.launch_servicer.stop()
         self.file_servicer.stop()

@@ -16,23 +16,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import fkie_node_manager_daemon.grpc_proto.version_pb2_grpc as vgrpc
-import fkie_node_manager_daemon.grpc_proto.version_pb2 as vmsg
+import asyncio
+from autobahn import wamp
+import json
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.crossbar.runtime_interface import DaemonVersion
+from fkie_multimaster_pylib.logging.logging import Log
 import fkie_node_manager_daemon as nmd
 from . import version
 
 
-class VersionServicer(vgrpc.VersionServiceServicer):
+class VersionServicer(CrossbarBaseSession):
 
-    def __init__(self):
-        nmd.ros_node.get_logger().info("Create version servicer")
-        vgrpc.VersionServiceServicer.__init__(self)
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
+        Log.info("Create ROS2 version servicer")
+        CrossbarBaseSession.__init__(self, loop, realm, port)
         self._version, self._date = version.detect_version(
             nmd.ros_node, 'fkie_node_manager_daemon')
 
-    def GetVersion(self, request, context):
-        reply = vmsg.Version()
-        reply.version = self._version
-        reply.date = self._date
-        return reply
+    @wamp.register('ros.daemon.get_version')
+    def get_version(self) -> DaemonVersion:
+        Log.info(f"{self.__class__.__name__}: get daemon version ")
+        reply = DaemonVersion(f"{self._version}", f"{self._date}")
+        return json.dumps(reply, cls=SelfEncoder)

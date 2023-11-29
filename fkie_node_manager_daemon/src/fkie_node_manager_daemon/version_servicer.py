@@ -30,18 +30,24 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
+import asyncio
+from autobahn import wamp
+import json
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.crossbar.runtime_interface import DaemonVersion
 import fkie_multimaster_msgs.grpc.version_pb2_grpc as vgrpc
 import fkie_multimaster_msgs.grpc.version_pb2 as vmsg
 from . import version
 from fkie_multimaster_pylib.logging.logging import Log
 
 
-class VersionServicer(vgrpc.VersionServiceServicer):
+class VersionServicer(vgrpc.VersionServiceServicer, CrossbarBaseSession):
 
-    def __init__(self):
+    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
         Log.info("Create version servicer")
         vgrpc.VersionServiceServicer.__init__(self)
+        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._version, self._date = version.detect_version(
             'fkie_node_manager_daemon')
 
@@ -50,3 +56,9 @@ class VersionServicer(vgrpc.VersionServiceServicer):
         reply.version = self._version
         reply.date = self._date
         return reply
+
+    @wamp.register('ros.daemon.get_version')
+    def get_version(self) -> DaemonVersion:
+        Log.info(f"{self.__class__.__name__}: get daemon version ")
+        reply = DaemonVersion(f"{self._version}", f"{self._date}")
+        return json.dumps(reply, cls=SelfEncoder)
