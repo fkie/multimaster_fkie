@@ -28,14 +28,19 @@ from . import version
 
 
 class VersionServicer(CrossbarBaseSession):
-
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911):
+    def __init__(
+        self, loop: asyncio.AbstractEventLoop, realm: str = "ros", port: int = 11911
+    ):
         Log.info("Create ROS2 version servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
         self._version, self._date = version.detect_version(
-            nmd.ros_node, 'fkie_node_manager_daemon')
+            nmd.ros_node, "fkie_node_manager_daemon"
+        )
 
-    @wamp.register('ros.daemon.get_version')
+    def stop(self):
+        self.shutdown()
+
+    @wamp.register("ros.daemon.get_version")
     def get_version(self) -> DaemonVersion:
         Log.info(f"{self.__class__.__name__}: get daemon version ")
         reply = DaemonVersion(f"{self._version}", f"{self._date}")

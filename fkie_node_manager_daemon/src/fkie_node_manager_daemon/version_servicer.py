@@ -43,13 +43,20 @@ from fkie_multimaster_pylib.logging.logging import Log
 
 
 class VersionServicer(vgrpc.VersionServiceServicer, CrossbarBaseSession):
-
-    def __init__(self, loop: asyncio.AbstractEventLoop, realm: str = 'ros', port: int = 11911, test_env=False):
+    def __init__(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        realm: str = "ros",
+        port: int = 11911,
+        test_env=False,
+    ):
         Log.info("Create version servicer")
         vgrpc.VersionServiceServicer.__init__(self)
         CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
-        self._version, self._date = version.detect_version(
-            'fkie_node_manager_daemon')
+        self._version, self._date = version.detect_version("fkie_node_manager_daemon")
+
+    def stop(self):
+        self.shutdown()
 
     def GetVersion(self, request, context):
         reply = vmsg.Version()
@@ -57,7 +64,7 @@ class VersionServicer(vgrpc.VersionServiceServicer, CrossbarBaseSession):
         reply.date = self._date
         return reply
 
-    @wamp.register('ros.daemon.get_version')
+    @wamp.register("ros.daemon.get_version")
     def get_version(self) -> DaemonVersion:
         Log.info(f"{self.__class__.__name__}: get daemon version ")
         reply = DaemonVersion(f"{self._version}", f"{self._date}")

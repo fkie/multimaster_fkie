@@ -501,3 +501,6 @@ class DaemonVersion:
     def __init__(self, version: str, date: str) -> None:
         self.version = version
         self.date = date
+
+    def __repr__(self) -> str:
+        return f"DaemonVersion<version: {self.version}, date: {self.date}>"
