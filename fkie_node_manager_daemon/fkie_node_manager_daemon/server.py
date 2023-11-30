@@ -28,7 +28,12 @@ import asyncio
 import json
 from types import SimpleNamespace
 
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSHistoryPolicy, QoSReliabilityPolicy
+from rclpy.qos import (
+    QoSProfile,
+    QoSDurabilityPolicy,
+    QoSHistoryPolicy,
+    QoSReliabilityPolicy,
+)
 from fkie_multimaster_msgs.msg import Endpoint
 from fkie_multimaster_msgs.srv import ListNodes
 from fkie_multimaster_msgs.srv import LoadLaunch
@@ -51,7 +56,6 @@ from fkie_node_manager_daemon.version_servicer import VersionServicer
 
 
 class Server:
-
     def __init__(self, rosnode, *, default_domain_id=-1):
         self.rosnode = rosnode
         self.crossbar_port = server.port()
@@ -59,40 +63,61 @@ class Server:
         self.crossbar_loop = asyncio.get_event_loop()
         self.ros_domain_id = default_domain_id
         if self.ros_domain_id > 0:
-            rosnode.get_logger().warn('default ROS_DOMAIN_ID=%d overwritten to %d' %
-                                      (0, self.ros_domain_id))
+            rosnode.get_logger().warn(
+                "default ROS_DOMAIN_ID=%d overwritten to %d" % (0, self.ros_domain_id)
+            )
         self.name = get_host_name()
-        self.uri = ''
-        # self.monitor_servicer = MonitorServicer(
-        #     self.settings_servicer.settings)
+        self.uri = ""
+        self.monitor_servicer = MonitorServicer(
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
+        )
         self.file_servicer = FileServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
+        )
         self.screen_servicer = ScreenServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
+        )
         self.rosstate_servicer = RosStateServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
+        )
         self.parameter_servicer = ParameterServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
+        )
         self.launch_servicer = LaunchServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port, ros_domain_id=self.ros_domain_id)
+            self.crossbar_loop,
+            self.crossbar_realm,
+            self.crossbar_port,
+            ros_domain_id=self.ros_domain_id,
+        )
         self.version_servicer = VersionServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port)
+            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
+        )
 
-        rosnode.create_service(LoadLaunch, '~/start_launch',
-                               self._rosservice_start_launch)
-        rosnode.create_service(LoadLaunch, '~/load_launch',
-                               self._rosservice_load_launch)
-        rosnode.create_service(Task, '~/run', self._rosservice_start_node)
-        qos_profile = QoSProfile(depth=10,
-                                 durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
-                                 # history=QoSHistoryPolicy.KEEP_LAST,
-                                 reliability=QoSReliabilityPolicy.RELIABLE)
+        rosnode.create_service(
+            LoadLaunch, "~/start_launch", self._rosservice_start_launch
+        )
+        rosnode.create_service(
+            LoadLaunch, "~/load_launch", self._rosservice_load_launch
+        )
+        rosnode.create_service(Task, "~/run", self._rosservice_start_node)
+        qos_profile = QoSProfile(
+            depth=10,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            # history=QoSHistoryPolicy.KEEP_LAST,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+        )
         self.pub_endpoint = rosnode.create_publisher(
-            Endpoint, 'daemons', qos_profile=qos_profile)
-        self.rosname = ns_join(
-            nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
-        self._endpoint_msg = Endpoint(name=self.name, uri=self.rosstate_servicer.uri, ros_name=self.rosname,
-                                      ros_domain_id=self.ros_domain_id, on_shutdown=False, pid=os.getpid())
+            Endpoint, "daemons", qos_profile=qos_profile
+        )
+        self.rosname = ns_join(nmd.ros_node.get_namespace(), nmd.ros_node.get_name())
+        self._endpoint_msg = Endpoint(
+            name=self.name,
+            uri=self.rosstate_servicer.uri,
+            ros_name=self.rosname,
+            ros_domain_id=self.ros_domain_id,
+            on_shutdown=False,
+            pid=os.getpid(),
+        )
 
     def __del__(self):
         self.crossbar_loop.stop()
@@ -103,7 +128,7 @@ class Server:
         self.rosstate_servicer = None
         self.parameter_servicer = None
 
-    def start(self, uri: Text, displayed_name: Text = '') -> bool:
+    def start(self, uri: Text, displayed_name: Text = "") -> bool:
         if displayed_name:
             self.name = displayed_name
         nmd.ros_node.get_logger().info(f"Connect to crossbar server on {uri}")
@@ -114,10 +139,12 @@ class Server:
             self.name = f"{self.name}_{port}"
         self._endpoint_msg.name = self.name
         self._crossbarThread = threading.Thread(
-            target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True)
+            target=self.run_crossbar_forever, args=(self.crossbar_loop,), daemon=True
+        )
         self._crossbarThread.start()
         self._crossbarNotificationThread = threading.Thread(
-            target=self._crossbar_notify_if_regsitered, daemon=True)
+            target=self._crossbar_notify_if_regsitered, daemon=True
+        )
         self._crossbarNotificationThread.start()
         self.rosstate_servicer.start()
         self.screen_servicer.start()
@@ -142,8 +169,7 @@ class Server:
 
     def _crossbar_send_status(self, status: bool):
         # try to send notification to crossbar subscribers
-        self.rosstate_servicer.publish_to(
-            'ros.daemon.ready', {'status': status})
+        self.rosstate_servicer.publish_to("ros.daemon.ready", {"status": status})
 
     def publish_daemon_state(self, is_running: bool = True):
         self._endpoint_msg.on_shutdown = not is_running
@@ -153,6 +179,7 @@ class Server:
             pass
             return
             import traceback
+
             print(traceback.format_exc())
 
     def shutdown(self):
@@ -168,7 +195,8 @@ class Server:
         self.screen_servicer.stop()
         self.parameter_servicer.stop()
         shutdown_task = self.crossbar_loop.create_task(
-            self.crossbar_loop.shutdown_asyncgens())
+            self.crossbar_loop.shutdown_asyncgens()
+        )
         self.rosnode.destroy_publisher(self.pub_endpoint)
         sleep_time = 0.5
         while not shutdown_task.done() or self.parameter_servicer.crossbar_connected:
@@ -179,55 +207,60 @@ class Server:
 
     def load_launch_file(self, path, autostart=False):
         pass
-        #self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
+        # self.launch_servicer.load_launch_file(xml.interpret_path(path), autostart)
 
     def _rosservice_start_launch(self, request, response):
-        nmd.ros_node.get_logger().info("Service request to load and start %s" % request.path)
-        params = {"ros_package": '',
-                  "launch": '',
-                  "path": xml.interpret_path(request.path),
-                  "args": [],
-                  "force_first_file": False,
-                  "request_args": [],
-                  "masteruri": '',
-                  "host": ''
-                  }
+        nmd.ros_node.get_logger().info(
+            "Service request to load and start %s" % request.path
+        )
+        params = {
+            "ros_package": "",
+            "launch": "",
+            "path": xml.interpret_path(request.path),
+            "args": [],
+            "force_first_file": False,
+            "request_args": [],
+            "masteruri": "",
+            "host": "",
+        }
         result = self.launch_servicer.load_launch(params, return_as_json=False)
-        if result.status.code != 'OK':
+        if result.status.code != "OK":
             raise Exception(result.status.msg)
-        #self.launch_servicer.load_launch_file(xml.interpret_path(request.path), True)
+        # self.launch_servicer.load_launch_file(xml.interpret_path(request.path), True)
         return response
 
     def _rosservice_load_launch(self, request, response):
         nmd.ros_node.get_logger().info("Service request to load %s" % request.path)
-        params = {"ros_package": '',
-                  "launch": '',
-                  "path": xml.interpret_path(request.path),
-                  "args": [],
-                  "force_first_file": False,
-                  "request_args": [],
-                  "masteruri": '',
-                  "host": ''
-                  }
+        params = {
+            "ros_package": "",
+            "launch": "",
+            "path": xml.interpret_path(request.path),
+            "args": [],
+            "force_first_file": False,
+            "request_args": [],
+            "masteruri": "",
+            "host": "",
+        }
         result = self.launch_servicer.load_launch(params, return_as_json=False)
-        if result.status.code != 'OK':
+        if result.status.code != "OK":
             raise Exception(result.status.msg)
         return response
 
     def _rosservice_start_node(self, request, response):
-        '''
+        """
         Callback for the ROS service to start a node.
-        '''
-        params = {"name": request.node,
-                  "opt_binary": '',
-                  "opt_launch": '',
-                  "loglevel": '',
-                  "logformat": '',
-                  "masteruri": '',
-                  "reload_global_param": False,
-                  "cmd_prefix": ''
-                  }
+        """
+        params = {
+            "name": request.node,
+            "opt_binary": "",
+            "opt_launch": "",
+            "loglevel": "",
+            "logformat": "",
+            "masteruri": "",
+            "reload_global_param": False,
+            "cmd_prefix": "",
+        }
         result = self.launch_servicer.start_node(params, return_as_json=False)
-        if result.status.code != 'OK':
+        if result.status.code != "OK":
             raise Exception(result.status.msg)
         return response

@@ -17,60 +17,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
-import os
-import signal
-import subprocess
-import time
-from fkie_node_manager_daemon.monitor import Service  # , grpc_msg
-import fkie_node_manager_daemon as nmd
+import asyncio
+from autobahn import wamp
+import json
+
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemEnvironment
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemInformation
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
+from fkie_multimaster_pylib.logging.logging import Log
 
 
-class MonitorServicer():
+class MonitorServicer(CrossbarBaseSession):
+    def __init__(
+        self, loop: asyncio.AbstractEventLoop, realm: str = "ros", port: int = 11911
+    ):
+        Log.info("Create monitor servicer")
+        CrossbarBaseSession.__init__(self, loop, realm, port)
 
-    def __init__(self, settings):
-        nmd.ros_node.get_logger().info("Create monitor servicer")
-        # mgrpc.MonitorServiceServicer.__init__(self)
-        self._monitor = Service(settings)
+    @wamp.register("ros.provider.get_system_info")
+    def getSystemInfo(self) -> SystemInformation:
+        Log.info("crossbar: get system info")
+        return json.dumps(SystemInformation(), cls=SelfEncoder)
 
-    def stop(self):
-        self._monitor.stop()
-
-    def level2bytes(self, levels: list):
-        return [int.to_bytes(lvl, length=1, byteorder='big') for lvl in levels]
-
-    def GetSystemDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_system_diagnostics(
-            self.level2bytes(request.level), request.timestamp)
-        # return grpc_msg(rosmsg)
-
-    def GetSystemWarnings(self, request, context):
-        rosmsg = self._monitor.get_system_diagnostics(2, 0)
-        # return grpc_msg(rosmsg)
-
-    def GetDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_diagnostics(
-            self.level2bytes(request.level), request.timestamp)
-        # return grpc_msg(rosmsg)
-
-    def GetWarnings(self, request, context):
-        rosmsg = self._monitor.get_diagnostics(2, 0)
-        # return grpc_msg(rosmsg)
-
-    def KillProcess(self, request, context):
-        os.kill(request.pid, signal.SIGKILL)
-        #reply = mmsg.Empty()
-        # return reply
-
-    def SetTime(self, request, context):
-        dtime = datetime.fromtimestamp(request.timestamp)
-        args = ['sudo', '-n', '/bin/date', '-s', '%s' % dtime]
-        nmd.ros_node.get_logger().info('Set time: %s' % args)
-        subp = subprocess.Popen(args, stderr=subprocess.PIPE)
-        result_err = ''
-        if subp.stderr is not None:
-            result_err = subp.stderr.read()
-            raise Exception(result_err)
-        #reply = mmsg.Timestamp()
-        #reply.timestamp = time.time()
-        # return reply
+    @wamp.register("ros.provider.get_system_env")
+    def getSystemEnv(self) -> SystemEnvironment:
+        Log.info("crossbar: get system env")
+        return json.dumps(SystemEnvironment(), cls=SelfEncoder)

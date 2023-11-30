@@ -34,25 +34,39 @@
 import getpass
 import os
 import signal
+import json
+import asyncio
+from autobahn import wamp
+
 from fkie_node_manager_daemon.monitor import Service, grpc_msg
 import fkie_multimaster_msgs.grpc.monitor_pb2_grpc as mgrpc
 import fkie_multimaster_msgs.grpc.monitor_pb2 as mmsg
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemEnvironment
+from fkie_multimaster_pylib.crossbar.runtime_interface import SystemInformation
+from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
+from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
 from fkie_multimaster_pylib.logging.logging import Log
 
 
-class MonitorServicer(mgrpc.MonitorServiceServicer):
-
-    def __init__(self, settings):
+class MonitorServicer(mgrpc.MonitorServiceServicer, CrossbarBaseSession):
+    def __init__(
+        self,
+        settings,
+        loop: asyncio.AbstractEventLoop,
+        realm: str = "ros",
+        port: int = 11911,
+        test_env=False,
+    ):
         Log.info("Create monitor servicer")
         mgrpc.MonitorServiceServicer.__init__(self)
+        CrossbarBaseSession.__init__(self, loop, realm, port, test_env=test_env)
         self._monitor = Service(settings)
 
     def stop(self):
         self._monitor.stop()
 
     def GetSystemDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_system_diagnostics(
-            request.level, request.timestamp)
+        rosmsg = self._monitor.get_system_diagnostics(request.level, request.timestamp)
         return grpc_msg(rosmsg)
 
     def GetSystemWarnings(self, request, context):
@@ -60,8 +74,7 @@ class MonitorServicer(mgrpc.MonitorServiceServicer):
         return grpc_msg(rosmsg)
 
     def GetDiagnostics(self, request, context):
-        rosmsg = self._monitor.get_diagnostics(
-            request.level, request.timestamp)
+        rosmsg = self._monitor.get_diagnostics(request.level, request.timestamp)
         return grpc_msg(rosmsg)
 
     def GetWarnings(self, request, context):
@@ -77,3 +90,13 @@ class MonitorServicer(mgrpc.MonitorServiceServicer):
         reply = mmsg.User()
         reply.user = getpass.getuser()
         return reply
+
+    @wamp.register("ros.provider.get_system_info")
+    def getSystemInfo(self) -> SystemInformation:
+        Log.info("crossbar: get system info")
+        return json.dumps(SystemInformation(), cls=SelfEncoder)
+
+    @wamp.register("ros.provider.get_system_env")
+    def getSystemEnv(self) -> SystemEnvironment:
+        Log.info("crossbar: get system env")
+        return json.dumps(SystemEnvironment(), cls=SelfEncoder)
