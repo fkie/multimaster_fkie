@@ -35,8 +35,8 @@ def detect_version(rosnode, package):
     if VERSION != 'unknown':
         return VERSION, DATE
     try:
-        VERSION = pkg_version.version
-        DATE = pkg_version.date
+        VERSION = pkg_version.version if (hasattr(pkg_version.version, "decode")) else pkg_version.version
+        DATE = pkg_version.date if (hasattr(pkg_version.date, "decode")) else pkg_version.date
         rosnode.get_logger().info("detected version: %s (%s)" % (VERSION, DATE))
     except Exception:
         pass

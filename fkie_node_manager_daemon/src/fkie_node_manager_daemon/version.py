@@ -40,49 +40,62 @@ import xml.dom.minidom as dom
 from fkie_node_manager_daemon.strings import utf8
 from fkie_multimaster_pylib.system.supervised_popen import SupervisedPopen
 
-VERSION = 'unknown'
-DATE = 'unknown'
+VERSION = "unknown"
+DATE = "unknown"
 
 
 def detect_version(package):
-    '''
+    """
     Try to detect the current version from git, installed VERSION/DATE files or package.xml
-    '''
+    """
     global VERSION
     global DATE
-    if VERSION != 'unknown':
+    if VERSION != "unknown":
         return VERSION, DATE
-    version = 'unknown'
-    date = 'unknown'
+    version = "unknown"
+    date = "unknown"
     try:
         pkg_path = roslib.packages.get_pkg_dir(package)
         if pkg_path is not None and os.path.isfile("%s/VERSION" % pkg_path):
             try:
                 with open("%s/VERSION" % pkg_path) as f:
                     version = f.read()
-                    version = version.strip().decode('utf-8')
+                    version = version.strip().decode("utf-8")
                 with open("%s/DATE" % pkg_path) as f:
                     datetag = f.read().split()
                     if datetag:
                         date = datetag[0]  # .decode('utf-8')
             except Exception as err:
                 sys.stderr.write("version detection error: %s\n" % utf8(err))
-        elif os.path.isdir("%s/../.git" % pkg_path) and os.path.isfile('/usr/bin/git'):
+        elif os.path.isdir("%s/../.git" % pkg_path) and os.path.isfile("/usr/bin/git"):
             try:
                 os.chdir(pkg_path)
-                ps = SupervisedPopen(['/usr/bin/git', 'describe', '--tags', '--dirty', '--always',
-                                      '--abbrev=8'], stdout=subprocess.PIPE, object_id='get git version')
+                ps = SupervisedPopen(
+                    [
+                        "/usr/bin/git",
+                        "describe",
+                        "--tags",
+                        "--dirty",
+                        "--always",
+                        "--abbrev=8",
+                    ],
+                    stdout=subprocess.PIPE,
+                    object_id="get git version",
+                )
                 output = ps.stdout.read()  # .decode('utf-8')
                 version = output.strip()
-                ps = SupervisedPopen(['/usr/bin/git', 'show', '-s', '--format=%ci'],
-                                     stdout=subprocess.PIPE, object_id='get git date')
+                ps = SupervisedPopen(
+                    ["/usr/bin/git", "show", "-s", "--format=%ci"],
+                    stdout=subprocess.PIPE,
+                    object_id="get git date",
+                )
                 output = ps.stdout.read().split()
                 if output:
                     date = output[0]  # .decode('utf-8')
             except Exception as err:
                 sys.stderr.write("version detection error: %s\n" % utf8(err))
         else:
-            ppath = roslib.packages.find_resource(package, 'package.xml')
+            ppath = roslib.packages.find_resource(package, "package.xml")
             if ppath:
                 doc = dom.parse(ppath[0])
                 version_tags = doc.getElementsByTagName("version")
@@ -91,11 +104,12 @@ def detect_version(package):
                     version = version
                 else:
                     sys.stderr.write(
-                        "version detection: no version tag in package.xml found!")
+                        "version detection: no version tag in package.xml found!"
+                    )
             else:
                 sys.stderr.write("version detection: package.xml not found!")
     except Exception as err:
         sys.stderr.write("version detection error: %s\n" % utf8(err))
-    VERSION = version
-    DATE = date
+    VERSION = version.decode() if (hasattr(version, "decode")) else version
+    DATE = date.decode() if (hasattr(date, "decode")) else date
     return version, date

@@ -67,5 +67,5 @@ class VersionServicer(vgrpc.VersionServiceServicer, CrossbarBaseSession):
     @wamp.register("ros.daemon.get_version")
     def get_version(self) -> DaemonVersion:
         Log.info(f"{self.__class__.__name__}: get daemon version ")
-        reply = DaemonVersion(f"{self._version}", f"{self._date}")
+        reply = DaemonVersion(self._version, self._date)
         return json.dumps(reply, cls=SelfEncoder)
