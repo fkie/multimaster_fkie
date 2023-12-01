@@ -305,8 +305,10 @@ def main(argv=sys.argv) -> int:
     command = args.node_type
     if args.node_type is None:
         command = args.command
-    running_processes = find_process_by_name(
-        command, args.package, additional_args)
+    running_processes = find_process_by_name(command, args.package, additional_args)
+    if not running_processes:
+        # try without package name
+        running_processes = find_process_by_name(command, None, additional_args)
     if len(running_processes) > 0:
         if args.name:
             Log.warn(
