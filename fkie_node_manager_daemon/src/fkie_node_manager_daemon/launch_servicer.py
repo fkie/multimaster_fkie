@@ -215,7 +215,8 @@ class LaunchServicer(
                 if event.src_path in path_list:
                     affected_launch_files.append(launch_path)
             change_event = {
-                event.event_type: event.src_path,
+                "eventType": event.event_type,
+                "srcPath": event.src_path,
                 "affected": affected_launch_files,
             }
             Log.debug("observed change %s on %s" % (event.event_type, event.src_path))

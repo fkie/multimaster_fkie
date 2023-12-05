@@ -179,8 +179,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             for launch_path, path_list in self._observed_launch_files.items():
                 if event.src_path in path_list:
                     affected_launch_files.append(launch_path)
-            change_event = {event.event_type: event.src_path,
-                            'affected': affected_launch_files}
+            change_event = {"eventType": event.event_type,
+                            "srcPath": event.src_path,
+                            "affected": affected_launch_files}
             Log.debug(
                 f"{self.__class__.__name__}: observed change {event.event_type} on {event.src_path}")
             self.publish_to('ros.path.changed', change_event)
