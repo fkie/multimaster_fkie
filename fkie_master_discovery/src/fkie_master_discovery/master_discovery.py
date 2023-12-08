@@ -1056,6 +1056,7 @@ class Discoverer(object):
                                                master.masteruri) > 0 else f'{addr}:{port}',
                                            origin=master.masteruri == self.master_monitor.getMasteruri(),
                                            hostnames=list(set([addr[0], get_hostname(master.masteruri)])))
+                    cbmaster.ros_domain_id = self.mcast_port - 11511
                     result.append(cbmaster)
                     crossbar_reported_masters.add(master.masteruri)
             if not (crossbar_reported_masters == self._crossbar_reported_masters):
