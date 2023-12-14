@@ -390,7 +390,9 @@ def find_included_files(string: str,
                         # try to resolve path
                         fname = replace_arg(fname, resolve_args_all)
                         fname = replace_arg(fname, resolve_args_intern)
-                        fname = interpret_path(fname, pwd)
+                        if fname.find('$(arg ') == -1:
+                            # do not try to resolve if not all args are replaced
+                            fname = interpret_path(fname, pwd)
                     except Exception as err:
                         Log.warn(f"Interpret file failed: {err}")
                     if os.path.isdir(fname):
