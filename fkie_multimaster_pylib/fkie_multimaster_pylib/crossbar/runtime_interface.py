@@ -504,3 +504,46 @@ class DaemonVersion:
 
     def __repr__(self) -> str:
         return f"DaemonVersion<version: {self.version}, date: {self.date}>"
+
+
+class DiagnosticArray:
+    """
+    This message is used to send diagnostic information about the state of the host.
+:param timestamp:
+:param status: an array of components being reported on.
+
+    """
+    def __init__(self, timestamp: float, status: []) -> None:
+        self.timestamp = timestamp
+        self.status = status
+
+
+class DiagnosticStatus:
+    """
+ This message holds the status of an individual component of the host.
+  :param level: level of operation enumerated above
+  :param name: a description of the test/component reporting
+  :param message: a description of the status
+  :param hardware_id: a hardware unique string
+  :param values: an array of values associated with the status
+     """
+    
+    # Possible levels of operations
+    class LevelType:
+        OK = 0
+        WARN = 1
+        ERROR = 2
+        STALE = 3
+
+    class KeyValue:
+        def __init__(self, key: str, value: str) -> None:
+            self.key = key
+            self.value = value
+
+    def __init__(self, level: LevelType, name: str, message: str, hardware_id: str, values: List[KeyValue]) -> None:
+        self.level = level
+        self.name = name
+        self.message = message
+        self.hardware_id = hardware_id
+        self.values = values
+

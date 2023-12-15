@@ -45,7 +45,6 @@ from .net_load import NetLoad
 
 
 class DiagnosticObj(DiagnosticStatus):
-
     def __init__(self, msg=DiagnosticStatus(), timestamp=0):
         self.msg = msg
         self.timestamp = timestamp
@@ -67,21 +66,22 @@ class DiagnosticObj(DiagnosticStatus):
 
 
 class Service:
-
-    def __init__(self, settings):
+    def __init__(self, settings, callbackDiagnostics=None):
         self._settings = settings
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
-        self.use_diagnostics_agg = settings.param(
-            'global/use_diagnostics_agg', False)
+        self._callbackDiagnostics = callbackDiagnostics
+        self.use_diagnostics_agg = settings.param("global/use_diagnostics_agg", True)
         self._sub_diag_agg = None
         self._sub_diag = None
         if self.use_diagnostics_agg:
             self._sub_diag_agg = rospy.Subscriber(
-                '/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+                "/diagnostics_agg", DiagnosticArray, self._callback_diagnostics
+            )
         else:
             self._sub_diag = rospy.Subscriber(
-                '/diagnostics', DiagnosticArray, self._callback_diagnostics)
+                "/diagnostics", DiagnosticArray, self._callback_diagnostics
+            )
         hostname = socket.gethostname()
 
         self.sensors = []
@@ -95,7 +95,7 @@ class Service:
         self._settings.add_reload_listener(self.reload_parameter)
 
     def reload_parameter(self, settings):
-        value = settings.param('global/use_diagnostics_agg', False)
+        value = settings.param("global/use_diagnostics_agg", True)
         if value != self.use_diagnostics_agg:
             if self._sub_diag is not None:
                 self._sub_diag.unregister()
@@ -105,10 +105,12 @@ class Service:
                 self._sub_diag_agg = None
             if value:
                 self._sub_diag_agg = rospy.Subscriber(
-                    '/diagnostics_agg', DiagnosticArray, self._callback_diagnostics)
+                    "/diagnostics_agg", DiagnosticArray, self._callback_diagnostics
+                )
             else:
                 self._sub_diag = rospy.Subscriber(
-                    '/diagnostics', DiagnosticArray, self._callback_diagnostics)
+                    "/diagnostics", DiagnosticArray, self._callback_diagnostics
+                )
             self.use_diagnostics_agg = value
 
     def _callback_diagnostics(self, msg):
@@ -124,6 +126,8 @@ class Service:
                 except Exception:
                     diag_obj = DiagnosticObj(status, stamp)
                     self._diagnostics.append(diag_obj)
+            if self._callbackDiagnostics:
+                self._callbackDiagnostics(msg)
 
     def get_system_diagnostics(self, filter_level=0, filter_ts=0):
         result = DiagnosticArray()

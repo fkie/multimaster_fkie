@@ -53,7 +53,7 @@ class Settings:
                 'version': {':value': self.version, ':ro': True},
                 'file': {':value': self.filename, ':ro': True},
                 'grpc_timeout': {':value': 15.0, ':type': 'float', ':min': 0, ':default': 15.0, ':hint': "timeout for connection to remote gRPC-server"},
-                'use_diagnostics_agg': {':value': False, ':hint': "subscribes to '/diagnostics_agg' topic instead of '/diagnostics'"},
+                'use_diagnostics_agg': {':value': True, ':hint': "subscribes to '/diagnostics_agg' topic instead of '/diagnostics'"},
                 'reset': {':value': False, ':hint': 'if this flag is set to True the configuration will be reseted'},
                 'grpc_verbosity': {':value': 'INFO', ':alt': ['DEBUG', 'INFO', 'ERROR'], ':hint': 'change gRPC verbosity', ':need_restart': True},
                 'grpc_poll_strategy': {':value': '', ':alt': ['', 'poll', 'epollex', 'epoll1'], ':hint': 'change the strategy if you get warnings. Empty sets to default.', ':need_restart': True}
