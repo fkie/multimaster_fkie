@@ -24,6 +24,7 @@ import rclpy
 import shlex
 import sys
 import traceback
+from importlib import import_module
 
 from launch.launch_context import LaunchContext
 import asyncio
@@ -722,9 +723,9 @@ class LaunchServicer(CrossbarBaseSession, LoggingEventHandler):
             f"{self.__class__.__name__}: Request to [ros.launch.get_msg_struct]: msg [{msg_type}]")
         result = LaunchMessageStruct(msg_type)
         try:
-            splitted_type = msg_type.replace('/', '.').split('.')
+            splitted_type = msg_type.replace('/', '.').rsplit('.', 1)
             splitted_type.reverse()
-            module = __import__(splitted_type.pop())
+            module = import_module(splitted_type.pop())
             sub_class = getattr(module, splitted_type.pop())
             while splitted_type:
                 sub_class = getattr(sub_class, splitted_type.pop())
