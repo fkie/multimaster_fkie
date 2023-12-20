@@ -72,11 +72,12 @@ class DiagnosticObj(DiagnosticStatus):
 
 class Service:
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings, callbackDiagnostics=None):
         self._clock = Clock()
         self._settings = settings
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
+        self._callbackDiagnostics = callbackDiagnostics
         self.use_diagnostics_agg = settings.param(
             'global/use_diagnostics_agg', True)
         self._sub_diag = None
@@ -115,7 +116,7 @@ class Service:
     def _callback_diagnostics(self, msg: DiagnosticArray):
         # TODO: update diagnostics
         with self._mutex:
-            stamp = msg.header.stamp.to_sec()
+            stamp = float(msg.header.stamp.sec) + float(msg.header.stamp.nanosec) / 1000000000.0
             for status in msg.status:
                 try:
                     idx = self._diagnostics.index(status)
@@ -126,6 +127,8 @@ class Service:
                     diag_obj = DiagnosticObj(status, stamp)
                     diag_obj.timestamp = stamp
                     self._diagnostics.append(diag_obj)
+            if self._callbackDiagnostics:
+                self._callbackDiagnostics(msg)
 
     def get_system_diagnostics(self, filter_level: list = [], filter_ts: float = 0):
         result = DiagnosticArray()

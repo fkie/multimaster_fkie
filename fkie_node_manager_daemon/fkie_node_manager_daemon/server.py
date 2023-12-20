@@ -41,6 +41,7 @@ from fkie_multimaster_msgs.srv import Task
 from fkie_multimaster_pylib.launch import xml
 from fkie_multimaster_pylib.names import ns_join
 from fkie_multimaster_pylib.crossbar import server
+from fkie_multimaster_pylib.settings import Settings
 from fkie_multimaster_pylib.system.host import get_host_name
 from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
 from fkie_multimaster_pylib.logging.logging import Log
@@ -53,6 +54,7 @@ from fkie_node_manager_daemon.parameter_servicer import ParameterServicer
 from fkie_node_manager_daemon.rosstate_servicer import RosStateServicer
 from fkie_node_manager_daemon.screen_servicer import ScreenServicer
 from fkie_node_manager_daemon.version_servicer import VersionServicer
+from fkie_node_manager_daemon.version import detect_version
 
 
 class Server:
@@ -61,6 +63,10 @@ class Server:
         self.crossbar_port = server.port()
         self.crossbar_realm = "ros"
         self.crossbar_loop = asyncio.get_event_loop()
+        self._version, self._date = detect_version(
+            nmd.ros_node, "fkie_node_manager_daemon"
+        )
+        self._settings = Settings(version=self._version)
         self.ros_domain_id = default_domain_id
         if self.ros_domain_id > 0:
             rosnode.get_logger().warn(
@@ -69,7 +75,7 @@ class Server:
         self.name = get_host_name()
         self.uri = ""
         self.monitor_servicer = MonitorServicer(
-            self.crossbar_loop, self.crossbar_realm, self.crossbar_port
+            self._settings, self.crossbar_loop, self.crossbar_realm, self.crossbar_port
         )
         self.file_servicer = FileServicer(
             self.crossbar_loop, self.crossbar_realm, self.crossbar_port
@@ -163,6 +169,7 @@ class Server:
             registration_finished &= self.rosstate_servicer.crossbar_registered
             registration_finished &= self.parameter_servicer.crossbar_registered
             registration_finished &= self.version_servicer.crossbar_registered
+            registration_finished &= self.monitor_servicer.crossbar_registered
             time.sleep(0.5)
         self.publish_daemon_state(True)
         self._crossbar_send_status(True)
@@ -190,7 +197,7 @@ class Server:
         self.screen_servicer.stop()
         self.launch_servicer.stop()
         self.file_servicer.stop()
-        # self.monitor_servicer.stop()
+        self.monitor_servicer.stop()
         self.rosstate_servicer.stop()
         self.screen_servicer.stop()
         self.parameter_servicer.stop()

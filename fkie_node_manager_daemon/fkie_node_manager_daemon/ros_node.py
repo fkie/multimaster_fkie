@@ -112,8 +112,9 @@ class RosNodeLauncher(object):
         try:
             rclpy.shutdown()
         except Exception:
-            import traceback
-            print(traceback.format_exc())
+            pass
+            # import traceback
+            # print(traceback.format_exc())
         print('bye!')
 
     def _run_tests(self):

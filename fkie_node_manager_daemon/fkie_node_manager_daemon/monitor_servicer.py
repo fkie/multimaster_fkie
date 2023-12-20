@@ -22,7 +22,6 @@ from autobahn import wamp
 import json
 
 from fkie_node_manager_daemon.monitor import Service
-from fkie_multimaster_pylib.settings import Settings
 
 from fkie_multimaster_pylib.crossbar.runtime_interface import DiagnosticArray
 from fkie_multimaster_pylib.crossbar.runtime_interface import DiagnosticStatus
@@ -31,9 +30,7 @@ from fkie_multimaster_pylib.crossbar.runtime_interface import SystemInformation
 from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
 from fkie_multimaster_pylib.logging.logging import Log
-import fkie_node_manager_daemon as nmd
 
-from . import version
 
 class MonitorServicer(CrossbarBaseSession):
     def __init__(
@@ -41,10 +38,11 @@ class MonitorServicer(CrossbarBaseSession):
     ):
         Log.info("Create monitor servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
-        self._version, self._date = version.detect_version(
-            nmd.ros_node, "fkie_node_manager_daemon"
-        )
-        self._monitor = Service(Settings(version=self._version), self.diagnosticsCbPublisher)
+        self._monitor = Service(settings, self.diagnosticsCbPublisher)
+
+    def stop(self):
+        self._monitor.stop()
+        self.shutdown()
 
     @wamp.register("ros.provider.get_system_info")
     def getSystemInfo(self) -> SystemInformation:
@@ -58,8 +56,8 @@ class MonitorServicer(CrossbarBaseSession):
 
     def _toCrossbarDiagnostics(self, rosmsg):
         cbMsg = DiagnosticArray(
-            float(rosmsg.header.stamp.secs)
-            + float(rosmsg.header.stamp.nsecs) / 1000000000.0, []
+            timestamp=float(rosmsg.header.stamp.sec)
+            + float(rosmsg.header.stamp.nanosec) / 1000000000.0, status=[]
         )
         for sensor in rosmsg.status:
             values = []
