@@ -21,19 +21,30 @@ import asyncio
 from autobahn import wamp
 import json
 
+from fkie_node_manager_daemon.monitor import Service
+from fkie_multimaster_pylib.settings import Settings
+
+from fkie_multimaster_pylib.crossbar.runtime_interface import DiagnosticArray
+from fkie_multimaster_pylib.crossbar.runtime_interface import DiagnosticStatus
 from fkie_multimaster_pylib.crossbar.runtime_interface import SystemEnvironment
 from fkie_multimaster_pylib.crossbar.runtime_interface import SystemInformation
 from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
 from fkie_multimaster_pylib.logging.logging import Log
+import fkie_node_manager_daemon as nmd
 
+from . import version
 
 class MonitorServicer(CrossbarBaseSession):
     def __init__(
-        self, loop: asyncio.AbstractEventLoop, realm: str = "ros", port: int = 11911
+        self, settings, loop: asyncio.AbstractEventLoop, realm: str = "ros", port: int = 11911
     ):
         Log.info("Create monitor servicer")
         CrossbarBaseSession.__init__(self, loop, realm, port)
+        self._version, self._date = version.detect_version(
+            nmd.ros_node, "fkie_node_manager_daemon"
+        )
+        self._monitor = Service(Settings(version=self._version), self.diagnosticsCbPublisher)
 
     @wamp.register("ros.provider.get_system_info")
     def getSystemInfo(self) -> SystemInformation:
@@ -44,3 +55,31 @@ class MonitorServicer(CrossbarBaseSession):
     def getSystemEnv(self) -> SystemEnvironment:
         Log.info("crossbar: get system env")
         return json.dumps(SystemEnvironment(), cls=SelfEncoder)
+
+    def _toCrossbarDiagnostics(self, rosmsg):
+        cbMsg = DiagnosticArray(
+            float(rosmsg.header.stamp.secs)
+            + float(rosmsg.header.stamp.nsecs) / 1000000000.0, []
+        )
+        for sensor in rosmsg.status:
+            values = []
+            for v in sensor.values:
+                values.append(DiagnosticStatus.KeyValue(v.key, v.value))
+            status = DiagnosticStatus(
+                sensor.level, sensor.name, sensor.message, sensor.hardware_id, values
+            )
+            cbMsg.status.append(status)
+        return cbMsg
+
+    def diagnosticsCbPublisher(self, rosmsg):
+        self.publish_to(
+            "ros.provider.diagnostics",
+            json.dumps(self._toCrossbarDiagnostics(rosmsg), cls=SelfEncoder),
+        )
+
+    @wamp.register("ros.provider.get_diagnostics")
+    def getDiagnostics(self) -> DiagnosticArray:
+        Log.info("crossbar: get diagnostics")
+        rosmsg = self._monitor.get_diagnostics(0, 0)
+        # copy message to the crossbar structure
+        return json.dumps(self._toCrossbarDiagnostics(rosmsg), cls=SelfEncoder)

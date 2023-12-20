@@ -78,7 +78,7 @@ class Service:
         self._mutex = threading.RLock()
         self._diagnostics = []  # DiagnosticObj
         self.use_diagnostics_agg = settings.param(
-            'global/use_diagnostics_agg', False)
+            'global/use_diagnostics_agg', True)
         self._sub_diag = None
         if self.use_diagnostics_agg:
             self._sub_diag = nmd.ros_node.create_subscription(
