@@ -188,7 +188,6 @@ class LaunchServicer(
         self._loaded_files = dict()  # dictionary of (CfgId: LaunchConfig)
         self._monitor_servicer = monitor_servicer
         self._watchdog_observer.start()
-        print(self.get_msg_struct("fkie_multimaster_msgs/LinkStatesStamped"))
 
     def _terminated(self):
         Log.info("terminated launch context")
