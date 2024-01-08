@@ -1074,6 +1074,8 @@ class MasterMonitor(CrossbarBaseSession):
                 for code, msg, _ in r:
                     if code != 1:
                         Log.warn(f"unregistration failed: {msg}")
+                    else:
+                        success = True
             except KeyError:
                 msg = f"Error while unregistering node: Node '{name}' not found"
                 Log.warn(msg)

@@ -88,6 +88,26 @@ class LogPathItem:
         return json.dumps(dict(self), ensure_ascii=False)
 
 
+class LogPathClearResult:
+    """
+    :param str node: complete node name
+    :param bool result: Clear result.
+    :param str message: Message on error.
+    """
+
+    def __init__(
+        self,
+        node: str,
+        result: bool = False,
+        message: str = "",
+    ) -> None:
+        self.node = node
+        self.result = result
+        self.message = message
+
+    def __str__(self):
+        return json.dumps(dict(self), ensure_ascii=False)
+
 class FileItem:
     """
     :param str path: absolute path of the file or directory

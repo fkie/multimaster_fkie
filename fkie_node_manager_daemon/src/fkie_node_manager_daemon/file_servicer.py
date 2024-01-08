@@ -53,6 +53,7 @@ from fkie_multimaster_pylib.crossbar.file_interface import FileItem
 from fkie_multimaster_pylib.crossbar.file_interface import RosPackage
 from fkie_multimaster_pylib.crossbar.file_interface import PathItem
 from fkie_multimaster_pylib.crossbar.file_interface import LogPathItem
+from fkie_multimaster_pylib.crossbar.file_interface import LogPathClearResult
 from fkie_multimaster_pylib.defines import PACKAGE_FILE
 from fkie_multimaster_pylib.launch import xml
 from fkie_multimaster_pylib.logging.logging import Log
@@ -606,6 +607,47 @@ class FileServicer(fms_grpc.FileServiceServicer, CrossbarBaseSession):
                 screen_log_exists=os.path.exists(screen_log),
                 ros_log=ros_log,
                 ros_log_exists=os.path.exists(ros_log),
+            )
+            result.append(log_path_item)
+        return json.dumps(result, cls=SelfEncoder)
+
+    @wamp.register("ros.path.clear_log_paths")
+    def clearLogPaths(self, nodes: List[str]) -> List[LogPathClearResult]:
+        Log.info(
+            f"{self.__class__.__name__}: Request to [ros.path.clear_log_paths] for {nodes}"
+        )
+        result = []
+        for node in nodes:
+            namespace = None
+            node_name = node
+
+            namespace_search = re.search("/(.*)/", node_name)
+            if namespace_search is not None:
+                namespace = f"/{namespace_search.group(1)}"
+                node_name = node.replace(f"/{namespace}/", "")
+
+            screen_log = get_logfile(
+                node=node_name, for_new_screen=True, namespace=namespace
+            )
+            ros_log = get_ros_logfile(node)
+            resultDelete = True
+            message = ''
+            if (os.path.exists(screen_log)):
+                try:
+                    os.remove(screen_log)
+                except OSError as error:
+                    resultDelete = False
+                    message += f"Can not remove {screen_log}: {error}. "
+            if (os.path.exists(ros_log)):
+                try:
+                    os.remove(ros_log)
+                except OSError as error:
+                    resultDelete = False
+                    message += f"Can not remove {ros_log}: {error}. "
+            log_path_item = LogPathClearResult(
+                node,
+                result=resultDelete,
+                message=message
             )
             result.append(log_path_item)
         return json.dumps(result, cls=SelfEncoder)
