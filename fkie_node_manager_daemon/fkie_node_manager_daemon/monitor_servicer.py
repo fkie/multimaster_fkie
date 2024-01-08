@@ -81,3 +81,11 @@ class MonitorServicer(CrossbarBaseSession):
         rosmsg = self._monitor.get_diagnostics(0, 0)
         # copy message to the crossbar structure
         return json.dumps(self._toCrossbarDiagnostics(rosmsg), cls=SelfEncoder)
+
+    @wamp.register("ros.provider.ros_clean_purge")
+    def rosCleanPurge(self) -> {bool, str}:
+        Log.info("crossbar: ros_clean_purge")
+        result = False
+        message = 'Not implemented'
+        Log.warn("Not implemented: ros.provider.ros_clean_purge")
+        return json.dumps({result: result, message: message}, cls=SelfEncoder)

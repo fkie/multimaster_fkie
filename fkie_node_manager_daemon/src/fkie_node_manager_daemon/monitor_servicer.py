@@ -48,6 +48,7 @@ from fkie_multimaster_pylib.crossbar.runtime_interface import SystemInformation
 from fkie_multimaster_pylib.crossbar.base_session import CrossbarBaseSession
 from fkie_multimaster_pylib.crossbar.base_session import SelfEncoder
 from fkie_multimaster_pylib.logging.logging import Log
+from fkie_multimaster_pylib.system.screen import ros_clean
 
 
 class MonitorServicer(mgrpc.MonitorServiceServicer, CrossbarBaseSession):
@@ -130,3 +131,15 @@ class MonitorServicer(mgrpc.MonitorServiceServicer, CrossbarBaseSession):
     def getSystemEnv(self) -> SystemEnvironment:
         Log.info("crossbar: get system env")
         return json.dumps(SystemEnvironment(), cls=SelfEncoder)
+
+    @wamp.register("ros.provider.ros_clean_purge")
+    def rosCleanPurge(self) -> {bool, str}:
+        Log.info("crossbar: ros_clean_purge")
+        result = False
+        message = ''
+        try:
+            ros_clean()
+            result = True
+        except Exception as error:
+            message = str(error)
+        return json.dumps({result: result, message: message}, cls=SelfEncoder)
