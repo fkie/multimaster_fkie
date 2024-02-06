@@ -42,7 +42,9 @@ from .common import utf8
 GRPC_TIMEOUT = 15.0
 ''':var GRPC_TIMEOUT: timeout for connection to remote gRPC-server'''
 
-RESPAWN_SCRIPT = 'rosrun fkie_node_manager respawn'
+LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
+
+RESPAWN_SCRIPT = 'rosrun fkie_node_manager_daemon respawn'
 ''':var RESPAWN_SCRIPT: start prefix to launch ROS-Nodes with respawn script'''
 
 LOG_PATH = ''.join([os.environ.get('ROS_LOG_DIR'), os.path.sep]) if os.environ.get('ROS_LOG_DIR') else os.path.join(os.path.expanduser('~'), '.ros/log/')

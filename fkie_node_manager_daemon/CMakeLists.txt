@@ -24,6 +24,13 @@ generate_version(TARGETS version_TARGETS)
 catkin_install_python(
     PROGRAMS 
         nodes/node_manager_daemon
+        scripts/remote_nm.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(
+    PROGRAMS
+        scripts/respawn
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
