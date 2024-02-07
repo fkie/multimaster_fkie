@@ -164,6 +164,8 @@ def test_screen():
     '''
     if not os.path.isfile(SCREEN):
         raise ScreenException(SCREEN, "%s is missing" % SCREEN)
+    if not os.path.exists(SETTINGS_PATH):
+        os.makedirs(SETTINGS_PATH)
     with open('%s/screen.cfg' % SETTINGS_PATH, 'w') as sf:
         sf.write('logfile flush 0')
 

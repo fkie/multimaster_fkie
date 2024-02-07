@@ -122,7 +122,7 @@ class Settings(object):
     CURRENT_DIALOG_PATH = os.path.expanduser('~')
     LOG_PATH = screen.LOG_PATH
     LOG_VIEWER = "/usr/bin/less -fKLnQrSU"
-    STARTER_SCRIPT = 'rosrun fkie_node_manager_daemon remote_nm.py'
+    STARTER_SCRIPT = 'rosrun fkie_node_manager remote_nm.py'
     ''':ivar STARTER_SCRIPT: the script used on remote hosts to start new ROS nodes.'''
 
     LAUNCH_HISTORY_FILE = 'launch.history'
